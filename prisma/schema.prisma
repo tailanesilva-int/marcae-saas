@@ -1,0 +1,342 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Empresa {
+  id                                 String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  slug                               String    @unique
+  nome                               String
+  descricao                          String?
+  telefone                           String?
+  endereco                           String?
+  logoUrl                            String?
+  midiaUrl                           String?
+  tipoMidia                          String?   @default("imagem")
+  ativo                              Boolean   @default(true)
+  createdAt                          DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt                          DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  whatsapp                           String?
+  instagram                          String?
+  corPrimaria                        String?
+  corSecundaria                      String?
+  whatsappInstance                   String?
+  whatsappAtivo                      Boolean   @default(false)
+
+  plano                              String?   @default("basico")
+  trialAtivo                         Boolean   @default(true)
+  trialExpiraEm                      DateTime? @db.Timestamp(6)
+  assinaturaStatus                   String    @default("trial")
+  assinaturaExpiraEm                 DateTime? @db.Timestamp(6)
+  mercadoPagoAssinaturaId            String?
+  responsavel                        String?
+  assinaturaProximaCobrancaEm        DateTime? @db.Timestamp(6)
+  assinaturaRecorrenteAtiva          Boolean   @default(false)
+  assinaturaUltimoLembreteWhatsappEm DateTime? @db.Timestamp(6)
+  modoPagamentoAssinatura            String    @default("manual")
+  formaPagamentoAssinatura           String    @default("pix")
+
+  valorMensalPersonalizado           Decimal?  @db.Decimal(10, 2)
+  descontoMensal                     Decimal?  @db.Decimal(10, 2)
+  statusFinanceiro                   String    @default("em_dia")
+  bloqueadoPorInadimplencia          Boolean   @default(false)
+  ultimoPagamentoEm                  DateTime? @db.Timestamp(6)
+  observacoesInternas                String?
+
+  agendamentos                       Agendamento[]
+  clientes                           Cliente[]
+  disponibilidades                   Disponibilidade[]
+  pagamentos                         Pagamento[]
+  pagamentosAssinatura               PagamentoAssinatura[]
+  profissionais                      Profissional[]
+  ProfissionalServico                ProfissionalServico[]
+  promocoes                          Promocao[]
+  servicos                           Servico[]
+  usuarios                           UsuarioEmpresa[]
+  comissoes                          Comissao[]
+  logs                                   EmpresaLog[]
+  pagamentosSaaS          EmpresaPagamento[]
+}
+
+model Cliente {
+  id             String        @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId      String
+  nome           String
+  whatsapp       String
+  cpf            String?
+  dataNascimento DateTime?     @db.Timestamp(6)
+  createdAt      DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt      DateTime      @default(now()) @updatedAt @db.Timestamp(6)
+
+  agendamentos   Agendamento[]
+  empresa        Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Pagamento      Pagamento[]
+
+  @@unique([empresaId, whatsapp])
+}
+
+model Servico {
+  id                       String                  @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId                String
+  nome                     String
+  descricao                String?
+  duracaoMin               Int                     @default(30)
+  valor                    Decimal                 @default(0) @db.Decimal(10, 2)
+  ativo                    Boolean                 @default(true)
+  exigePagamento           Boolean                 @default(false)
+  tipoPagamento            String?
+  permiteAgendamentoOnline Boolean                 @default(true)
+  ordem                    Int                     @default(0)
+  createdAt                DateTime                @default(now()) @db.Timestamp(6)
+  updatedAt                DateTime                @default(now()) @updatedAt @db.Timestamp(6)
+  exigePrePagamento        Boolean?                @default(false)
+  valorPrePagamento        Decimal?                @db.Decimal
+  tipoPrePagamento         String?
+
+  agendamentos             Agendamento[]
+  profissionais            ProfissionalServico[]
+  empresa                  Empresa                 @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ProfissionalToServico    ProfissionalToServico[]
+}
+
+model Profissional {
+  id                    String                  @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId             String
+  nome                  String
+  fotoUrl               String?
+  bio                   String?
+  ativo                 Boolean                 @default(true)
+  ordem                 Int                     @default(0)
+  tipoComissao          String?
+  valorComissao         Float?
+  createdAt             DateTime                @default(now()) @db.Timestamp(6)
+  updatedAt             DateTime                @default(now()) @updatedAt @db.Timestamp(6)
+
+  agendamentos          Agendamento[]
+  disponibilidades      Disponibilidade[]
+  empresa               Empresa                 @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  servicos              ProfissionalServico[]
+  ProfissionalToServico ProfissionalToServico[]
+  comissoes             Comissao[]
+}
+
+model ProfissionalServico {
+  id             String       @id @default(dbgenerated("(gen_random_uuid())::text"))
+  profissionalId String
+  servicoId      String
+  empresaId      String?
+
+  Empresa        Empresa?     @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  servico        Servico      @relation(fields: [servicoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([profissionalId, servicoId])
+}
+
+model Disponibilidade {
+  id             String        @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId      String
+  profissionalId String?
+  diaSemana      Int
+  horaInicio     String
+  horaFim        String
+  intervaloMin   Int           @default(30)
+  ativo          Boolean       @default(true)
+  tipo           String        @default("trabalho")
+  updatedAt      DateTime      @default(now()) @updatedAt @db.Timestamp(6)
+
+  empresa        Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profissional   Profissional? @relation(fields: [profissionalId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model Agendamento {
+  id                        String        @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId                 String
+  servicoId                 String
+  profissionalId            String?
+  data                      String?
+  horaInicio                String?
+  duracaoMin                Int
+  clienteNome               String?
+  clienteCpf                String?
+  clienteNascimento         String?
+  clienteWhatsapp           String?
+  status                    String        @default("pendente")
+  createdAt                 DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt                 DateTime      @default(now()) @updatedAt @db.Timestamp(6)
+  nomeCliente               String?
+  telefoneCliente           String?
+  clienteId                 String?
+  dataHoraInicio            DateTime?     @db.Timestamp(6)
+  dataHoraFim               DateTime?     @db.Timestamp(6)
+  valorTotal                Decimal       @default(0) @db.Decimal
+  valorPrePago              Decimal?      @db.Decimal
+  statusPagamento           String        @default("pendente")
+  origem                    String        @default("online")
+  lembreteWhatsappEnviado   Boolean       @default(false)
+  lembreteWhatsappEnviadoAt DateTime?     @db.Timestamp(6)
+  motivoCancelamento      String?
+  canceladoEm             DateTime?     @db.Timestamp(6)
+
+  comissaoGerada            Boolean       @default(false)
+
+  cliente                   Cliente?      @relation(fields: [clienteId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  empresa                   Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profissional              Profissional? @relation(fields: [profissionalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  servico                   Servico       @relation(fields: [servicoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pagamento                 Pagamento[]
+  comissoes                 Comissao[]
+}
+
+model Pagamento {
+  id              String      @id(map: "pagamento_pkey") @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId       String
+  agendamentoId   String
+  clienteId       String?
+  provedor        String      @default("mercadopago")
+  externalId      String?
+  preferenceId    String?
+  valorTotal      Decimal     @default(0) @db.Decimal(10, 2)
+  valorPago       Decimal     @default(0) @db.Decimal(10, 2)
+  status          String      @default("pendente")
+  metodoPagamento String?
+  linkPagamento   String?
+  qrCode          String?
+  qrCodeBase64    String?
+  paidAt          DateTime?   @db.Timestamp(6)
+  createdAt       DateTime    @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime    @default(now()) @updatedAt @db.Timestamp(6)
+
+  agendamento     Agendamento @relation(fields: [agendamentoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "pagamento_agendamentoid_fkey")
+  Cliente         Cliente?    @relation(fields: [clienteId], references: [id], onUpdate: NoAction, map: "pagamento_clienteid_fkey")
+  empresa         Empresa     @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "pagamento_empresaid_fkey")
+
+  @@index([agendamentoId], map: "pagamento_agendamentoid_idx")
+  @@index([externalId], map: "pagamento_externalid_idx")
+}
+
+model Comissao {
+  id             String       @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId      String
+  agendamentoId  String
+  profissionalId String
+
+  valorServico   Decimal      @default(0) @db.Decimal(10, 2)
+  valorComissao  Decimal      @default(0) @db.Decimal(10, 2)
+  tipoComissao   String?
+
+  status         String       @default("pendente")
+  dataPagamento  DateTime?    @db.Timestamp(6)
+  observacao     String?
+
+  createdAt      DateTime     @default(now()) @db.Timestamp(6)
+  updatedAt      DateTime     @default(now()) @updatedAt @db.Timestamp(6)
+
+  empresa        Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  agendamento    Agendamento  @relation(fields: [agendamentoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([agendamentoId, profissionalId])
+  @@index([empresaId])
+  @@index([profissionalId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Promocao {
+  id                    String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId             String
+  servicoId             String?
+  tipo                  String    @default("geral")
+  titulo                String
+  descricao             String?
+  mensagemWhatsapp      String?
+  dataInicio            DateTime? @db.Timestamp(6)
+  dataFim               DateTime? @db.Timestamp(6)
+  tipoDesconto          String?
+  desconto              Decimal?  @db.Decimal(10, 2)
+  status                String    @default("ativa")
+  createdAt             DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt             DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  whatsappEnviadoAt     DateTime? @db.Timestamp(6)
+  whatsappTotalEnviados Int       @default(0)
+  whatsappTotalErros    Int       @default(0)
+
+  empresa               Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model UsuarioEmpresa {
+  id          String    @id @default(uuid())
+  empresaId   String
+  nome        String
+  email       String    @unique
+  senhaHash   String
+  perfil      String?   @default("admin")
+  ativo       Boolean?  @default(true)
+  permissoes  Json?
+  createdAt   DateTime? @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime? @default(now()) @updatedAt @db.Timestamp(6)
+
+  empresa     Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_empresa")
+}
+
+model PagamentoAssinatura {
+  id                           String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId                    String
+  valor                        Decimal   @default(0) @db.Decimal(10, 2)
+  status                       String    @default("pendente")
+  preferenceId                 String?
+  paymentId                    String?
+  linkPagamento                String?
+  vencimento                   DateTime? @db.Timestamp(6)
+  dataPagamento                DateTime? @db.Timestamp(6)
+  createdAt                    DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt                    DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  mercadoPagoAssinaturaId      String?
+  tipo                         String    @default("manual")
+  whatsappConfirmacaoEnviadoAt DateTime? @db.Timestamp(6)
+  whatsappLembreteEnviadoAt    DateTime? @db.Timestamp(6)
+
+  empresa                      Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([empresaId])
+  @@index([mercadoPagoAssinaturaId])
+  @@index([paymentId])
+  @@index([preferenceId])
+}
+
+model ProfissionalToServico {
+  A            String
+  B            String
+
+  Profissional Profissional @relation(fields: [A], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Servico      Servico      @relation(fields: [B], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([A, B])
+  @@map("_ProfissionalToServico")
+}
+
+model EmpresaLog {
+  id        String   @id @default(uuid())
+  empresaId String
+  tipo      String   // bloquear, desbloquear, inativar, ativar
+  motivo    String
+  criadoEm  DateTime @default(now())
+
+  empresa   Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+}
+
+model EmpresaPagamento {
+  id        String   @id @default(uuid())
+  empresaId String
+  valor     Decimal  @db.Decimal(10, 2)
+  status    String   // pago, pendente, falhou
+  descricao String?
+  criadoEm  DateTime @default(now())
+
+  empresa   Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+}
