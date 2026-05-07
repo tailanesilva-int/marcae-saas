@@ -64,21 +64,23 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      const empresaPagamento = agendamento.empresa as any;
+
       if (!podeUsarPrePagamento(agendamento.empresa)) {
         return NextResponse.json(
           {
             error:
               'Pré-pagamento disponível apenas para empresas com Premium ativo.',
-            planoAtual: agendamento.empresa.plano || 'basico',
+            planoAtual: empresaPagamento.plano || 'basico',
             assinaturaStatus:
-              agendamento.empresa.assinaturaStatus || 'vencida',
-            assinaturaExpiraEm: agendamento.empresa.assinaturaExpiraEm,
+              empresaPagamento.assinaturaStatus || 'vencida',
+            assinaturaExpiraEm: empresaPagamento.assinaturaExpiraEm,
           },
           { status: 403 }
         );
       }
 
-      if (!agendamento.empresa.mercadoPagoAtivo) {
+      if (!empresaPagamento.mercadoPagoAtivo) {
         return NextResponse.json(
           {
             error:
@@ -88,7 +90,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      if (!agendamento.empresa.mercadoPagoAccessToken) {
+      if (!empresaPagamento.mercadoPagoAccessToken) {
         return NextResponse.json(
           {
             error:
@@ -110,7 +112,7 @@ export async function POST(req: NextRequest) {
       }
 
       const clientEmpresa = criarClienteMercadoPago(
-        agendamento.empresa.mercadoPagoAccessToken
+        empresaPagamento.mercadoPagoAccessToken
       );
 
       const preference = new Preference(clientEmpresa);
@@ -149,7 +151,7 @@ export async function POST(req: NextRequest) {
 
       const linkPagamento = obterLinkPagamento(
         response,
-        agendamento.empresa.mercadoPagoModo
+        empresaPagamento.mercadoPagoModo
       );
 
       await prisma.pagamento.create({
@@ -171,7 +173,7 @@ export async function POST(req: NextRequest) {
         notificationUrl,
         tipo: 'agendamento',
         recebedor: 'empresa',
-        mercadoPagoModo: agendamento.empresa.mercadoPagoModo || 'sandbox',
+        mercadoPagoModo: empresaPagamento.mercadoPagoModo || 'sandbox',
       });
     }
 
