@@ -3,17 +3,33 @@ import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { prisma } from '@/app/lib/prisma';
 import { podeUsarPrePagamento } from '@/lib/plano';
 
-const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
-});
+function criarClienteMercadoPago(accessToken?: string | null) {
+  const token = String(accessToken || '').trim();
+
+  if (!token) {
+    throw new Error('Access Token Mercado Pago não configurado.');
+  }
+
+  return new MercadoPagoConfig({
+    accessToken: token,
+  });
+}
 
 function getBaseUrl() {
   const url =
     process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NGROK_URL ||
-    'https://return-encircle-efficient.ngrok-free.dev';
+    process.env.APP_URL ||
+    'https://www.marcaeapp.com.br';
 
   return url.replace(/\/$/, '');
+}
+
+function obterLinkPagamento(response: any, modo?: string | null) {
+  if (modo === 'sandbox') {
+    return response.sandbox_init_point || response.init_point;
+  }
+
+  return response.init_point || response.sandbox_init_point;
 }
 
 export async function POST(req: NextRequest) {
@@ -23,9 +39,6 @@ export async function POST(req: NextRequest) {
     const { agendamentoId, empresaId, tipo } = body;
 
     const baseUrl = getBaseUrl();
-    const notificationUrl = `${baseUrl}/api/webhook/mercadopago`;
-
-    const preference = new Preference(client);
 
     if (tipo === 'agendamento') {
       if (!agendamentoId) {
@@ -65,6 +78,26 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      if (!agendamento.empresa.mercadoPagoAtivo) {
+        return NextResponse.json(
+          {
+            error:
+              'Mercado Pago da empresa ainda não está ativo. Configure o recebimento online em Configurações.',
+          },
+          { status: 400 }
+        );
+      }
+
+      if (!agendamento.empresa.mercadoPagoAccessToken) {
+        return NextResponse.json(
+          {
+            error:
+              'Access Token Mercado Pago da empresa não configurado. Configure o recebimento online em Configurações.',
+          },
+          { status: 400 }
+        );
+      }
+
       const valorPrePago = Number(agendamento.valorPrePago || 0);
       const valorTotal = Number(agendamento.valorTotal || 0);
       const valor = valorPrePago > 0 ? valorPrePago : valorTotal;
@@ -76,16 +109,24 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      const clientEmpresa = criarClienteMercadoPago(
+        agendamento.empresa.mercadoPagoAccessToken
+      );
+
+      const preference = new Preference(clientEmpresa);
+
+      const notificationUrl = `${baseUrl}/api/webhook/mercadopago?tipo=agendamento&empresaId=${agendamento.empresaId}&agendamentoId=${agendamento.id}`;
+
       const response = await preference.create({
         body: {
           items: [
-  {
-    id: agendamento.id,
-    title: agendamento.servico?.nome || 'Agendamento',
-    quantity: 1,
-    unit_price: valor,
-  },
-],
+            {
+              id: agendamento.id,
+              title: agendamento.servico?.nome || 'Agendamento',
+              quantity: 1,
+              unit_price: valor,
+            },
+          ],
           payer: {
             name: agendamento.cliente?.nome || 'Cliente',
             email: 'test_user_3373866382@testuser.com',
@@ -106,7 +147,10 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      const linkPagamento = response.init_point || response.sandbox_init_point;
+      const linkPagamento = obterLinkPagamento(
+        response,
+        agendamento.empresa.mercadoPagoModo
+      );
 
       await prisma.pagamento.create({
         data: {
@@ -126,6 +170,8 @@ export async function POST(req: NextRequest) {
         preferenceId: response.id,
         notificationUrl,
         tipo: 'agendamento',
+        recebedor: 'empresa',
+        mercadoPagoModo: agendamento.empresa.mercadoPagoModo || 'sandbox',
       });
     }
 
@@ -148,18 +194,35 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      const tokenMarcae = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+
+      if (!tokenMarcae) {
+        return NextResponse.json(
+          {
+            error:
+              'Token Mercado Pago do Marcaê não configurado no ambiente.',
+          },
+          { status: 500 }
+        );
+      }
+
+      const clientMarcae = criarClienteMercadoPago(tokenMarcae);
+      const preference = new Preference(clientMarcae);
+
+      const notificationUrl = `${baseUrl}/api/webhook/mercadopago?tipo=assinatura&empresaId=${empresa.id}`;
+
       const valorPlano = 49.9;
 
       const response = await preference.create({
         body: {
           items: [
-  {
-    id: `assinatura-${empresa.id}`,
-    title: `Assinatura Premium - ${empresa.nome}`,
-    quantity: 1,
-    unit_price: valorPlano,
-  },
-],
+            {
+              id: `assinatura-${empresa.id}`,
+              title: `Assinatura Premium - ${empresa.nome}`,
+              quantity: 1,
+              unit_price: valorPlano,
+            },
+          ],
           payer: {
             email: 'test_user_3373866382@testuser.com',
           },
@@ -178,7 +241,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      const linkPagamento = response.init_point || response.sandbox_init_point;
+      const linkPagamento = obterLinkPagamento(response, 'producao');
 
       await prisma.pagamentoAssinatura.create({
         data: {
@@ -196,6 +259,7 @@ export async function POST(req: NextRequest) {
         preferenceId: response.id,
         notificationUrl,
         tipo: 'assinatura',
+        recebedor: 'marcae',
       });
     }
 
