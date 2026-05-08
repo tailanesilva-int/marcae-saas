@@ -68,9 +68,9 @@ export async function POST(req: Request) {
     const client = await criarClientMercadoPago(empresaIdUrl, tipoUrl);
     const payment = new Payment(client);
 
-    const pagamentoMP = await payment.get({
-      id: paymentId,
-    });
+    const pagamentoMP = (await payment.get({
+  id: paymentId,
+})) as any;
 
     console.log('📦 Dados MP:', pagamentoMP);
 
