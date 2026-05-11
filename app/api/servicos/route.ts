@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 
+function numero(valor: any) {
+  if (valor === null || valor === undefined || valor === '') return 0;
+  const convertido = Number(String(valor).replace(',', '.'));
+  return Number.isNaN(convertido) ? 0 : convertido;
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const empresaId = searchParams.get('empresaId');
@@ -26,6 +32,7 @@ export async function POST(req: Request) {
     descricao,
     duracaoMin,
     valor,
+    custo,
     exigePrePagamento,
     valorPrePagamento,
   } = body;
@@ -48,10 +55,11 @@ export async function POST(req: Request) {
       nome,
       descricao,
       duracaoMin: Number(duracaoMin),
-      valor: Number(valor),
+      valor: numero(valor),
+      custo: custo ? numero(custo) : null,
       exigePrePagamento: exigePrePagamento || false,
       valorPrePagamento: valorPrePagamento
-        ? Number(valorPrePagamento)
+        ? numero(valorPrePagamento)
         : null,
     },
   });

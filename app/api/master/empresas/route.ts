@@ -22,6 +22,53 @@ function planoEhValido(plano: string) {
   return ["basico", "plus", "premium", "trial"].includes(plano);
 }
 
+function normalizarValorMonetario(valor: any) {
+  if (valor === null || valor === undefined || valor === "") {
+    return 0;
+  }
+
+  if (typeof valor === "number") {
+    return Number.isFinite(valor) ? valor : 0;
+  }
+
+  const texto = String(valor)
+    .replace("R$", "")
+    .replace(/\s/g, "")
+    .trim();
+
+  const normalizado = texto.includes(",")
+    ? texto.replace(/\./g, "").replace(",", ".")
+    : texto;
+
+  const numero = Number(normalizado);
+
+  return Number.isFinite(numero) && numero >= 0 ? numero : 0;
+}
+
+async function obterValorPadraoPlano(plano: string) {
+  const planoNormalizado = String(plano || "basico").toLowerCase();
+
+  const configuracao = await (prisma as any).configuracaoSaas.findFirst({
+    orderBy: {
+      createdAt: "asc",
+    },
+  });
+
+  if (planoNormalizado === "trial") {
+    return 0;
+  }
+
+  if (planoNormalizado === "plus") {
+    return normalizarValorMonetario(configuracao?.valorPlanoPlus);
+  }
+
+  if (planoNormalizado === "premium") {
+    return normalizarValorMonetario(configuracao?.valorPlanoPremium);
+  }
+
+  return normalizarValorMonetario(configuracao?.valorPlanoBasico);
+}
+
 function permissoesPorPlano(plano: string) {
   const planoNormalizado = String(plano || "basico").toLowerCase();
 
@@ -176,7 +223,10 @@ export async function POST(req: Request) {
     const responsavel = String(body?.responsavel || "").trim();
     const observacoesInternas = String(body?.observacoesInternas || "").trim();
     const plano = String(body?.plano || "basico").trim().toLowerCase();
-    const valorMensalPersonalizado = Number(body?.valorMensalPersonalizado || 0);
+    const valorRecebido = normalizarValorMonetario(body?.valorMensalPersonalizado);
+    const valorPadraoPlano = await obterValorPadraoPlano(plano);
+    const valorMensalPersonalizado =
+      plano === "trial" ? 0 : valorRecebido > 0 ? valorRecebido : valorPadraoPlano;
     const endereco = montarEndereco(body);
 
     if (!nome) {
@@ -202,7 +252,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (Number.isNaN(valorMensalPersonalizado) || valorMensalPersonalizado < 0) {
+    if (!Number.isFinite(valorMensalPersonalizado) || valorMensalPersonalizado < 0) {
       return NextResponse.json(
         { error: "Valor mensal inválido." },
         { status: 400 }
@@ -229,20 +279,16 @@ export async function POST(req: Request) {
       );
     }
 
-    const emailUsuarioPadrao = `${usuarioBase}@agendeai.local`;
+    let emailUsuarioPadrao = `${usuarioBase}@marcae.local`;
+    let tentativaUsuario = 1;
 
-    const usuarioExistente = await prisma.usuarioEmpresa.findUnique({
-      where: { email: emailUsuarioPadrao },
-    });
-
-    if (usuarioExistente) {
-      return NextResponse.json(
-        {
-          error:
-            "Já existe um usuário padrão com esse nome. Ajuste o nome da empresa ou edite manualmente depois.",
-        },
-        { status: 400 }
-      );
+    while (
+      await prisma.usuarioEmpresa.findUnique({
+        where: { email: emailUsuarioPadrao },
+      })
+    ) {
+      tentativaUsuario += 1;
+      emailUsuarioPadrao = `${usuarioBase}${tentativaUsuario}@marcae.local`;
     }
 
     const hoje = new Date();
@@ -315,11 +361,16 @@ export async function POST(req: Request) {
       },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao cadastrar empresa master:", error);
 
     return NextResponse.json(
-      { error: "Erro interno ao cadastrar empresa." },
+      {
+        error:
+          error?.message ||
+          "Erro interno ao cadastrar empresa.",
+        detalhe: String(error),
+      },
       { status: 500 }
     );
   }

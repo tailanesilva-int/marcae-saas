@@ -1,111 +1,475 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 
+function numero(valor: any) {
+  const convertido = Number(valor || 0);
+  return Number.isNaN(convertido) ? 0 : convertido;
+}
+
+function pagamentoFoiRealizado(status?: string | null) {
+  return (
+    status === 'pago' ||
+    status === 'confirmado' ||
+    status === 'aprovado'
+  );
+}
+
+async function gerarComissaoIndividual(params: {
+  empresa: any;
+  agendamento: any;
+  profissionalId?: string | null;
+  valorServico: number;
+  servicoId?: string | null;
+  agendamentoServicoId?: string | null;
+  origemServico: 'principal' | 'adicional';
+}) {
+  const {
+    empresa,
+    agendamento,
+    profissionalId,
+    valorServico,
+    servicoId,
+    agendamentoServicoId,
+    origemServico,
+  } = params;
+
+  if (!profissionalId) return;
+
+  const profissional =
+    await prisma.profissional.findUnique({
+      where: {
+        id: profissionalId,
+      },
+    });
+
+  if (!profissional) return;
+
+  const existeComissao =
+    await prisma.comissao.findFirst({
+      where: {
+        empresaId: empresa.id,
+        agendamentoId: agendamento.id,
+        profissionalId,
+        agendamentoServicoId:
+          agendamentoServicoId || null,
+      },
+    });
+
+  if (existeComissao) return;
+
+  let tipoComissao =
+    profissional.tipoComissao || 'fixo';
+
+  let valorConfigurado =
+    numero(profissional.valorComissao);
+
+  if (servicoId) {
+    const servico =
+      await prisma.servico.findUnique({
+        where: {
+          id: servicoId,
+        },
+      });
+
+    if (servico?.tipoComissao) {
+      tipoComissao = servico.tipoComissao;
+    }
+
+    if (servico?.valorComissao) {
+      valorConfigurado = numero(
+        servico.valorComissao
+      );
+    }
+  }
+
+  let valorBase = valorServico;
+
+  if (
+    empresa.tipoCalculoComissao ===
+    'valor_recebido'
+  ) {
+    valorBase = valorServico;
+  }
+
+  let valorComissao = 0;
+
+  if (tipoComissao === 'percentual') {
+    valorComissao =
+      (valorBase * valorConfigurado) / 100;
+  }
+
+  if (tipoComissao === 'fixo') {
+    valorComissao = valorConfigurado;
+  }
+
+  await prisma.comissao.create({
+    data: {
+      empresaId: empresa.id,
+      agendamentoId: agendamento.id,
+      profissionalId,
+      agendamentoServicoId:
+        agendamentoServicoId || null,
+
+      origemServico,
+
+      valorServico: valorServico,
+
+      valorBaseRecebido: valorBase,
+
+      percentualAplicado:
+        tipoComissao === 'percentual'
+          ? valorConfigurado
+          : null,
+
+      valorComissao,
+
+      tipoComissao,
+
+      status: 'pendente',
+
+      observacao:
+        origemServico === 'principal'
+          ? 'Comissão do serviço principal.'
+          : 'Comissão de serviço adicional.',
+    },
+  });
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { agendamentoId } = body;
 
-    if (!agendamentoId) {
+    const {
+      empresaId,
+      agendamentoId,
+      quitarPendencias,
+      pagamentos = [],
+    } = body;
+
+    if (!empresaId) {
       return NextResponse.json(
-        { success: false, error: 'agendamentoId obrigatório.' },
+        {
+          success: false,
+          error: 'empresaId obrigatório.',
+        },
         { status: 400 }
       );
     }
 
-    const agendamento = await prisma.agendamento.findUnique({
-      where: { id: agendamentoId },
-      include: {
-        profissional: true,
-        servico: true,
-        cliente: true,
-      },
-    });
-
-    if (!agendamento) {
+    if (!agendamentoId) {
       return NextResponse.json(
-        { success: false, error: 'Agendamento não encontrado.' },
+        {
+          success: false,
+          error: 'agendamentoId obrigatório.',
+        },
+        { status: 400 }
+      );
+    }
+
+    const empresa =
+      await prisma.empresa.findUnique({
+        where: {
+          id: empresaId,
+        },
+      });
+
+    if (!empresa) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Empresa não encontrada.',
+        },
         { status: 404 }
       );
     }
 
-    if (agendamento.comissaoGerada) {
-      return NextResponse.json({
-        success: true,
-        message: 'Atendimento já finalizado e comissão já gerada.',
-      });
-    }
-
-    if (!agendamento.profissionalId || !agendamento.profissional) {
-      await prisma.agendamento.update({
-        where: { id: agendamento.id },
-        data: {
-          status: 'concluido',
-          comissaoGerada: false,
+    const agendamento =
+      await prisma.agendamento.findFirst({
+        where: {
+          id: agendamentoId,
+          empresaId,
         },
-      });
+        include: {
+          cliente: true,
+          servico: true,
+          profissional: true,
 
-      return NextResponse.json({
-        success: true,
-        message: 'Atendimento finalizado, mas sem profissional vinculado para gerar comissão.',
-      });
-    }
-
-    const profissional = agendamento.profissional;
-
-    const valorServico = Number(agendamento.valorTotal || 0);
-    const tipoComissao = profissional.tipoComissao || null;
-    const valorComissaoConfig = Number(profissional.valorComissao || 0);
-
-    let valorComissaoCalculada = 0;
-
-    if (tipoComissao === 'percentual') {
-      valorComissaoCalculada = (valorServico * valorComissaoConfig) / 100;
-    }
-
-    if (tipoComissao === 'fixo') {
-      valorComissaoCalculada = valorComissaoConfig;
-    }
-
-    await prisma.$transaction(async (tx) => {
-      if (valorComissaoCalculada > 0 && tipoComissao) {
-        await tx.comissao.create({
-          data: {
-            empresaId: agendamento.empresaId,
-            agendamentoId: agendamento.id,
-            profissionalId: profissional.id,
-            valorServico,
-            valorComissao: valorComissaoCalculada,
-            tipoComissao,
-            status: 'pendente',
+          servicosAdicionais: {
+            include: {
+              servico: true,
+              profissional: true,
+            },
           },
-        });
-      }
-
-      await tx.agendamento.update({
-        where: { id: agendamento.id },
-        data: {
-          status: 'concluido',
-          comissaoGerada: valorComissaoCalculada > 0,
         },
       });
+
+    if (!agendamento) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Atendimento não encontrado.',
+        },
+        { status: 404 }
+      );
+    }
+
+    if (agendamento.status === 'cancelado') {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Atendimento cancelado não pode ser finalizado.',
+        },
+        { status: 400 }
+      );
+    }
+
+/*
+=========================================
+BLOQUEAR FINALIZAÇÃO FUTURA
+=========================================
+*/
+
+const agora = new Date();
+
+const dataAtendimento = new Date(
+  agendamento.dataHoraInicio
+);
+
+if (
+  dataAtendimento.getTime() >
+  agora.getTime()
+) {
+  return NextResponse.json(
+    {
+      success: false,
+      error:
+        'Atendimentos futuros não podem ser finalizados.',
+    },
+    { status: 400 }
+  );
+}
+
+    const valorPrincipal = numero(
+      agendamento.servico?.valor ||
+        agendamento.valorTotal
+    );
+
+    const principalPago =
+      pagamentoFoiRealizado(
+        agendamento.statusPagamento
+      );
+
+    let totalPago = principalPago
+      ? valorPrincipal
+      : 0;
+
+    let totalPendente = principalPago
+      ? 0
+      : valorPrincipal;
+
+    for (const item of agendamento.servicosAdicionais) {
+      const valor = numero(item.valor);
+
+      if (
+        pagamentoFoiRealizado(
+          item.statusPagamento
+        )
+      ) {
+        totalPago += valor;
+      } else {
+        totalPendente += valor;
+      }
+    }
+
+    if (quitarPendencias) {
+      await prisma.agendamento.update({
+        where: {
+          id: agendamento.id,
+        },
+        data: {
+          statusPagamento: 'pago',
+        },
+      });
+
+      await prisma.agendamentoServico.updateMany({
+        where: {
+          agendamentoId: agendamento.id,
+          statusPagamento: {
+            not: 'pago',
+          },
+        },
+        data: {
+          statusPagamento: 'pago',
+
+          formaPagamento:
+            pagamentos
+              ?.map(
+                (p: any) => p.forma
+              )
+              .join(', ') || null,
+
+          pagoEm: new Date(),
+        },
+      });
+
+      totalPago = numero(
+        agendamento.valorTotal
+      );
+
+      totalPendente = 0;
+    }
+
+    const pagamentoExistente =
+      await prisma.pagamento.findFirst({
+        where: {
+          agendamentoId: agendamento.id,
+          status: 'pago',
+        },
+      });
+
+    if (!pagamentoExistente) {
+      await prisma.pagamento.create({
+        data: {
+          empresaId,
+
+          agendamentoId:
+            agendamento.id,
+
+          valorTotal: numero(
+            agendamento.valorTotal
+          ),
+
+          valorPago: totalPago,
+
+          metodoPagamento:
+            pagamentos
+              ?.map(
+                (p: any) =>
+                  `${p.forma}: R$ ${Number(
+                    p.valor || 0
+                  ).toFixed(2)}`
+              )
+              .join(' | ') ||
+            'não informado',
+
+          status:
+            totalPendente > 0
+              ? 'parcial'
+              : 'pago',
+
+          paidAt:
+            totalPendente > 0
+              ? null
+              : new Date(),
+        },
+      });
+    }
+
+    /*
+    =========================================
+    COMISSÃO SERVIÇO PRINCIPAL
+    =========================================
+    */
+
+    await gerarComissaoIndividual({
+      empresa,
+
+      agendamento,
+
+      profissionalId:
+        agendamento.profissionalId,
+
+      servicoId:
+        agendamento.servicoId,
+
+      valorServico:
+        valorPrincipal,
+
+      origemServico:
+        'principal',
     });
+
+    /*
+    =========================================
+    COMISSÃO SERVIÇOS ADICIONAIS
+    =========================================
+    */
+
+    for (const adicional of agendamento.servicosAdicionais) {
+      await gerarComissaoIndividual({
+        empresa,
+
+        agendamento,
+
+        profissionalId:
+          adicional.profissionalId,
+
+        servicoId:
+          adicional.servicoId,
+
+        agendamentoServicoId:
+          adicional.id,
+
+        valorServico: numero(
+          adicional.valor
+        ),
+
+        origemServico:
+          'adicional',
+      });
+    }
+
+    const atendimentoFinalizado =
+      await prisma.agendamento.update({
+        where: {
+          id: agendamento.id,
+        },
+
+        data: {
+          status: 'concluido',
+        },
+
+        include: {
+          cliente: true,
+          servico: true,
+          profissional: true,
+          servicosAdicionais: true,
+        },
+      });
 
     return NextResponse.json({
       success: true,
-      message: 'Atendimento finalizado com sucesso.',
-      comissaoGerada: valorComissaoCalculada > 0,
-      valorServico,
-      valorComissao: valorComissaoCalculada,
+
+      atendimento:
+        atendimentoFinalizado,
+
+      financeiro: {
+        totalPago,
+        totalPendente,
+      },
+
+      message:
+        totalPendente > 0
+          ? 'Atendimento finalizado com pendência financeira.'
+          : 'Atendimento finalizado com sucesso.',
     });
   } catch (error: any) {
-    console.error('Erro ao finalizar atendimento:', error);
+    console.error(
+      'Erro ao finalizar atendimento:',
+      error
+    );
 
     return NextResponse.json(
       {
         success: false,
-        error: 'Erro ao finalizar atendimento.',
-        detalhe: error?.message || String(error),
+
+        error:
+          'Erro ao finalizar atendimento.',
+
+        detalhe:
+          error?.message ||
+          String(error),
       },
       { status: 500 }
     );

@@ -12,6 +12,7 @@ export default function ServicosPage() {
     descricao: '',
     duracaoMin: 30,
     valor: '',
+    custo: '',
     exigePrePagamento: false,
     valorPrePagamento: '',
   });
@@ -38,6 +39,13 @@ export default function ServicosPage() {
 
     setServicos(data.servicos || []);
     setCarregando(false);
+  }
+
+  function dinheiro(valor: any) {
+    return Number(valor || 0).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    });
   }
 
   async function salvar() {
@@ -70,6 +78,7 @@ export default function ServicosPage() {
       descricao: '',
       duracaoMin: 30,
       valor: '',
+      custo: '',
       exigePrePagamento: false,
       valorPrePagamento: '',
     });
@@ -82,26 +91,65 @@ export default function ServicosPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#f1f5f9', padding: 30 }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <header style={headerPremium}>
+  <div style={headerConteudo}>
+    <div style={logoHeader}>
+      {empresa?.logoUrl || empresa?.logo || empresa?.imagemUrl ? (
+        <img
+          src={empresa.logoUrl || empresa.logo || empresa.imagemUrl}
+          alt={empresa.nome}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+      ) : (
+        <span>{empresa?.nome?.charAt(0)?.toUpperCase() || 'M'}</span>
+      )}
+    </div>
 
-        {/* HEADER */}
-        <header style={header}>
-          <div>
-            <h1 style={{ margin: 0 }}>Serviços</h1>
-            <p style={{ marginTop: 6 }}>
-              Gerencie valores, duração e pré-pagamento
-            </p>
-          </div>
+    <div>
+      <span style={badgeBoasVindas}>
+        ✂️ Gestão operacional
+      </span>
 
-          <div style={{ display: 'flex', gap: 10 }}>
-            <a href="/admin">
-              <button style={botaoSecundario}>Admin</button>
-            </a>
+      <h1 style={tituloHeader}>Serviços</h1>
 
-            <a href="/dashboard">
-              <button style={botaoSecundario}>Dashboard</button>
-            </a>
-          </div>
-        </header>
+      <p style={subtituloHeader}>
+        Gerencie preços, duração, custos operacionais e pré-pagamentos.
+      </p>
+
+      <div style={linhaBadgesHeader}>
+        <span style={badgeEmpresa}>
+          🏢 {empresa?.nome || 'Meu Estúdio'}
+        </span>
+
+        <span style={badgeModulo}>
+          ✂️ Operacional
+        </span>
+
+        <span style={badgeStatusHeader}>
+          ✅ Ativo
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div style={acoesHeader}>
+    <a href="/admin">
+      <button style={botaoHeaderClaro}>
+        Admin
+      </button>
+    </a>
+
+    <a href="/dashboard">
+      <button style={botaoHeaderRoxo}>
+        Dashboard
+      </button>
+    </a>
+  </div>
+</header>
 
         {/* FORM */}
         <section style={box}>
@@ -123,7 +171,21 @@ export default function ServicosPage() {
                 style={input}
                 value={form.valor}
                 onChange={(e) => setForm({ ...form, valor: e.target.value })}
+                placeholder="Ex: 150,00"
               />
+            </div>
+
+            <div style={campo}>
+              <label>Custo do serviço (opcional)</label>
+              <input
+                style={input}
+                value={form.custo}
+                onChange={(e) => setForm({ ...form, custo: e.target.value })}
+                placeholder="Ex: 20,00"
+              />
+              <span style={hint}>
+                Use para custo de material/produto. Esse valor entra no cálculo do lucro.
+              </span>
             </div>
 
             <div style={campo}>
@@ -207,12 +269,16 @@ export default function ServicosPage() {
                   </div>
 
                   <div style={{ marginTop: 6 }}>
-                    ⏱ {s.duracaoMin} min — 💰 R$ {s.valor}
+                    ⏱ {s.duracaoMin} min — 💰 {dinheiro(s.valor)}
+                  </div>
+
+                  <div style={{ marginTop: 6, color: '#64748b', fontSize: 13, fontWeight: 700 }}>
+                    Custo operacional: {Number(s.custo || 0) > 0 ? dinheiro(s.custo) : 'Não informado'}
                   </div>
 
                   {s.exigePrePagamento && (
                     <span style={badge}>
-                      Pré: R$ {s.valorPrePagamento}
+                      Pré: {dinheiro(s.valorPrePagamento)}
                     </span>
                   )}
                 </div>
@@ -266,6 +332,12 @@ const input = {
   border: '1px solid #cbd5e1',
 };
 
+const hint = {
+  color: '#64748b',
+  fontSize: 12,
+  fontWeight: 500,
+};
+
 const card = {
   border: '1px solid #e2e8f0',
   borderRadius: 14,
@@ -298,5 +370,126 @@ const botaoSecundario = {
   border: '1px solid #cbd5e1',
   background: '#fff',
   fontWeight: 600,
+  cursor: 'pointer',
+};
+
+const headerPremium: React.CSSProperties = {
+  background: 'linear-gradient(135deg, #4f46e5, #9333ea)',
+  color: '#fff',
+  borderRadius: 28,
+  padding: 34,
+  marginBottom: 24,
+  boxShadow: '0 20px 40px rgba(79,70,229,0.24)',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 24,
+  flexWrap: 'wrap',
+};
+
+const headerConteudo: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 20,
+};
+
+const logoHeader: React.CSSProperties = {
+  width: 82,
+  height: 82,
+  borderRadius: 24,
+  overflow: 'hidden',
+  background: 'rgba(255,255,255,0.14)',
+  border: '2px solid rgba(255,255,255,0.18)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 32,
+  fontWeight: 900,
+  color: '#fff',
+};
+
+const badgeBoasVindas: React.CSSProperties = {
+  display: 'inline-block',
+  background: 'rgba(255,255,255,0.14)',
+  color: '#fff',
+  padding: '6px 12px',
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 900,
+  marginBottom: 10,
+};
+
+const tituloHeader: React.CSSProperties = {
+  margin: 0,
+  fontSize: 38,
+  fontWeight: 950,
+  color: '#fff',
+  lineHeight: 1,
+};
+
+const subtituloHeader: React.CSSProperties = {
+  margin: '10px 0 0',
+  color: 'rgba(255,255,255,0.84)',
+  fontSize: 15,
+  fontWeight: 600,
+};
+
+const linhaBadgesHeader: React.CSSProperties = {
+  display: 'flex',
+  gap: 10,
+  flexWrap: 'wrap',
+  marginTop: 16,
+};
+
+const badgeEmpresa: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.14)',
+  color: '#fff',
+  padding: '8px 13px',
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 900,
+};
+
+const badgeModulo: React.CSSProperties = {
+  background: '#fef3c7',
+  color: '#f59e0b',
+  padding: '8px 13px',
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 900,
+};
+
+const badgeStatusHeader: React.CSSProperties = {
+  background: '#22c55e',
+  color: '#fff',
+  padding: '8px 13px',
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 900,
+};
+
+const acoesHeader: React.CSSProperties = {
+  display: 'flex',
+  gap: 12,
+  flexWrap: 'wrap',
+};
+
+const botaoHeaderClaro: React.CSSProperties = {
+  padding: '13px 18px',
+  borderRadius: 14,
+  border: '1px solid rgba(255,255,255,0.22)',
+  background: 'rgba(255,255,255,0.14)',
+  color: '#fff',
+  fontWeight: 900,
+  cursor: 'pointer',
+};
+
+const botaoHeaderRoxo: React.CSSProperties = {
+  padding: '13px 18px',
+  borderRadius: 14,
+  border: 'none',
+  background: '#fff',
+  color: '#6d28d9',
+  fontWeight: 900,
   cursor: 'pointer',
 };

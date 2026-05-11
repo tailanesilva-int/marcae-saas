@@ -59,6 +59,11 @@ export async function GET(req: Request) {
             servico: true,
           },
         },
+        agendamentoServico: {
+          include: {
+            servico: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'asc',
@@ -81,6 +86,13 @@ export async function GET(req: Request) {
 
       const valorServico = Number(comissao.valorServico || 0);
       const valorComissao = Number(comissao.valorComissao || 0);
+      const custoServico = Number(
+        comissao.agendamentoServico?.custo ||
+          comissao.agendamentoServico?.servico?.custo ||
+          comissao.agendamento?.servico?.custo ||
+          0
+      );
+      const lucroEstimado = valorServico - custoServico - valorComissao;
 
       totalFaturadoGeral += valorServico;
       totalComissaoGeral += valorComissao;
@@ -94,15 +106,23 @@ export async function GET(req: Request) {
 
       if (!profissionaisMap[profissional.id]) {
         profissionaisMap[profissional.id] = {
-          profissionalId: profissional.id,
-          profissionalNome: profissional.nome,
-          totalServicos: 0,
-          totalFaturado: 0,
-          totalComissao: 0,
-          totalPago: 0,
-          totalPendente: 0,
-          servicos: [],
-        };
+  profissionalId: profissional.id,
+  profissionalNome: profissional.nome,
+
+  tipoComissao:
+    profissional.tipoComissao || 'percentual',
+
+  valorComissaoConfigurado:
+    Number(profissional.valorComissao || 0),
+
+  totalServicos: 0,
+  totalFaturado: 0,
+  totalComissao: 0,
+  totalPago: 0,
+  totalPendente: 0,
+
+  servicos: [],
+};
       }
 
       profissionaisMap[profissional.id].totalServicos += 1;
@@ -127,7 +147,9 @@ export async function GET(req: Request) {
         servico: agendamento?.servico?.nome || 'Serviço não informado',
         profissional: profissional.nome,
         valorServico,
+        custoServico,
         valorComissao,
+        lucroEstimado,
         tipoComissao: comissao.tipoComissao || 'não informado',
         status: comissao.status,
         dataPagamento: comissao.dataPagamento,
@@ -165,6 +187,12 @@ export async function GET(req: Request) {
           'Cliente não informado',
         servico: comissao.agendamento?.servico?.nome || 'Serviço não informado',
         valorServico: Number(comissao.valorServico || 0),
+        custoServico: Number(
+          comissao.agendamentoServico?.custo ||
+            comissao.agendamentoServico?.servico?.custo ||
+            comissao.agendamento?.servico?.custo ||
+            0
+        ),
         valorComissao: Number(comissao.valorComissao || 0),
         tipoComissao: comissao.tipoComissao || 'não informado',
         status: comissao.status,

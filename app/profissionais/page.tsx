@@ -247,24 +247,51 @@ export default function ProfissionaisPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#f1f5f9', padding: 30 }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <header style={header}>
-          <div>
-            <h1 style={{ margin: 0 }}>Profissionais</h1>
-            <p style={{ marginTop: 6, color: '#475569' }}>
-              Cadastre profissionais, vincule serviços, configure agenda semanal e comissão.
-            </p>
-          </div>
+        <header style={headerPremium}>
+  <div style={headerConteudo}>
+    <div style={logoHeader}>
+      {empresa?.logoUrl || empresa?.logo || empresa?.imagemUrl ? (
+        <img
+          src={empresa.logoUrl || empresa.logo || empresa.imagemUrl}
+          alt={empresa.nome}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+      ) : (
+        <span>{empresa?.nome?.charAt(0)?.toUpperCase() || 'M'}</span>
+      )}
+    </div>
 
-          <div style={{ display: 'flex', gap: 10 }}>
-            <a href="/admin">
-              <button style={botaoSecundario}>Admin</button>
-            </a>
+    <div>
+      <span style={badgeBoasVindas}>Equipe e agenda</span>
 
-            <a href="/dashboard">
-              <button style={botaoSecundario}>Dashboard</button>
-            </a>
-          </div>
-        </header>
+      <h1 style={tituloHeader}>Profissionais</h1>
+
+      <p style={subtituloHeader}>
+        Cadastre profissionais, vincule serviços, configure agenda semanal e comissão.
+      </p>
+
+      <div style={linhaBadgesHeader}>
+        <span style={badgeEmpresa}>🏢 {empresa?.nome || 'Meu Estúdio'}</span>
+        <span style={badgeModulo}>👥 Gestão de equipe</span>
+        <span style={badgeStatus}>✅ Ativo</span>
+      </div>
+    </div>
+  </div>
+
+  <div style={acoesHeader}>
+    <a href="/admin">
+      <button style={botaoHeaderClaro}>Admin</button>
+    </a>
+
+    <a href="/dashboard">
+      <button style={botaoHeaderRoxo}>Dashboard</button>
+    </a>
+  </div>
+</header>
 
         <section style={box}>
           <h2 style={{ marginTop: 0 }}>
@@ -693,5 +720,126 @@ const botaoSecundario = {
   background: '#fff',
   color: '#0f172a',
   fontWeight: 700,
+  cursor: 'pointer',
+};
+
+const headerPremium = {
+  background: 'linear-gradient(135deg, #4f46e5, #9333ea)',
+  color: '#fff',
+  borderRadius: 28,
+  padding: 34,
+  marginBottom: 24,
+  boxShadow: '0 20px 40px rgba(79,70,229,0.24)',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 24,
+  flexWrap: 'wrap' as const,
+};
+
+const headerConteudo = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 20,
+};
+
+const logoHeader = {
+  width: 82,
+  height: 82,
+  borderRadius: 24,
+  overflow: 'hidden',
+  background: 'rgba(255,255,255,0.14)',
+  border: '2px solid rgba(255,255,255,0.18)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 32,
+  fontWeight: 900,
+  color: '#fff',
+};
+
+const badgeBoasVindas = {
+  display: 'inline-block',
+  background: 'rgba(255,255,255,0.14)',
+  color: '#fff',
+  padding: '6px 12px',
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 900,
+  marginBottom: 10,
+};
+
+const tituloHeader = {
+  margin: 0,
+  fontSize: 38,
+  fontWeight: 950,
+  color: '#fff',
+  lineHeight: 1,
+};
+
+const subtituloHeader = {
+  margin: '10px 0 0',
+  color: 'rgba(255,255,255,0.84)',
+  fontSize: 15,
+  fontWeight: 600,
+};
+
+const linhaBadgesHeader = {
+  display: 'flex',
+  gap: 10,
+  flexWrap: 'wrap' as const,
+  marginTop: 16,
+};
+
+const badgeEmpresa = {
+  background: 'rgba(255,255,255,0.14)',
+  color: '#fff',
+  padding: '8px 13px',
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 900,
+};
+
+const badgeModulo = {
+  background: '#dbeafe',
+  color: '#1d4ed8',
+  padding: '8px 13px',
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 900,
+};
+
+const badgeStatus = {
+  background: '#22c55e',
+  color: '#fff',
+  padding: '8px 13px',
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 900,
+};
+
+const acoesHeader = {
+  display: 'flex',
+  gap: 10,
+  flexWrap: 'wrap' as const,
+};
+
+const botaoHeaderClaro = {
+  padding: '13px 18px',
+  borderRadius: 14,
+  border: '1px solid rgba(255,255,255,0.22)',
+  background: 'rgba(255,255,255,0.14)',
+  color: '#fff',
+  fontWeight: 900,
+  cursor: 'pointer',
+};
+
+const botaoHeaderRoxo = {
+  padding: '13px 18px',
+  borderRadius: 14,
+  border: 'none',
+  background: '#fff',
+  color: '#6d28d9',
+  fontWeight: 900,
   cursor: 'pointer',
 };

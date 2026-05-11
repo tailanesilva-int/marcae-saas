@@ -2,9 +2,38 @@ import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { prisma } from '@/app/lib/prisma';
 
-const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
-});
+async function criarClientMercadoPago(
+  empresaId?: string | null,
+  tipo?: string | null
+) {
+  // Assinatura do SaaS → usa token do Marcaê
+  if (tipo === 'assinatura') {
+    return new MercadoPagoConfig({
+      accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
+    });
+  }
+
+  // Pagamento de agendamento → usa token da empresa
+  if (empresaId) {
+    const empresa = await prisma.empresa.findUnique({
+      where: { id: empresaId },
+      select: {
+        mercadoPagoAccessToken: true,
+      },
+    });
+
+    if (empresa?.mercadoPagoAccessToken) {
+      return new MercadoPagoConfig({
+        accessToken: empresa.mercadoPagoAccessToken,
+      });
+    }
+  }
+
+  // fallback segurança
+  return new MercadoPagoConfig({
+    accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
+  });
+}
 
 export async function POST(req: Request) {
   try {
@@ -31,8 +60,24 @@ export async function POST(req: Request) {
 
     console.log('💳 Payment ID:', paymentId);
 
-    const payment = new Payment(client);
-    const pagamentoMP = await payment.get({ id: paymentId });
+    const empresaId =
+  body?.empresaId ||
+  url.searchParams.get('empresaId');
+
+const tipoPagamento =
+  body?.tipo ||
+  url.searchParams.get('tipo');
+
+const client = await criarClientMercadoPago(
+  empresaId,
+  tipoPagamento
+);
+
+const payment = new Payment(client);
+
+const pagamentoMP = await payment.get({
+  id: paymentId,
+});
 
     console.log('📦 Dados MP:', pagamentoMP);
 

@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 
+function numero(valor: any) {
+  const convertido = Number(valor || 0);
+  return Number.isNaN(convertido) ? 0 : convertido;
+}
+
+function pagamentoFoiRealizado(status?: string | null) {
+  return (
+    status === 'pago' ||
+    status === 'aprovado' ||
+    status === 'confirmado'
+  );
+}
+
 function obterValorPago(agendamento: any) {
   return Number(
     agendamento.valorPrePago ||
@@ -40,12 +53,25 @@ export async function GET(req: NextRequest) {
         servico: true,
         profissional: true,
         empresa: true,
+        comissoes: true,
+        servicosAdicionais: {
+          include: {
+            servico: true,
+            profissional: true,
+            comissoes: true,
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
       },
       orderBy: { dataHoraInicio: 'asc' },
     });
 
     let faturamentoTotal = 0;
     let totalPagos = 0;
+    let custoOperacionalTotal = 0;
+    let totalComissoes = 0;
 
     const mapaFaturamento: Record<string, number> = {};
     const mapaAgendamentos: Record<string, number> = {};
@@ -57,17 +83,30 @@ export async function GET(req: NextRequest) {
       const data = ag.dataHoraInicio.toISOString().split('T')[0];
       const valorPago = obterValorPago(ag);
 
-      const estaPago =
-        ag.statusPagamento === 'pago' ||
-        ag.statusPagamento === 'aprovado' ||
-        ag.statusPagamento === 'confirmado';
+      const estaPago = pagamentoFoiRealizado(ag.statusPagamento);
 
       if (estaPago) {
         faturamentoTotal += valorPago;
         totalPagos++;
 
+        custoOperacionalTotal += numero(ag.servico?.custo);
+
         if (!mapaFaturamento[data]) mapaFaturamento[data] = 0;
         mapaFaturamento[data] += valorPago;
+      }
+
+      for (const adicional of ag.servicosAdicionais || []) {
+        if (pagamentoFoiRealizado(adicional.statusPagamento)) {
+          faturamentoTotal += numero(adicional.valor);
+          custoOperacionalTotal += numero(adicional.custo || adicional.servico?.custo);
+
+          if (!mapaFaturamento[data]) mapaFaturamento[data] = 0;
+          mapaFaturamento[data] += numero(adicional.valor);
+        }
+      }
+
+      for (const comissao of ag.comissoes || []) {
+        totalComissoes += numero(comissao.valorComissao);
       }
 
       if (!mapaAgendamentos[data]) mapaAgendamentos[data] = 0;
@@ -78,6 +117,7 @@ export async function GET(req: NextRequest) {
       mapaStatus[status]++;
     });
 
+    const lucroLiquido = faturamentoTotal - custoOperacionalTotal - totalComissoes;
     const ticketMedio = totalPagos > 0 ? faturamentoTotal / totalPagos : 0;
 
     const graficoFaturamento = Object.entries(mapaFaturamento).map(
@@ -98,8 +138,13 @@ export async function GET(req: NextRequest) {
       agendamentos,
       resumo: {
         faturamentoTotal,
+        faturamentoBruto: faturamentoTotal,
         totalPagos,
         ticketMedio,
+        custoOperacionalTotal,
+        totalComissoes,
+        lucroLiquido,
+        liquidoEstimado: lucroLiquido,
       },
       graficoFaturamento,
       graficoAgendamentos,

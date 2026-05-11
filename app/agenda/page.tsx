@@ -500,80 +500,79 @@ export default function AgendaPage() {
           boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)',
         }}
       >
-        <header
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 20,
-            gap: 16,
-          }}
-        >
-          <div>
-            <h1 style={{ margin: 0, fontSize: 28 }}>Agenda</h1>
-            <p style={{ marginTop: 6, color: '#64748b' }}>
-              Visualização semanal dos agendamentos
-            </p>
-          </div>
+        <header style={headerPremium}>
+  <div style={headerConteudo}>
+    <div style={logoHeader}>
+      <span>📅</span>
+    </div>
 
-          <button
-            onClick={() => (window.location.href = '/dashboard')}
-            style={{
-              background: '#4f46e5',
-              color: '#fff',
-              border: 'none',
-              padding: '12px 18px',
-              borderRadius: 12,
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
-          >
-            ← Voltar para Dashboard
-          </button>
-        </header>
+    <div>
+      <span style={badgeBoasVindas}>
+        📆 Agenda inteligente
+      </span>
 
-        <div
-          style={{
-            marginBottom: 16,
-            display: 'flex',
-            gap: 10,
-            alignItems: 'center',
-          }}
-        >
-          <input
-            value={pesquisa}
-            onChange={(e) => setPesquisa(e.target.value)}
-            placeholder="Pesquisar agendamentos por nome, serviço, WhatsApp ou CPF"
-            style={{
-              width: '100%',
-              height: 46,
-              borderRadius: 14,
-              border: '1px solid #cbd5e1',
-              padding: '0 14px',
-              outline: 'none',
-              fontSize: 14,
-              background: '#f8fafc',
-            }}
-          />
+      <h1 style={tituloHeader}>Agenda</h1>
 
-          {pesquisa && (
-            <button
-              onClick={() => setPesquisa('')}
-              style={{
-                height: 46,
-                borderRadius: 14,
-                border: '1px solid #e2e8f0',
-                background: '#fff',
-                padding: '0 14px',
-                cursor: 'pointer',
-                fontWeight: 700,
-                color: '#334155',
-              }}
-            >
-              Limpar
-            </button>
-          )}
-        </div>
+      <p style={subtituloHeader}>
+        Visualização semanal completa dos agendamentos e atendimentos.
+      </p>
+
+      <div style={linhaBadgesHeader}>
+        <span style={badgeEmpresa}>
+          🏢 Agenda semanal
+        </span>
+
+        <span style={badgeModulo}>
+          📆 Operacional
+        </span>
+
+        <span style={badgeStatusHeader}>
+          ✅ Tempo real
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div style={acoesHeader}>
+    <button
+      onClick={() => (window.location.href = '/dashboard')}
+      style={botaoHeaderRoxo}
+    >
+      Dashboard
+    </button>
+
+    <button
+      onClick={() => (window.location.href = '/admin')}
+      style={botaoHeaderClaro}
+    >
+      Admin
+    </button>
+  </div>
+</header>
+
+        <section style={toolbarAgenda}>
+  <div style={toolbarTopo}>
+    <div>
+      <h2 style={toolbarTitulo}>Pesquisar agendamentos</h2>
+      <p style={toolbarTexto}>
+        Busque por nome, serviço, WhatsApp ou CPF.
+      </p>
+    </div>
+
+    {pesquisa && (
+      <button onClick={() => setPesquisa('')} style={botaoLimparBusca}>
+        Limpar busca
+      </button>
+    )}
+  </div>
+
+  <input
+    value={pesquisa}
+    onChange={(e) => setPesquisa(e.target.value)}
+    placeholder="Pesquisar agendamentos por nome, serviço, WhatsApp ou CPF"
+    style={inputBuscaAgenda}
+  />
+</section>
 
         <div style={{ height: '85vh' }}>
           <Calendar
@@ -996,4 +995,179 @@ const cardInfoCancelado = {
 const labelCancelado = {
   fontSize: 12,
   color: '#991b1b',
+};
+
+const headerPremium: React.CSSProperties = {
+  background: 'linear-gradient(135deg, #4f46e5, #9333ea)',
+  color: '#fff',
+  borderRadius: 28,
+  padding: 34,
+  marginBottom: 24,
+  boxShadow: '0 20px 40px rgba(79,70,229,0.24)',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 24,
+  flexWrap: 'wrap',
+};
+
+const headerConteudo: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 20,
+};
+
+const logoHeader: React.CSSProperties = {
+  width: 82,
+  height: 82,
+  borderRadius: 24,
+  overflow: 'hidden',
+  background: 'rgba(255,255,255,0.14)',
+  border: '2px solid rgba(255,255,255,0.18)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 34,
+  fontWeight: 900,
+  color: '#fff',
+};
+
+const badgeBoasVindas: React.CSSProperties = {
+  display: 'inline-block',
+  background: 'rgba(255,255,255,0.14)',
+  color: '#fff',
+  padding: '6px 12px',
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 900,
+  marginBottom: 10,
+};
+
+const tituloHeader: React.CSSProperties = {
+  margin: 0,
+  fontSize: 42,
+  fontWeight: 950,
+  color: '#fff',
+  lineHeight: 1,
+};
+
+const subtituloHeader: React.CSSProperties = {
+  margin: '10px 0 0',
+  color: 'rgba(255,255,255,0.84)',
+  fontSize: 15,
+  fontWeight: 600,
+};
+
+const linhaBadgesHeader: React.CSSProperties = {
+  display: 'flex',
+  gap: 10,
+  flexWrap: 'wrap',
+  marginTop: 16,
+};
+
+const badgeEmpresa: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.14)',
+  color: '#fff',
+  padding: '8px 13px',
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 900,
+};
+
+const badgeModulo: React.CSSProperties = {
+  background: '#dbeafe',
+  color: '#2563eb',
+  padding: '8px 13px',
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 900,
+};
+
+const badgeStatusHeader: React.CSSProperties = {
+  background: '#22c55e',
+  color: '#fff',
+  padding: '8px 13px',
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 900,
+};
+
+const acoesHeader: React.CSSProperties = {
+  display: 'flex',
+  gap: 12,
+  flexWrap: 'wrap',
+};
+
+const botaoHeaderClaro: React.CSSProperties = {
+  padding: '13px 18px',
+  borderRadius: 14,
+  border: '1px solid rgba(255,255,255,0.22)',
+  background: 'rgba(255,255,255,0.14)',
+  color: '#fff',
+  fontWeight: 900,
+  cursor: 'pointer',
+};
+
+const botaoHeaderRoxo: React.CSSProperties = {
+  padding: '13px 18px',
+  borderRadius: 14,
+  border: 'none',
+  background: '#fff',
+  color: '#6d28d9',
+  fontWeight: 900,
+  cursor: 'pointer',
+};
+
+const toolbarAgenda: React.CSSProperties = {
+  background: '#f8fafc',
+  border: '1px solid #e2e8f0',
+  borderRadius: 22,
+  padding: 18,
+  marginBottom: 18,
+  boxShadow: '0 12px 28px rgba(15,23,42,0.06)',
+};
+
+const toolbarTopo: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 14,
+  marginBottom: 12,
+};
+
+const toolbarTitulo: React.CSSProperties = {
+  margin: 0,
+  fontSize: 18,
+  fontWeight: 900,
+  color: '#0f172a',
+};
+
+const toolbarTexto: React.CSSProperties = {
+  margin: '4px 0 0',
+  color: '#64748b',
+  fontSize: 13,
+  fontWeight: 600,
+};
+
+const inputBuscaAgenda: React.CSSProperties = {
+  width: '100%',
+  height: 48,
+  borderRadius: 16,
+  border: '1px solid #cbd5e1',
+  padding: '0 16px',
+  outline: 'none',
+  fontSize: 14,
+  background: '#fff',
+  boxSizing: 'border-box',
+};
+
+const botaoLimparBusca: React.CSSProperties = {
+  height: 42,
+  borderRadius: 14,
+  border: '1px solid #cbd5e1',
+  background: '#fff',
+  padding: '0 16px',
+  cursor: 'pointer',
+  fontWeight: 900,
+  color: '#4f46e5',
 };

@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 
 export default function AgendarPage() {
   const { slug } = useParams();
+  const searchParams = useSearchParams();
+  const clienteIdUrl = searchParams.get('clienteId');
 
   const [empresa, setEmpresa] = useState<any>(null);
   const [servicos, setServicos] = useState<any[]>([]);
@@ -128,6 +130,42 @@ export default function AgendarPage() {
 
     setEmpresa(data.empresa);
     carregarDados(data.empresa.id);
+
+    if (clienteIdUrl) {
+      carregarClientePorId(data.empresa.id, clienteIdUrl);
+    }
+  }
+
+  async function carregarClientePorId(empresaId: string, clienteId: string) {
+    try {
+      const res = await fetch(
+        `/api/v1/clients?empresaId=${empresaId}&clienteId=${clienteId}`,
+        { cache: 'no-store' }
+      );
+
+      const data = await res.json();
+
+      if (!data.cliente) {
+        alert('Cliente não encontrado para esta empresa.');
+        return;
+      }
+
+      setCpf(formatarCpf(data.cliente.cpf || ''));
+      setCpfConsultado(true);
+      setClienteEncontrado(data.cliente);
+      setMostrarCamposExtras(false);
+      setModoReagendamento(false);
+
+      setCliente({
+        nome: data.cliente.nome || '',
+        whatsapp: data.cliente.whatsapp || '',
+        dataNascimento: data.cliente.dataNascimento
+          ? String(data.cliente.dataNascimento).slice(0, 10)
+          : '',
+      });
+    } catch (error) {
+      alert('Erro ao carregar cliente selecionado.');
+    }
   }
 
   async function carregarDados(empresaId: string) {
@@ -335,8 +373,8 @@ export default function AgendarPage() {
   }
 
   async function agendar() {
-    if (!cpf) return alert('Informe o CPF');
-    if (!cpfConsultado) return alert('Clique em continuar para validar o CPF');
+    if (!clienteEncontrado && !cpf) return alert('Informe o CPF');
+    if (!clienteEncontrado && !cpfConsultado) return alert('Clique em continuar para validar o CPF');
     if (!servicoId) return alert('Selecione um serviço');
     if (!profissionalId) return alert('Selecione um profissional');
     if (!data) return alert('Selecione uma data');
@@ -352,9 +390,23 @@ export default function AgendarPage() {
     if (!horarioSelecionado) return alert('Selecione um horário');
 
     if (!clienteEncontrado) {
-      if (!cliente.nome.trim()) return alert('Informe seu nome');
+      if (!cliente.nome.trim()) return alert('Informe seu nome completo');
       if (!cliente.whatsapp.trim()) return alert('Informe seu WhatsApp');
       if (!cliente.dataNascimento) return alert('Informe sua data de nascimento');
+
+      const hoje = new Date();
+      const nascimento = new Date(cliente.dataNascimento);
+
+      let idade = hoje.getFullYear() - nascimento.getFullYear();
+      const mes = hoje.getMonth() - nascimento.getMonth();
+
+      if (mes < 0 || (mes === 0 && hoje.getDate() < nascimento.getDate())) {
+        idade--;
+      }
+
+      if (idade < 10) {
+        return alert('É necessário ter pelo menos 10 anos para realizar um agendamento.');
+      }
     }
 
     const dataHora = new Date(`${data}T${horarioSelecionado}`);
@@ -414,6 +466,7 @@ export default function AgendarPage() {
   const profissionalSelecionado = profissionais.find((p) => p.id === profissionalId);
   const podeMostrarAgenda =
     !modoReagendamento && cpfConsultado && (clienteEncontrado || mostrarCamposExtras);
+  const clienteVeioDoPainel = Boolean(clienteIdUrl);
 
   if (!empresa) {
     return (
@@ -440,49 +493,74 @@ export default function AgendarPage() {
           <div className="secureBadge">Ambiente seguro de agendamento</div>
         </header>
 
-        <section className="hero">
-          <div className="empresaLogoBox">
-            {empresa.logoUrl ? (
-              <img src={empresa.logoUrl} alt={empresa.nome} className="empresaLogo" />
-            ) : (
-              <div className="empresaLogoFallback">
-                {String(empresa.nome || 'M').charAt(0)}
-              </div>
-            )}
+       <section className="hero">
+  <div className="heroBackgroundGlow" />
+
+  <div className="empresaHeroCard">
+    <div className="heroOfficialBadge">
+      <span>✓</span>
+      Agendamento online oficial
+    </div>
+
+    <div className="empresaHeroCentered">
+      <div className="empresaLogoBox">
+        {empresa.logoUrl ? (
+          <img
+            src={empresa.logoUrl}
+            alt={empresa.nome}
+            className="empresaLogo"
+          />
+        ) : (
+          <div className="empresaLogoFallback">
+            {String(empresa.nome || 'M').charAt(0)}
           </div>
+        )}
+      </div>
 
-          <div className="tag">Agenda online oficial</div>
+      <h1>{empresa.nome}</h1>
 
-          <h1>{empresa.nome}</h1>
+      <p className="subtitle">
+        Agende seu atendimento em poucos minutos, escolha o melhor horário disponível
+        e receba sua confirmação automática.
+      </p>
 
-          <p className="subtitle">
-            Agende seu atendimento em poucos minutos, escolha o melhor horário disponível
-            e receba a confirmação de forma prática.
-          </p>
+      <div className="heroMiniBadges">
+        <div className="heroMiniBadge">
+          🛡️ Dados protegidos
+        </div>
 
-          <div className="trustRow">
-            <div className="trustItem">
-              <strong>⚡ Rápido</strong>
-              <span>sem troca infinita de mensagens</span>
-            </div>
+        <div className="heroMiniBadge">
+          ⚡ Confirmação imediata
+        </div>
 
-            <div className="trustItem">
-              <strong>📲 Prático</strong>
-              <span>confirmação do atendimento</span>
-            </div>
+        <div className="heroMiniBadge">
+          🔔 Lembretes automáticos
+        </div>
+      </div>
+    </div>
 
-            <div className="trustItem">
-              <strong>🔒 Seguro</strong>
-              <span>seus dados protegidos</span>
-            </div>
-          </div>
-        </section>
+    <div className="heroBanner">
+      <div className="heroBannerIcon">
+        📅
+      </div>
+
+      <div className="heroBannerText">
+        <strong>Agilidade que você sente, cuidado que você merece.</strong>
+        <span>Processo simples, rápido e pensado para sua comodidade.</span>
+      </div>
+
+      <div className="heroBannerIllustration">
+        ✨
+      </div>
+    </div>
+  </div>
+</section>
 
         <section className="card">
           <div className="cardHeader">
             <div>
               <h2>Reserve seu horário</h2>
-              <p>Comece pelo CPF para localizar seu cadastro ou criar um novo.</p>
+              <p>{clienteVeioDoPainel ? 'Cliente selecionado pelo painel. Escolha serviço e horário.' : 'Comece pelo CPF para localizar seu cadastro ou criar um novo.'}</p>
             </div>
 
             <div className="step">1/3</div>
@@ -505,51 +583,103 @@ export default function AgendarPage() {
             </div>
           </div>
 
-          <div className="cpfBox">
-            <label>Informe seu CPF</label>
+          {clienteVeioDoPainel && clienteEncontrado && (
+  <div className="clienteSelecionadoCard">
+    <div className="clienteSelecionadoTop">
+      <div className="clienteAvatar">
+        {String(clienteEncontrado.nome || 'C')
+          .charAt(0)
+          .toUpperCase()}
+      </div>
 
-            <div className="cpfLine">
-              <input
-                placeholder="000.000.000-00"
-                value={cpf}
-                onChange={(e) => {
-                  setCpf(formatarCpf(e.target.value));
-                  setCpfConsultado(false);
-                  setClienteEncontrado(null);
-                  setMostrarCamposExtras(false);
-                  setModoReagendamento(false);
-                  limparFluxoAgendamento();
-                  limparFluxoReagendamento();
-                }}
-              />
+      <div className="clienteInfo">
+        <strong>{clienteEncontrado.nome}</strong>
 
-              <button onClick={buscarClientePorCpf} disabled={buscandoCpf}>
-                {buscandoCpf ? 'Buscando...' : 'Continuar'}
+        <span>
+          📲 {formatarWhatsapp(clienteEncontrado.whatsapp || '')}
+        </span>
+
+        {clienteEncontrado.cpf && (
+          <span>
+            🪪 {formatarCpf(clienteEncontrado.cpf)}
+          </span>
+        )}
+
+        {clienteEncontrado.dataNascimento && (
+          <span>
+            🎂{' '}
+            {new Date(clienteEncontrado.dataNascimento).toLocaleDateString(
+              'pt-BR'
+            )}
+          </span>
+        )}
+      </div>
+    </div>
+
+    <div className="clienteSelecionadoFooter">
+      <div className="clienteBadge">
+        ✅ Cliente identificado
+      </div>
+
+      <button
+        className="trocarClienteButton"
+        onClick={() => {
+          window.location.href = `/agendar/${slug}`;
+        }}
+      >
+        Trocar cliente
+      </button>
+    </div>
+  </div>
+)}
+
+          {!clienteVeioDoPainel && (
+            <div className="cpfBox">
+              <label>Informe seu CPF</label>
+
+              <div className="cpfLine">
+                <input
+                  placeholder="000.000.000-00"
+                  value={cpf}
+                  onChange={(e) => {
+                    setCpf(formatarCpf(e.target.value));
+                    setCpfConsultado(false);
+                    setClienteEncontrado(null);
+                    setMostrarCamposExtras(false);
+                    setModoReagendamento(false);
+                    limparFluxoAgendamento();
+                    limparFluxoReagendamento();
+                  }}
+                />
+
+                <button onClick={buscarClientePorCpf} disabled={buscandoCpf}>
+                  {buscandoCpf ? 'Buscando...' : 'Continuar'}
+                </button>
+              </div>
+
+              <button
+                className="outlineButton"
+                onClick={buscarAgendamentosParaReagendar}
+                disabled={buscandoReagendamentos}
+              >
+                {buscandoReagendamentos ? 'Buscando agendamentos...' : 'Já tenho horário e quero reagendar'}
               </button>
+
+              {clienteEncontrado && (
+                <div className="successBox">
+                  <strong>Cadastro encontrado</strong>
+                  <span>Olá, {clienteEncontrado.nome}. Agora escolha o serviço e o melhor horário para você.</span>
+                </div>
+              )}
+
+              {mostrarCamposExtras && (
+                <div className="warningBox">
+                  <strong>Novo cadastro</strong>
+                  <span>Não encontramos seu CPF. Complete seus dados uma única vez para continuar.</span>
+                </div>
+              )}
             </div>
-
-            <button
-              className="outlineButton"
-              onClick={buscarAgendamentosParaReagendar}
-              disabled={buscandoReagendamentos}
-            >
-              {buscandoReagendamentos ? 'Buscando agendamentos...' : 'Já tenho horário e quero reagendar'}
-            </button>
-
-            {clienteEncontrado && (
-              <div className="successBox">
-                <strong>Cadastro encontrado</strong>
-                <span>Olá, {clienteEncontrado.nome}. Agora escolha o serviço e o melhor horário para você.</span>
-              </div>
-            )}
-
-            {mostrarCamposExtras && (
-              <div className="warningBox">
-                <strong>Novo cadastro</strong>
-                <span>Não encontramos seu CPF. Complete seus dados uma única vez para continuar.</span>
-              </div>
-            )}
-          </div>
+          )}
 
           {modoReagendamento && (
             <div className="section">
@@ -727,88 +857,214 @@ export default function AgendarPage() {
                     }
                   />
 
-                  <input
-                    className="field"
-                    type="date"
-                    value={cliente.dataNascimento}
-                    onChange={(e) =>
-                      setCliente({
-                        ...cliente,
-                        dataNascimento: e.target.value,
-                      })
-                    }
-                  />
+                  <div className="fieldGroup">
+                    <label className="fieldLabel">Data de nascimento</label>
+
+                    <input
+                      className="field"
+                      type="date"
+                      value={cliente.dataNascimento}
+                      onChange={(e) =>
+                        setCliente({
+                          ...cliente,
+                          dataNascimento: e.target.value,
+                        })
+                      }
+                    />
+
+                    <span className="fieldHint">
+                      Usamos essa informação para identificação e possíveis benefícios futuros 🎁
+                    </span>
+                  </div>
                 </div>
               )}
 
               <div className="section">
-                <div className="sectionTitle">Escolha o serviço</div>
+  <div className="sectionTitleRow">
+    <div className="sectionTitle">Escolha o serviço</div>
 
-                <select
-                  className="field"
-                  value={servicoId}
-                  onChange={(e) => {
-                    setServicoId(e.target.value);
-                    setHorarios([]);
-                    setHorarioSelecionado('');
-                  }}
-                >
-                  <option value="">Selecione o serviço</option>
-                  {servicos.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.nome} - {s.duracaoMin}min
-                    </option>
-                  ))}
-                </select>
+    {servicos.length > 0 && (
+      <span>{servicos.length} opções</span>
+    )}
+  </div>
 
-                {servicoSelecionado && (
-                  <div className="selectedInfo">
-                    <span>Serviço selecionado</span>
-                    <strong>
-                      {servicoSelecionado.nome} • {servicoSelecionado.duracaoMin}min
-                    </strong>
-                  </div>
+  {servicos.length === 0 ? (
+    <div className="emptySlots">
+      Nenhum serviço disponível para agendamento no momento.
+    </div>
+  ) : (
+    <div className="servicosPublicos">
+      {servicos.map((s) => {
+        const servicoAtivo = servicoId === s.id;
+        const valorServico =
+          typeof s.valor === 'number'
+            ? s.valor
+            : typeof s.preco === 'number'
+              ? s.preco
+              : typeof s.valorTotal === 'number'
+                ? s.valorTotal
+                : null;
+
+        return (
+          <button
+            key={s.id}
+            type="button"
+            className={
+              servicoAtivo
+                ? 'servicoPublicoCard active'
+                : 'servicoPublicoCard'
+            }
+            onClick={() => {
+              setServicoId(s.id);
+              setHorarios([]);
+              setHorarioSelecionado('');
+            }}
+          >
+            <div className="servicoPublicoIcon">
+              ✨
+            </div>
+
+            <div className="servicoPublicoInfo">
+              <strong>{s.nome}</strong>
+
+              {s.descricao && (
+                <p>{s.descricao}</p>
+              )}
+
+              <div className="servicoPublicoMeta">
+                {s.duracaoMin && (
+                  <span>⏱ {s.duracaoMin}min</span>
                 )}
 
-                {servicoSelecionado?.exigePrePagamento && (
-                  <div className="policyBox">
-                    <strong>Importante sobre o pré-pagamento</strong>
-                    <span>
-                      A taxa de pré-pagamento não é reembolsável em caso de falta
-                      no dia do agendamento ou se o reagendamento não for solicitado
-                      com pelo menos 24h de antecedência.
-                    </span>
-                  </div>
+                {valorServico !== null && (
+                  <span>
+                    💰{' '}
+                    {valorServico.toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}
+                  </span>
+                )}
+
+                {s.exigePrePagamento && (
+                  <span className="prePagamentoTag">
+                    Pré-pagamento
+                  </span>
                 )}
               </div>
+            </div>
+
+            <div className="servicoPublicoCheck">
+              {servicoAtivo ? '✓' : ''}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  )}
+
+  {servicoSelecionado && (
+    <div className="selectedInfo">
+      <span>Serviço selecionado</span>
+      <strong>
+        {servicoSelecionado.nome} • {servicoSelecionado.duracaoMin}min
+      </strong>
+    </div>
+  )}
+
+  {servicoSelecionado?.exigePrePagamento && (
+    <div className="policyBox">
+      <strong>Importante sobre o pré-pagamento</strong>
+      <span>
+        A taxa de pré-pagamento não é reembolsável em caso de falta
+        no dia do agendamento ou se o reagendamento não for solicitado
+        com pelo menos 24h de antecedência.
+      </span>
+    </div>
+  )}
+</div>
 
               <div className="section">
-                <div className="sectionTitle">Profissional</div>
+  <div className="sectionTitle">Profissional</div>
 
-                <select
-                  className="field"
-                  value={profissionalId}
-                  onChange={(e) => {
-                    setProfissionalId(e.target.value);
-                    setHorarios([]);
-                    setHorarioSelecionado('');
-                  }}
-                >
-                  <option value="">Selecione o profissional</option>
-                  {profissionais.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nome}
-                    </option>
+  {profissionais.length === 0 ? (
+    <div className="emptySlots">
+      Nenhum profissional disponível para este serviço no momento.
+    </div>
+  ) : (
+    <div className="profissionaisPublicos">
+      {profissionais.map((p) => {
+        const fotoProfissional =
+          p.fotoUrl || p.foto || p.imagemUrl || p.avatarUrl || '';
+
+        const bioProfissional =
+          p.bio || p.descricao || 'Profissional disponível para atendimento.';
+
+        const servicosProfissional = Array.isArray(p.servicos)
+          ? p.servicos
+              .map((item: any) => item?.nome || item?.servico?.nome)
+              .filter(Boolean)
+          : [];
+
+        return (
+          <button
+            key={p.id}
+            type="button"
+            className={
+              profissionalId === p.id
+                ? 'profissionalPublicoCard active'
+                : 'profissionalPublicoCard'
+            }
+            onClick={() => {
+              setProfissionalId(p.id);
+              setHorarios([]);
+              setHorarioSelecionado('');
+            }}
+          >
+            <div className="profissionalFotoBox">
+              {fotoProfissional ? (
+                <img
+                  src={fotoProfissional}
+                  alt={p.nome}
+                  className="profissionalFoto"
+                />
+              ) : (
+                <div className="profissionalFotoFallback">
+                  {String(p.nome || 'P').charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+
+            <div className="profissionalPublicoInfo">
+              <strong>{p.nome}</strong>
+
+              <p>{bioProfissional}</p>
+
+              {servicosProfissional.length > 0 && (
+                <div className="profissionalServicos">
+                  {servicosProfissional.slice(0, 4).map((nomeServico: string) => (
+                    <span key={nomeServico}>{nomeServico}</span>
                   ))}
-                </select>
+                </div>
+              )}
+            </div>
 
-                {profissionalSelecionado && (
-                  <div className="selectedInfo">
-                    <span>Profissional selecionado</span>
-                    <strong>{profissionalSelecionado.nome}</strong>
-                  </div>
-                )}
-              </div>
+            <div className="profissionalCheck">
+              {profissionalId === p.id ? '✓' : ''}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  )}
+
+  {profissionalSelecionado && (
+    <div className="selectedInfo">
+      <span>Profissional selecionado</span>
+      <strong>{profissionalSelecionado.nome}</strong>
+    </div>
+  )}
+</div>
 
               <div className="section">
                 <div className="sectionTitle">Data do atendimento</div>
@@ -888,30 +1144,47 @@ export default function AgendarPage() {
           )}
         </section>
 
-        <section className="benefits">
-          <div className="benefit">
-            <span>⚡</span>
-            <strong>Rápido e prático</strong>
-            <p>Agende sem precisar esperar resposta.</p>
-          </div>
+        <section className="benefits benefitsMinimal">
+  <div className="benefit benefitMinimal">
+    <span>⚡</span>
+    <strong>Seu tempo importa</strong>
+  </div>
 
-          <div className="benefit">
-            <span>📲</span>
-            <strong>Tudo registrado</strong>
-            <p>Seu atendimento fica organizado.</p>
-          </div>
+  <div className="benefit benefitMinimal">
+    <span>🔒</span>
+    <strong>Seguro e confiável</strong>
+  </div>
 
-          <div className="benefit">
-            <span>✨</span>
-            <strong>Experiência simples</strong>
-            <p>Ideal para serviços, beleza, saúde e bem-estar.</p>
-          </div>
-        </section>
+  <div className="benefit benefitMinimal">
+    <span>💜</span>
+    <strong>Experiência premium</strong>
+  </div>
+</section>
 
-        <footer className="footerBrand">
-          <span>Agendamento online por</span>
-          <strong>Marc<span>aê</span></strong>
-        </footer>
+<footer className="footerBrand footerBrandPremium">
+  <span>✦</span>
+  <p>Agendado por</p>
+  <strong>Marc<span>aê</span></strong>
+  <span>✦</span>
+</footer>
+{podeMostrarAgenda && horarioSelecionado && (
+  <div className="mobileStickyBar">
+    <div>
+      <span>Horário escolhido</span>
+
+      <strong>
+        {horarioSelecionado}
+        {servicoSelecionado ? ` • ${servicoSelecionado.nome}` : ''}
+      </strong>
+    </div>
+
+    <button onClick={agendar}>
+      {servicoSelecionado?.exigePrePagamento
+        ? 'Pagar'
+        : 'Finalizar'}
+    </button>
+  </div>
+)}
       </section>
 
       <style jsx>{styles}</style>
@@ -1549,6 +1822,637 @@ const styles = `
     color: #64748b;
   }
 
+
+  .fieldGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .fieldLabel {
+    font-size: 12px;
+    font-weight: 800;
+    color: #475569;
+  }
+
+  .fieldHint {
+    font-size: 11px;
+    color: #94a3b8;
+  }
+
+.clienteSelecionadoCard {
+  background: linear-gradient(135deg, #ffffff, #faf5ff);
+  border: 1px solid #e9d5ff;
+  border-radius: 24px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 20px 45px rgba(124, 58, 237, 0.08);
+}
+
+.clienteSelecionadoTop {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.clienteAvatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #7c3aed, #db2777);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 950;
+  box-shadow: 0 14px 28px rgba(124, 58, 237, 0.22);
+}
+
+.clienteInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.clienteInfo strong {
+  font-size: 18px;
+  color: #111827;
+}
+
+.clienteInfo span {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.clienteSelecionadoFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.clienteBadge {
+  background: #ecfdf5;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.trocarClienteButton {
+  height: 42px;
+  border: 0;
+  border-radius: 14px;
+  padding: 0 16px;
+  background: #fff;
+  border: 1px solid #ddd6fe;
+  color: #7c3aed;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.profissionaisPublicos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.profissionalPublicoCard {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 66px minmax(0, 1fr) 30px;
+  gap: 14px;
+  align-items: center;
+  cursor: pointer;
+  text-align: left;
+  transition: 0.18s ease;
+}
+
+.profissionalPublicoCard:hover {
+  transform: translateY(-1px);
+  border-color: #c084fc;
+  box-shadow: 0 14px 30px rgba(124, 58, 237, 0.1);
+}
+
+.profissionalPublicoCard.active {
+  border-color: #a855f7;
+  background: linear-gradient(135deg, #ffffff, #faf5ff);
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.12);
+}
+
+.profissionalFotoBox {
+  width: 66px;
+  height: 66px;
+  border-radius: 22px;
+  overflow: hidden;
+  background: #eef2ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profissionalFoto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profissionalFotoFallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #7c3aed, #db2777);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 950;
+}
+
+.profissionalPublicoInfo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.profissionalPublicoInfo strong {
+  color: #111827;
+  font-size: 15px;
+}
+
+.profissionalPublicoInfo p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.profissionalServicos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.profissionalServicos span {
+  background: #ede9fe;
+  color: #5b21b6;
+  border: 1px solid #ddd6fe;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.profissionalCheck {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 950;
+}
+
+.hero {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  margin-bottom: 28px;
+}
+
+.heroBackgroundGlow {
+  position: absolute;
+  inset: -40px 40px auto;
+  height: 180px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.24), rgba(219, 39, 119, 0.24));
+  filter: blur(50px);
+  border-radius: 999px;
+  z-index: 0;
+}
+
+.empresaHeroCard {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(253, 244, 255, 0.9)),
+    radial-gradient(circle at top right, rgba(219, 39, 119, 0.12), transparent 42%);
+  border: 1px solid rgba(255, 255, 255, 0.96);
+  border-radius: 36px;
+  padding: 24px;
+  box-shadow: 0 32px 90px rgba(15, 23, 42, 0.14);
+  backdrop-filter: blur(18px);
+}
+
+.empresaHeroTop {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+}
+
+.empresaHeroInfo {
+  min-width: 0;
+  text-align: left;
+}
+
+.empresaHeroInfo h1 {
+  margin: 8px 0 0;
+  font-size: clamp(34px, 6vw, 62px);
+  line-height: 0.96;
+  letter-spacing: -0.07em;
+  color: #111827;
+}
+
+.empresaHeroInfo .subtitle {
+  max-width: 620px;
+  margin: 14px 0 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.empresaExtraInfos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.empresaInfoItem {
+  min-width: 0;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 22px;
+  padding: 14px;
+}
+
+.empresaInfoItem > span {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #7c3aed, #db2777);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 24px rgba(219, 39, 119, 0.18);
+}
+
+.empresaInfoItem strong {
+  display: block;
+  color: #111827;
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+.empresaInfoItem p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.empresaHeroCard .trustRow {
+  margin-top: 18px;
+}
+
+.servicosPublicos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.servicoPublicoCard {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 30px;
+  gap: 13px;
+  align-items: center;
+  cursor: pointer;
+  text-align: left;
+  transition: 0.18s ease;
+}
+
+.servicoPublicoCard:hover {
+  transform: translateY(-1px);
+  border-color: #c084fc;
+  box-shadow: 0 14px 30px rgba(124, 58, 237, 0.1);
+}
+
+.servicoPublicoCard.active {
+  border-color: #a855f7;
+  background: linear-gradient(135deg, #ffffff, #faf5ff);
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.12);
+}
+
+.servicoPublicoIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #7c3aed, #db2777);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 14px 28px rgba(219, 39, 119, 0.18);
+}
+
+.servicoPublicoInfo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.servicoPublicoInfo strong {
+  color: #111827;
+  font-size: 15px;
+}
+
+.servicoPublicoInfo p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.servicoPublicoMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.servicoPublicoMeta span {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.servicoPublicoMeta .prePagamentoTag {
+  background: #fff7ed;
+  color: #9a3412;
+  border-color: #fed7aa;
+}
+
+.servicoPublicoCheck {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 950;
+}
+
+.mobileStickyBar {
+  display: none;
+}
+
+.heroOfficialBadge {
+  width: fit-content;
+  margin: 0 auto 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: rgba(124, 58, 237, 0.1);
+  color: #6d28d9;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.heroOfficialBadge span {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #7c3aed, #db2777);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.empresaHeroCentered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.empresaHeroCentered .empresaLogoBox {
+  margin: 0 0 16px;
+  width: 92px;
+  height: 92px;
+  border-radius: 30px;
+}
+
+.empresaHeroCentered h1 {
+  margin: 0;
+  font-size: clamp(48px, 8vw, 82px);
+  line-height: 0.92;
+  letter-spacing: -0.075em;
+  color: #0f172a;
+}
+
+.empresaHeroCentered .subtitle {
+  max-width: 560px;
+  margin: 18px auto 0;
+  font-size: 18px;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.heroMiniBadges {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.heroMiniBadge {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.05);
+}
+
+.heroBanner {
+  margin-top: 34px;
+  min-height: 96px;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 92px;
+  gap: 18px;
+  align-items: center;
+  border-radius: 28px;
+  padding: 18px 22px;
+  background:
+    radial-gradient(circle at right, rgba(219, 39, 119, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(250, 245, 255, 0.96), rgba(255, 255, 255, 0.92));
+  border: 1px solid #e9d5ff;
+  overflow: hidden;
+}
+
+.heroBannerIcon {
+  width: 58px;
+  height: 58px;
+  border-radius: 20px;
+  background: #ffffff;
+  color: #7c3aed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  box-shadow: 0 16px 30px rgba(124, 58, 237, 0.14);
+}
+
+.heroBannerText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.heroBannerText strong {
+  color: #0f172a;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.heroBannerText span {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.heroBannerIllustration {
+  width: 78px;
+  height: 78px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 70% 70%, rgba(219, 39, 119, 0.28), transparent 32%),
+    linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(219, 39, 119, 0.12));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.benefitsMinimal {
+  max-width: 900px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+  border-radius: 32px;
+  padding: 22px;
+  gap: 0;
+}
+
+.benefitMinimal {
+  border-radius: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 22px 18px;
+  position: relative;
+}
+
+.benefitMinimal:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 22px;
+  right: 0;
+  width: 1px;
+  height: calc(100% - 44px);
+  background: #e2e8f0;
+}
+
+.benefitMinimal span {
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 70% 30%, rgba(219, 39, 119, 0.18), transparent 32%),
+    linear-gradient(135deg, rgba(124, 58, 237, 0.13), rgba(219, 39, 119, 0.12));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+}
+
+.benefitMinimal strong {
+  font-size: 17px;
+  letter-spacing: -0.035em;
+}
+
+.footerBrandPremium {
+  margin-top: 22px;
+  justify-content: center;
+  font-size: 18px;
+  gap: 12px;
+}
+
+.footerBrandPremium > span {
+  color: #a855f7;
+  font-size: 18px;
+}
+
+.footerBrandPremium p {
+  margin: 0;
+  color: #64748b;
+  font-size: 18px;
+}
+
+.footerBrandPremium strong {
+  font-size: 24px;
+  color: #0f172a;
+}
+
   @media (max-width: 720px) {
     .shell {
       padding: 18px 14px 28px;
@@ -1602,5 +2506,225 @@ const styles = `
     .benefits {
       grid-template-columns: 1fr;
     }
+
+.empresaHeroCard {
+  border-radius: 30px;
+  padding: 20px;
+}
+
+.empresaHeroTop {
+  grid-template-columns: 1fr;
+  text-align: center;
+}
+
+.empresaHeroInfo {
+  text-align: center;
+}
+
+.empresaLogoBox {
+  margin: 0 auto 4px;
+}
+
+.empresaExtraInfos {
+  grid-template-columns: 1fr;
+}
+
+.heroBackgroundGlow {
+  inset: -30px 20px auto;
+  height: 150px;
+}
+
+.cardHeader {
+  flex-direction: column;
+}
+
+.step {
+  width: 100%;
+  height: 44px;
+}
+
+.servicoPublicoCard {
+  grid-template-columns: 44px minmax(0, 1fr) 28px;
+  padding: 13px;
+}
+
+.servicoPublicoIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+}
+
+.profissionalPublicoCard {
+  grid-template-columns: 56px minmax(0, 1fr) 28px;
+  padding: 13px;
+}
+
+.profissionalFotoBox {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+}
+
+.mobileStickyBar {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.96);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 22px;
+  padding: 12px;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.32);
+  backdrop-filter: blur(14px);
+}
+
+.mobileStickyBar div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mobileStickyBar span {
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mobileStickyBar strong {
+  max-width: 190px;
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobileStickyBar button {
+  min-width: 92px;
+  height: 44px;
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #7c3aed, #db2777);
+  color: #ffffff;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.page {
+  padding-bottom: 82px;
+}
+
+.heroOfficialBadge {
+  margin-bottom: 16px;
+  padding: 9px 13px;
+  font-size: 12px;
+}
+
+.empresaHeroCentered .empresaLogoBox {
+  width: 78px;
+  height: 78px;
+  border-radius: 26px;
+  margin-bottom: 14px;
+}
+
+.empresaHeroCentered h1 {
+  font-size: 44px;
+  letter-spacing: -0.065em;
+}
+
+.empresaHeroCentered .subtitle {
+  font-size: 15px;
+  line-height: 1.55;
+  margin-top: 14px;
+}
+
+.heroMiniBadges {
+  margin-top: 18px;
+  gap: 8px;
+}
+
+.heroMiniBadge {
+  width: 100%;
+  min-height: 38px;
+  font-size: 12px;
+}
+
+.heroBanner {
+  margin-top: 24px;
+  grid-template-columns: 1fr;
+  text-align: center;
+  padding: 18px;
+  border-radius: 24px;
+}
+
+.heroBannerIcon,
+.heroBannerIllustration {
+  margin: 0 auto;
+}
+
+.heroBannerText {
+  text-align: center;
+}
+
+.heroBannerText strong {
+  font-size: 16px;
+}
+
+.heroBannerText span {
+  font-size: 13px;
+}
+
+.benefitsMinimal {
+  padding: 14px;
+  border-radius: 28px;
+  gap: 0;
+}
+
+.benefitMinimal {
+  padding: 22px 14px;
+}
+
+.benefitMinimal:not(:last-child)::after {
+  display: none;
+}
+
+.benefitMinimal:not(:last-child) {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.benefitMinimal span {
+  width: 62px;
+  height: 62px;
+  font-size: 30px;
+  margin-bottom: 12px;
+}
+
+.benefitMinimal strong {
+  font-size: 16px;
+}
+
+.footerBrandPremium {
+  margin-top: 18px;
+  font-size: 15px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.footerBrandPremium p {
+  font-size: 15px;
+}
+
+.footerBrandPremium strong {
+  font-size: 20px;
+}
+
   }
 `;

@@ -13,6 +13,7 @@ model Empresa {
   nome                               String
   descricao                          String?
   telefone                           String?
+  instagramUrl                  String?
   endereco                           String?
   logoUrl                            String?
   midiaUrl                           String?
@@ -27,6 +28,7 @@ model Empresa {
   whatsappInstance                   String?
   whatsappAtivo                      Boolean   @default(false)
 
+
   plano                              String?   @default("basico")
   trialAtivo                         Boolean   @default(true)
   trialExpiraEm                      DateTime? @db.Timestamp(6)
@@ -40,14 +42,30 @@ model Empresa {
   modoPagamentoAssinatura            String    @default("manual")
   formaPagamentoAssinatura           String    @default("pix")
 
+  mercadoPagoAtivo                   Boolean   @default(false)
+  mercadoPagoAccessToken             String?
+  mercadoPagoPublicKey               String?
+  mercadoPagoModo                    String    @default("sandbox")
+  mercadoPagoStatus                  String    @default("nao_configurado")
+  mercadoPagoAtualizadoEm            DateTime? @db.Timestamp(6)
+
   valorMensalPersonalizado           Decimal?  @db.Decimal(10, 2)
   descontoMensal                     Decimal?  @db.Decimal(10, 2)
   statusFinanceiro                   String    @default("em_dia")
   bloqueadoPorInadimplencia          Boolean   @default(false)
   ultimoPagamentoEm                  DateTime? @db.Timestamp(6)
+  ultimoLembreteFinanceiroEnviadoEm    DateTime? @db.Timestamp(6)
+  ultimoAvisoBloqueioEnviadoEm        DateTime? @db.Timestamp(6)
+  ultimoAvisoPagamentoRecusadoEm      DateTime? @db.Timestamp(6)
+  ultimoAvisoPagamentoAprovadoEm      DateTime? @db.Timestamp(6)
+  diasInadimplente                    Int       @default(0)
   observacoesInternas                String?
+solicitouIntegracaoMp Boolean @default(false)
+
+  tipoCalculoComissao                String    @default("servico_executado")
 
   agendamentos                       Agendamento[]
+  agendamentoServicos                AgendamentoServico[]
   clientes                           Cliente[]
   disponibilidades                   Disponibilidade[]
   pagamentos                         Pagamento[]
@@ -58,8 +76,9 @@ model Empresa {
   servicos                           Servico[]
   usuarios                           UsuarioEmpresa[]
   comissoes                          Comissao[]
-  logs                                   EmpresaLog[]
-  pagamentosSaaS          EmpresaPagamento[]
+pagamentosComissao ComissaoPagamento[]
+  logs                               EmpresaLog[]
+  pagamentosSaaS                     EmpresaPagamento[]
 }
 
 model Cliente {
@@ -86,6 +105,7 @@ model Servico {
   descricao                String?
   duracaoMin               Int                     @default(30)
   valor                    Decimal                 @default(0) @db.Decimal(10, 2)
+  custo                    Decimal?                @db.Decimal(10, 2)
   ativo                    Boolean                 @default(true)
   exigePagamento           Boolean                 @default(false)
   tipoPagamento            String?
@@ -97,7 +117,11 @@ model Servico {
   valorPrePagamento        Decimal?                @db.Decimal
   tipoPrePagamento         String?
 
+  tipoComissao             String?
+  valorComissao            Decimal?                @db.Decimal(10, 2)
+
   agendamentos             Agendamento[]
+  agendamentoServicos      AgendamentoServico[]
   profissionais            ProfissionalServico[]
   empresa                  Empresa                 @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   ProfissionalToServico    ProfissionalToServico[]
@@ -117,11 +141,13 @@ model Profissional {
   updatedAt             DateTime                @default(now()) @updatedAt @db.Timestamp(6)
 
   agendamentos          Agendamento[]
+  agendamentoServicos   AgendamentoServico[]
   disponibilidades      Disponibilidade[]
   empresa               Empresa                 @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   servicos              ProfissionalServico[]
   ProfissionalToServico ProfissionalToServico[]
   comissoes             Comissao[]
+  pagamentosComissao ComissaoPagamento[]
 }
 
 model ProfissionalServico {
@@ -179,8 +205,8 @@ model Agendamento {
   origem                    String        @default("online")
   lembreteWhatsappEnviado   Boolean       @default(false)
   lembreteWhatsappEnviadoAt DateTime?     @db.Timestamp(6)
-  motivoCancelamento      String?
-  canceladoEm             DateTime?     @db.Timestamp(6)
+  motivoCancelamento        String?
+  canceladoEm               DateTime?     @db.Timestamp(6)
 
   comissaoGerada            Boolean       @default(false)
 
@@ -190,6 +216,41 @@ model Agendamento {
   servico                   Servico       @relation(fields: [servicoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   pagamento                 Pagamento[]
   comissoes                 Comissao[]
+  servicosAdicionais        AgendamentoServico[]
+}
+
+model AgendamentoServico {
+  id              String        @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId       String
+  agendamentoId   String
+  servicoId       String
+  profissionalId  String?
+
+  nomeServico     String
+  valor           Decimal       @default(0) @db.Decimal(10, 2)
+  custo           Decimal?      @db.Decimal(10, 2)
+  statusPagamento String        @default("pendente")
+  formaPagamento  String?
+  observacao      String?
+  origem          String        @default("painel")
+
+  pagoEm          DateTime?     @db.Timestamp(6)
+  createdAt       DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime      @default(now()) @updatedAt @db.Timestamp(6)
+
+  empresa         Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  agendamento     Agendamento  @relation(fields: [agendamentoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  servico         Servico       @relation(fields: [servicoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profissional    Profissional? @relation(fields: [profissionalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  comissoes       Comissao[]
+
+  @@index([empresaId])
+  @@index([agendamentoId])
+  @@index([servicoId])
+  @@index([profissionalId])
+  @@index([statusPagamento])
+  @@index([createdAt])
 }
 
 model Pagamento {
@@ -220,29 +281,40 @@ model Pagamento {
 }
 
 model Comissao {
-  id             String       @id @default(dbgenerated("(gen_random_uuid())::text"))
-  empresaId      String
-  agendamentoId  String
-  profissionalId String
+  id                   String               @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId            String
+  agendamentoId        String
+  profissionalId       String
+  agendamentoServicoId String?
 
-  valorServico   Decimal      @default(0) @db.Decimal(10, 2)
-  valorComissao  Decimal      @default(0) @db.Decimal(10, 2)
-  tipoComissao   String?
+  valorServico         Decimal              @default(0) @db.Decimal(10, 2)
+  valorComissao        Decimal              @default(0) @db.Decimal(10, 2)
+  tipoComissao         String?
 
-  status         String       @default("pendente")
-  dataPagamento  DateTime?    @db.Timestamp(6)
-  observacao     String?
+  origemServico        String?              @default("principal")
+  percentualAplicado   Decimal?             @db.Decimal(10, 2)
+  valorBaseRecebido    Decimal?             @db.Decimal(10, 2)
 
-  createdAt      DateTime     @default(now()) @db.Timestamp(6)
-  updatedAt      DateTime     @default(now()) @updatedAt @db.Timestamp(6)
+  status               String               @default("pendente")
+  dataPagamento        DateTime?            @db.Timestamp(6)
+  pagoEm               DateTime?            @db.Timestamp(6)
+  observacao           String?
+  repasseObservacao    String?
+pagamentoId String?
 
-  empresa        Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  agendamento    Agendamento  @relation(fields: [agendamentoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  createdAt            DateTime             @default(now()) @db.Timestamp(6)
+  updatedAt            DateTime             @default(now()) @updatedAt @db.Timestamp(6)
 
-  @@unique([agendamentoId, profissionalId])
+  empresa              Empresa              @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  agendamento          Agendamento          @relation(fields: [agendamentoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profissional         Profissional         @relation(fields: [profissionalId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  agendamentoServico   AgendamentoServico?  @relation(fields: [agendamentoServicoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+pagamentoComissao ComissaoPagamento? @relation(fields: [pagamentoId], references: [id])
+
   @@index([empresaId])
+  @@index([agendamentoId])
   @@index([profissionalId])
+  @@index([agendamentoServicoId])
   @@index([status])
   @@index([createdAt])
 }
@@ -323,7 +395,7 @@ model ProfissionalToServico {
 model EmpresaLog {
   id        String   @id @default(uuid())
   empresaId String
-  tipo      String   // bloquear, desbloquear, inativar, ativar
+  tipo      String
   motivo    String
   criadoEm  DateTime @default(now())
 
@@ -334,9 +406,46 @@ model EmpresaPagamento {
   id        String   @id @default(uuid())
   empresaId String
   valor     Decimal  @db.Decimal(10, 2)
-  status    String   // pago, pendente, falhou
+  status    String
   descricao String?
   criadoEm  DateTime @default(now())
 
   empresa   Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+}
+
+model ComissaoPagamento {
+  id             String   @id @default(cuid())
+
+  empresaId      String
+  profissionalId String
+
+  valorPago      Decimal  @db.Decimal(10,2)
+
+  dataInicio     DateTime?
+  dataFim        DateTime?
+
+  observacao     String?
+
+  createdAt      DateTime @default(now())
+
+  empresa        Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  comissoes      Comissao[]
+
+  @@index([empresaId])
+  @@index([profissionalId])
+  @@index([createdAt])
+}
+
+model ConfiguracaoSaas {
+  id                String   @id @default(cuid())
+
+  valorPlanoBasico  Decimal  @default(49.90) @db.Decimal(10, 2)
+  valorPlanoPlus    Decimal  @default(99.90) @db.Decimal(10, 2)
+  valorPlanoPremium Decimal  @default(149.90) @db.Decimal(10, 2)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }

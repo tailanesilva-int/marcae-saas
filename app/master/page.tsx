@@ -20,6 +20,10 @@ type Empresa = {
   id: string;
   nome: string;
   slug: string;
+mercadoPagoAtivo?: boolean;
+mercadoPagoAccessToken?: string | null;
+mercadoPagoPublicKey?: string | null;
+mercadoPagoModo?: string | null;
   telefone?: string | null;
   whatsapp?: string | null;
   endereco?: string | null;
@@ -87,6 +91,12 @@ type HistoricoEmpresa = {
   pagamentos: HistoricoPagamento[];
 };
 
+type ConfiguracaoPlanos = {
+  valorPlanoBasico: string;
+  valorPlanoPlus: string;
+  valorPlanoPremium: string;
+};
+
 const formInicial: FormEmpresa = {
   nome: "",
   slug: "",
@@ -137,10 +147,106 @@ export default function MasterPage() {
   );
   const [carregandoHistorico, setCarregandoHistorico] = useState(false);
   const [erroHistorico, setErroHistorico] = useState("");
+const [modalRecebimentoAberto, setModalRecebimentoAberto] =
+  useState(false);
+
+const [empresaRecebimento, setEmpresaRecebimento] =
+  useState<Empresa | null>(null);
+
+const [salvandoRecebimento, setSalvandoRecebimento] =
+  useState(false);
+
+const [formRecebimento, setFormRecebimento] = useState({
+  ativo: false,
+  accessToken: "",
+  publicKey: "",
+  ambiente: "sandbox",
+});
+
+const [configuracaoPlanos, setConfiguracaoPlanos] =
+  useState<ConfiguracaoPlanos>({
+    valorPlanoBasico: "49,90",
+    valorPlanoPlus: "99,90",
+    valorPlanoPremium: "149,90",
+  });
+
+const [salvandoConfiguracaoPlanos, setSalvandoConfiguracaoPlanos] =
+  useState(false);
 
   useEffect(() => {
     carregar();
+    carregarConfiguracaoPlanos();
   }, []);
+
+  function atualizarConfiguracaoPlano(campo: keyof ConfiguracaoPlanos, valor: string) {
+    setConfiguracaoPlanos((atual) => ({
+      ...atual,
+      [campo]: valor,
+    }));
+  }
+
+  async function carregarConfiguracaoPlanos() {
+    try {
+      const res = await fetch("/api/master/configuracoes/planos", {
+        cache: "no-store",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Erro ao carregar configuração dos planos.");
+      }
+
+      if (data.configuracao) {
+        setConfiguracaoPlanos({
+          valorPlanoBasico: String(data.configuracao.valorPlanoBasico || 0).replace(".", ","),
+          valorPlanoPlus: String(data.configuracao.valorPlanoPlus || 0).replace(".", ","),
+          valorPlanoPremium: String(data.configuracao.valorPlanoPremium || 0).replace(".", ","),
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      setMensagem("Erro ao carregar preços dos planos.");
+    }
+  }
+
+  async function salvarConfiguracaoPlanos() {
+    try {
+      setSalvandoConfiguracaoPlanos(true);
+      setMensagem("");
+
+      const res = await fetch("/api/master/configuracoes/planos", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          valorPlanoBasico: configuracaoPlanos.valorPlanoBasico,
+          valorPlanoPlus: configuracaoPlanos.valorPlanoPlus,
+          valorPlanoPremium: configuracaoPlanos.valorPlanoPremium,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Erro ao salvar preços dos planos.");
+      }
+
+      setConfiguracaoPlanos({
+        valorPlanoBasico: String(data.configuracao.valorPlanoBasico || 0).replace(".", ","),
+        valorPlanoPlus: String(data.configuracao.valorPlanoPlus || 0).replace(".", ","),
+        valorPlanoPremium: String(data.configuracao.valorPlanoPremium || 0).replace(".", ","),
+      });
+
+      setMensagem("Preços dos planos atualizados com sucesso.");
+    } catch (error: any) {
+      console.error(error);
+      setMensagem(error?.message || "Erro ao salvar preços dos planos.");
+    } finally {
+      setSalvandoConfiguracaoPlanos(false);
+    }
+  }
 
   async function carregar() {
     try {
@@ -169,12 +275,39 @@ export default function MasterPage() {
     }
   }
 
-  function atualizarForm(campo: keyof FormEmpresa, valor: string) {
-    setFormEmpresa((atual) => ({
+  function obterValorPlano(plano: string) {
+  const planoNormalizado = String(plano || "").toLowerCase();
+
+  if (planoNormalizado === "premium") {
+    return configuracaoPlanos.valorPlanoPremium || "0";
+  }
+
+  if (planoNormalizado === "plus") {
+    return configuracaoPlanos.valorPlanoPlus || "0";
+  }
+
+  if (planoNormalizado === "trial") {
+    return "0";
+  }
+
+  return configuracaoPlanos.valorPlanoBasico || "0";
+}
+
+function atualizarForm(campo: keyof FormEmpresa, valor: string) {
+  setFormEmpresa((atual) => {
+    const atualizado = {
       ...atual,
       [campo]: valor,
-    }));
-  }
+    };
+
+    if (campo === "plano") {
+      atualizado.valorMensalPersonalizado =
+        obterValorPlano(valor);
+    }
+
+    return atualizado;
+  });
+}
 
   function gerarSlugAutomatico(nome: string) {
     return nome
@@ -280,6 +413,31 @@ export default function MasterPage() {
     setAbaHistorico("pagamentos");
   }
 
+function abrirRecebimento(empresa: Empresa) {
+  setEmpresaRecebimento(empresa);
+
+  setFormRecebimento({
+    ativo: empresa.mercadoPagoAtivo || false,
+    accessToken: empresa.mercadoPagoAccessToken || "",
+    publicKey: empresa.mercadoPagoPublicKey || "",
+    ambiente: empresa.mercadoPagoModo || "sandbox",
+  });
+
+  setModalRecebimentoAberto(true);
+}
+
+function fecharRecebimento() {
+  setModalRecebimentoAberto(false);
+  setEmpresaRecebimento(null);
+
+  setFormRecebimento({
+    ativo: false,
+    accessToken: "",
+    publicKey: "",
+    ambiente: "sandbox",
+  });
+}
+
   async function abrirHistorico(empresa: Empresa) {
     try {
       setEmpresaHistorico(empresa);
@@ -323,13 +481,18 @@ export default function MasterPage() {
       setMensagem("");
       setDadosUltimoUsuario(null);
 
-      const payload = {
-        ...formEmpresa,
-        slug: gerarSlugAutomatico(formEmpresa.slug || formEmpresa.nome),
-        valorMensalPersonalizado: Number(
-          formEmpresa.valorMensalPersonalizado.replace(",", ".")
-        ),
-      };
+      const valorNormalizado = String(
+  formEmpresa.valorMensalPersonalizado || "0"
+)
+  .replace(/\./g, "")
+  .replace(",", ".");
+
+const payload = {
+  ...formEmpresa,
+  slug: gerarSlugAutomatico(formEmpresa.slug || formEmpresa.nome),
+  valorMensalPersonalizado:
+    Number(valorNormalizado) || 0,
+};
 
       const url = empresaEditando
         ? `/api/master/empresas/${empresaEditando.id}`
@@ -559,6 +722,89 @@ export default function MasterPage() {
         <Card label="Plano Premium" value={totalPremium} color="#a855f7" />
       </div>
 
+      <section style={styles.configPlanosPanel}>
+        <div style={styles.configPlanosHeader}>
+          <div>
+            <div style={styles.configPlanosBadge}>Configuração comercial</div>
+            <h2 style={styles.configPlanosTitle}>Preços padrão dos planos</h2>
+            <p style={styles.configPlanosSubtitle}>
+              Defina os valores oficiais exibidos para clientes no painel administrativo.
+              Valores personalizados por empresa continuam sendo controlados no cadastro da empresa.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            style={{
+              ...styles.btnSalvarPrecoPlanos,
+              opacity: salvandoConfiguracaoPlanos ? 0.7 : 1,
+              cursor: salvandoConfiguracaoPlanos ? "not-allowed" : "pointer",
+            }}
+            onClick={salvarConfiguracaoPlanos}
+            disabled={salvandoConfiguracaoPlanos}
+          >
+            {salvandoConfiguracaoPlanos ? "Salvando..." : "Salvar preços"}
+          </button>
+        </div>
+
+        <div style={styles.configPlanosGrid}>
+          <div style={styles.configPlanoCard}>
+            <span style={styles.configPlanoIcone}>🌱</span>
+            <strong style={styles.configPlanoNome}>Básico</strong>
+            <small style={styles.configPlanoDescricao}>Entrada para agenda online</small>
+            <label style={styles.configPlanoLabel}>Valor mensal</label>
+            <div style={styles.configPlanoInputWrap}>
+              <span>R$</span>
+              <input
+                style={styles.configPlanoInput}
+                value={configuracaoPlanos.valorPlanoBasico}
+                onChange={(e) =>
+                  atualizarConfiguracaoPlano("valorPlanoBasico", e.target.value)
+                }
+                placeholder="49,90"
+              />
+            </div>
+          </div>
+
+          <div style={styles.configPlanoCard}>
+            <span style={styles.configPlanoIcone}>🚀</span>
+            <strong style={styles.configPlanoNome}>Plus</strong>
+            <small style={styles.configPlanoDescricao}>Automações, promoções e recebimentos</small>
+            <label style={styles.configPlanoLabel}>Valor mensal</label>
+            <div style={styles.configPlanoInputWrap}>
+              <span>R$</span>
+              <input
+                style={styles.configPlanoInput}
+                value={configuracaoPlanos.valorPlanoPlus}
+                onChange={(e) =>
+                  atualizarConfiguracaoPlano("valorPlanoPlus", e.target.value)
+                }
+                placeholder="99,90"
+              />
+            </div>
+          </div>
+
+          <div style={{ ...styles.configPlanoCard, ...styles.configPlanoPremium }}>
+            <div style={styles.configPlanoMaisVendido}>Mais vendido</div>
+            <span style={styles.configPlanoIcone}>💎</span>
+            <strong style={styles.configPlanoNome}>Premium</strong>
+            <small style={styles.configPlanoDescricao}>Gestão completa e visão gerencial</small>
+            <label style={styles.configPlanoLabel}>Valor mensal</label>
+            <div style={styles.configPlanoInputWrap}>
+              <span>R$</span>
+              <input
+                style={styles.configPlanoInput}
+                value={configuracaoPlanos.valorPlanoPremium}
+                onChange={(e) =>
+                  atualizarConfiguracaoPlano("valorPlanoPremium", e.target.value)
+                }
+                placeholder="149,90"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div style={styles.panel}>
         <div style={styles.panelHeader}>
           <div>
@@ -595,6 +841,7 @@ export default function MasterPage() {
                   <th style={styles.th}>Valor mensal</th>
                   <th style={styles.th}>Acesso</th>
                   <th style={styles.th}>Contato</th>
+                  <th style={styles.th}>Recebimento</th>
                   <th style={styles.th}>Ações</th>
                 </tr>
               </thead>
@@ -689,6 +936,58 @@ export default function MasterPage() {
                         )}
                       </td>
 
+<td style={styles.td}>
+  {e.mercadoPagoAtivo &&
+  e.mercadoPagoAccessToken ? (
+    <div>
+      <span
+        style={{
+          ...styles.badgeBase,
+          background: '#065f46',
+          color: '#d1fae5',
+          marginBottom: 8,
+        }}
+      >
+        Mercado Pago ativo
+      </span>
+
+      <div style={styles.small}>
+        Ambiente:{' '}
+        {e.mercadoPagoModo === 'producao'
+          ? 'Produção'
+          : 'Sandbox'}
+      </div>
+    </div>
+  ) : (
+  <>
+    <span
+      style={{
+        ...styles.badgeBase,
+        background: '#7f1d1d',
+        color: '#fecaca',
+        marginBottom: 8,
+      }}
+    >
+      Não configurado
+    </span>
+
+    {e.solicitouIntegracaoMp && (
+      <div style={{ marginTop: 8 }}>
+        <span
+          style={{
+            ...styles.badgeBase,
+            background: '#1d4ed8',
+            color: '#dbeafe',
+          }}
+        >
+          Solicitou integração
+        </span>
+      </div>
+    )}
+  </>
+)}
+</td>
+
                       <td style={styles.td}>
                         <div style={styles.actions}>
                           <button
@@ -698,6 +997,14 @@ export default function MasterPage() {
                           >
                             Editar cadastro
                           </button>
+
+<button
+  style={styles.btnBlue}
+  disabled={processando}
+  onClick={() => abrirRecebimento(e)}
+>
+  Recebimento
+</button>
 
                           <button
                             style={styles.btn}
@@ -1106,6 +1413,184 @@ export default function MasterPage() {
           </div>
         </div>
       )}
+
+{modalRecebimentoAberto && empresaRecebimento && (
+  <div style={styles.modalOverlay}>
+    <div style={styles.modal}>
+      <div style={styles.modalHeader}>
+        <div>
+          <h2 style={styles.modalTitle}>
+            Integração Mercado Pago
+          </h2>
+
+          <p style={styles.modalSubtitle}>
+            {empresaRecebimento.nome}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          style={styles.btnFechar}
+          onClick={fecharRecebimento}
+        >
+          ×
+        </button>
+      </div>
+
+      <div style={styles.form}>
+        <div style={styles.field}>
+          <label style={styles.label}>
+            <input
+              type="checkbox"
+              checked={formRecebimento.ativo}
+              onChange={(e) =>
+                setFormRecebimento((old) => ({
+                  ...old,
+                  ativo: e.target.checked,
+                }))
+              }
+            />
+
+            <span style={{ marginLeft: 10 }}>
+              Ativar recebimento online
+            </span>
+          </label>
+        </div>
+
+        <div style={styles.field}>
+          <label style={styles.label}>
+            Access Token
+          </label>
+
+          <input
+            style={styles.formInput}
+            value={formRecebimento.accessToken}
+            onChange={(e) =>
+              setFormRecebimento((old) => ({
+                ...old,
+                accessToken: e.target.value,
+              }))
+            }
+            placeholder="APP_USR-..."
+          />
+        </div>
+
+        <div style={styles.field}>
+          <label style={styles.label}>
+            Public Key
+          </label>
+
+          <input
+            style={styles.formInput}
+            value={formRecebimento.publicKey}
+            onChange={(e) =>
+              setFormRecebimento((old) => ({
+                ...old,
+                publicKey: e.target.value,
+              }))
+            }
+            placeholder="APP_USR-..."
+          />
+        </div>
+
+        <div style={styles.field}>
+          <label style={styles.label}>
+            Ambiente
+          </label>
+
+          <select
+            style={styles.formInput}
+            value={formRecebimento.ambiente}
+            onChange={(e) =>
+              setFormRecebimento((old) => ({
+                ...old,
+                ambiente: e.target.value,
+              }))
+            }
+          >
+            <option value="sandbox">
+              Sandbox/Teste
+            </option>
+
+            <option value="producao">
+              Produção
+            </option>
+          </select>
+        </div>
+
+        <div style={styles.modalActions}>
+          <button
+            type="button"
+            style={styles.btnCancelar}
+            onClick={fecharRecebimento}
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            style={styles.btnSalvar}
+            onClick={async () => {
+              try {
+                setSalvandoRecebimento(true);
+
+                const res = await fetch(
+                  `/api/master/empresas/${empresaRecebimento.id}`,
+                  {
+                    method: "PATCH",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      acao: "mercadoPago",
+
+                      mercadoPagoAtivo:
+                        formRecebimento.ativo,
+
+                      mercadoPagoAccessToken:
+                        formRecebimento.accessToken,
+
+                      mercadoPagoPublicKey:
+                        formRecebimento.publicKey,
+
+                      mercadoPagoModo:
+                        formRecebimento.ambiente,
+                    }),
+                  }
+                );
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                  throw new Error(
+                    data.error || "Erro ao salvar."
+                  );
+                }
+
+                await carregar();
+
+                fecharRecebimento();
+
+                alert(
+                  "Integração salva com sucesso."
+                );
+              } catch (error: any) {
+                alert(error.message);
+              } finally {
+                setSalvandoRecebimento(false);
+              }
+            }}
+          >
+            {salvandoRecebimento
+              ? "Salvando..."
+              : "Salvar integração"}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }
@@ -1352,6 +1837,140 @@ const styles: Record<string, any> = {
     display: "block",
     marginTop: "10px",
     fontSize: "28px",
+  },
+  configPlanosPanel: {
+    background:
+      "radial-gradient(circle at top right, rgba(168, 85, 247, 0.18), transparent 36%), rgba(15, 23, 42, 0.86)",
+    border: "1px solid rgba(148, 163, 184, 0.16)",
+    borderRadius: "26px",
+    padding: "24px",
+    marginBottom: "22px",
+    boxShadow: "0 24px 70px rgba(0,0,0,0.26)",
+  },
+  configPlanosHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "18px",
+    marginBottom: "18px",
+  },
+  configPlanosBadge: {
+    display: "inline-flex",
+    padding: "7px 11px",
+    borderRadius: "999px",
+    background: "rgba(168, 85, 247, 0.14)",
+    border: "1px solid rgba(168, 85, 247, 0.30)",
+    color: "#e9d5ff",
+    fontSize: "12px",
+    fontWeight: 900,
+    marginBottom: "10px",
+  },
+  configPlanosTitle: {
+    margin: 0,
+    color: "#f8fafc",
+    fontSize: "24px",
+    fontWeight: 950,
+    letterSpacing: "-0.04em",
+  },
+  configPlanosSubtitle: {
+    marginTop: "8px",
+    color: "#cbd5e1",
+    fontSize: "14px",
+    lineHeight: 1.55,
+    maxWidth: "720px",
+  },
+  btnSalvarPrecoPlanos: {
+    border: "1px solid rgba(216, 180, 254, 0.38)",
+    background: "linear-gradient(135deg, #7c3aed, #db2777)",
+    color: "#fff",
+    borderRadius: "16px",
+    padding: "13px 18px",
+    fontWeight: 950,
+    fontSize: "14px",
+    whiteSpace: "nowrap",
+  },
+  configPlanosGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: "14px",
+  },
+  configPlanoCard: {
+    position: "relative",
+    overflow: "hidden",
+    background: "rgba(2, 6, 23, 0.62)",
+    border: "1px solid rgba(148, 163, 184, 0.18)",
+    borderRadius: "22px",
+    padding: "18px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "9px",
+  },
+  configPlanoPremium: {
+    border: "1px solid rgba(216, 180, 254, 0.42)",
+    boxShadow: "0 18px 50px rgba(168, 85, 247, 0.12)",
+  },
+  configPlanoMaisVendido: {
+    position: "absolute",
+    top: 14,
+    right: 14,
+    borderRadius: "999px",
+    background: "linear-gradient(135deg, #f59e0b, #db2777)",
+    color: "#fff",
+    padding: "6px 9px",
+    fontSize: "11px",
+    fontWeight: 950,
+  },
+  configPlanoIcone: {
+    width: "44px",
+    height: "44px",
+    borderRadius: "16px",
+    background: "rgba(255,255,255,0.08)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "23px",
+  },
+  configPlanoNome: {
+    color: "#f8fafc",
+    fontSize: "20px",
+    fontWeight: 950,
+    letterSpacing: "-0.035em",
+  },
+  configPlanoDescricao: {
+    color: "#cbd5e1",
+    fontSize: "13px",
+    lineHeight: 1.45,
+    minHeight: "36px",
+  },
+  configPlanoLabel: {
+    marginTop: "4px",
+    color: "#e2e8f0",
+    fontSize: "12px",
+    fontWeight: 900,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+  },
+  configPlanoInputWrap: {
+    height: "48px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    borderRadius: "15px",
+    border: "1px solid rgba(148, 163, 184, 0.35)",
+    background: "#020617",
+    color: "#94a3b8",
+    padding: "0 12px",
+    fontWeight: 900,
+  },
+  configPlanoInput: {
+    width: "100%",
+    height: "100%",
+    border: "none",
+    outline: "none",
+    background: "transparent",
+    color: "#f8fafc",
+    fontSize: "18px",
+    fontWeight: 950,
   },
   panel: {
     background: "rgba(15, 23, 42, 0.86)",

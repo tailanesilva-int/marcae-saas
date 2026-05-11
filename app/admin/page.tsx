@@ -24,6 +24,13 @@ export default function AdminPage() {
   const [salvando, setSalvando] = useState(false);
   const [salvandoEmpresa, setSalvandoEmpresa] = useState(false);
   const [gerandoPagamento, setGerandoPagamento] = useState(false);
+  const [ativandoRecorrencia, setAtivandoRecorrencia] = useState(false);
+  const [sincronizandoRecorrencia, setSincronizandoRecorrencia] = useState(false);
+  const [configPlanos, setConfigPlanos] = useState({
+    valorPlanoBasico: null as number | null,
+    valorPlanoPlus: null as number | null,
+    valorPlanoPremium: null as number | null,
+  });
 
   const [dadosEmpresa, setDadosEmpresa] = useState({
     nome: '',
@@ -31,6 +38,101 @@ export default function AdminPage() {
     telefone: '',
     responsavel: '',
   });
+
+  async function sincronizarAssinaturaRecorrente(empresaAtual: any) {
+    if (!empresaAtual?.id || !empresaAtual?.mercadoPagoAssinaturaId) {
+      return empresaAtual;
+    }
+
+    try {
+      setSincronizandoRecorrencia(true);
+
+      const res = await fetch('/api/assinaturas/recorrente/sincronizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          empresaId: empresaAtual.id,
+          mercadoPagoAssinaturaId: empresaAtual.mercadoPagoAssinaturaId,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.success || !data?.empresa) {
+        console.warn(
+          'Não foi possível sincronizar assinatura recorrente:',
+          data?.error || res.status
+        );
+
+        return empresaAtual;
+      }
+
+      localStorage.setItem('empresaLogada', JSON.stringify(data.empresa));
+
+      return data.empresa;
+    } catch (error) {
+      console.error('Erro ao sincronizar assinatura recorrente:', error);
+
+      return empresaAtual;
+    } finally {
+      setSincronizandoRecorrencia(false);
+    }
+  }
+
+  async function carregarConfiguracaoPlanos() {
+    try {
+      const res = await fetch('/api/master/configuracoes/planos', {
+        cache: 'no-store',
+      });
+
+      if (!res.ok) {
+        console.warn('Configuração de planos não encontrada:', res.status);
+        return;
+      }
+
+      const data = await res.json();
+
+      const configuracao =
+        data?.configuracao ||
+        data?.config ||
+        data?.configuracaoSaas ||
+        data?.planos ||
+        data;
+
+      function normalizarValorPlano(valor: any) {
+        if (valor === null || valor === undefined || valor === '') {
+          return null;
+        }
+
+        if (typeof valor === 'number' && Number.isFinite(valor)) {
+          return valor;
+        }
+
+        if (typeof valor === 'string') {
+          const limpo = valor
+            .replace('R$', '')
+            .replace(/\s/g, '')
+            .trim();
+
+          const numero = limpo.includes(',')
+            ? Number(limpo.replace(/\./g, '').replace(',', '.'))
+            : Number(limpo);
+
+          return Number.isFinite(numero) ? numero : null;
+        }
+
+        return null;
+      }
+
+      setConfigPlanos({
+        valorPlanoBasico: normalizarValorPlano(configuracao?.valorPlanoBasico),
+        valorPlanoPlus: normalizarValorPlano(configuracao?.valorPlanoPlus),
+        valorPlanoPremium: normalizarValorPlano(configuracao?.valorPlanoPremium),
+      });
+    } catch (error) {
+      console.error('Erro ao carregar configuração dos planos:', error);
+    }
+  }
 
   useEffect(() => {
     async function carregarDadosAtualizados() {
@@ -59,14 +161,16 @@ export default function AdminPage() {
           return;
         }
 
-        setEmpresa(data.empresa);
-        localStorage.setItem('empresaLogada', JSON.stringify(data.empresa));
+        const empresaSincronizada = await sincronizarAssinaturaRecorrente(data.empresa);
+
+        setEmpresa(empresaSincronizada);
+        localStorage.setItem('empresaLogada', JSON.stringify(empresaSincronizada));
 
         setDadosEmpresa({
-          nome: data.empresa.nome || '',
-          endereco: data.empresa.endereco || '',
-          telefone: data.empresa.telefone || '',
-          responsavel: data.empresa.responsavel || '',
+          nome: empresaSincronizada.nome || '',
+          endereco: empresaSincronizada.endereco || '',
+          telefone: empresaSincronizada.telefone || '',
+          responsavel: empresaSincronizada.responsavel || '',
         });
 
         const hoje = new Date();
@@ -94,6 +198,7 @@ export default function AdminPage() {
       }
     }
 
+    carregarConfiguracaoPlanos();
     carregarDadosAtualizados();
   }, []);
 
@@ -193,22 +298,20 @@ export default function AdminPage() {
   }
 
   function nomePlanoAtual() {
-    if (trialAtivo()) return 'Trial 7 dias';
-    if (licencaExpirada() && planoPremium()) return 'Premium expirado';
-    if (licencaExpirada() && planoPlus()) return 'Plus expirado';
-    if (licencaExpirada()) return 'Básico vencido';
-    if (planoPremium()) return 'Premium';
-    if (planoPlus()) return 'Plus';
-    return 'Básico';
-  }
+  if (planoPremium()) return 'Premium';
+  if (planoPlus()) return 'Plus';
+  if (trialAtivo()) return 'Trial 7 dias';
+  if (licencaExpirada()) return 'Básico vencido';
+  return 'Básico';
+}
 
   function textoBadge() {
-    if (trialAtivo()) return 'Trial ativo';
-    if (licencaExpirada()) return 'Licença expirada';
-    if (planoPremium()) return 'Premium ativo';
-    if (planoPlus()) return 'Plus ativo';
-    return 'Básico ativo';
-  }
+  if (licencaExpirada()) return 'Licença expirada';
+  if (planoPremium()) return 'Premium ativo';
+  if (planoPlus()) return 'Plus ativo';
+  if (trialAtivo()) return 'Trial ativo';
+  return 'Básico ativo';
+}
 
   function estiloBadge() {
     if (trialAtivo()) return badgeTrial;
@@ -381,6 +484,42 @@ export default function AdminPage() {
     }
   }
 
+  async function ativarCobrancaAutomatica(planoSelecionado?: 'basico' | 'plus' | 'premium') {
+    if (sistemaBloqueado) {
+      recursoBloqueado();
+      return;
+    }
+
+    try {
+      setAtivandoRecorrencia(true);
+
+      const planoAssinatura = planoSelecionado || planoAtual();
+
+      const res = await fetch('/api/assinaturas/recorrente', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          empresaId: empresa.id,
+          plano: planoAssinatura,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success || !data.linkPagamento) {
+        alert(data.error || 'Erro ao criar assinatura recorrente.');
+        return;
+      }
+
+      window.location.href = data.linkPagamento;
+    } catch (error) {
+      console.error('Erro ao ativar cobrança automática:', error);
+      alert('Erro ao ativar cobrança automática.');
+    } finally {
+      setAtivandoRecorrencia(false);
+    }
+  }
+
   if (!empresa || !usuario) {
     return <p style={{ padding: 40 }}>Carregando...</p>;
   }
@@ -391,6 +530,9 @@ export default function AdminPage() {
   const trialEstaAtivo = trialAtivo();
   const sistemaBloqueado = licencaExpirada();
   const planoPremiumExpirado = premiumExpirado();
+  const cobrancaRecorrenteAtiva =
+    Boolean(empresa?.assinaturaRecorrenteAtiva) &&
+    empresa?.assinaturaStatus === 'ativa';
 
   const dashboardBloqueado = sistemaBloqueado || !temPermissao('dashboard');
   const agendaBloqueada = sistemaBloqueado || !temPermissao('agenda');
@@ -416,115 +558,328 @@ export default function AdminPage() {
     linkAgendamento
   )}`;
 
+
+  const valorPlanoBasico =
+    configPlanos.valorPlanoBasico ??
+    empresa.valorPlanoBasico ??
+    empresa.valorMensalBasico ??
+    empresa.precoPlanoBasico ??
+    null;
+
+  const valorPlanoPlus =
+    configPlanos.valorPlanoPlus ??
+    empresa.valorPlanoPlus ??
+    empresa.valorMensalPlus ??
+    empresa.precoPlanoPlus ??
+    null;
+
+  const valorPlanoPremium =
+    configPlanos.valorPlanoPremium ??
+    empresa.valorPlanoPremium ??
+    empresa.valorMensalPremium ??
+    empresa.precoPlanoPremium ??
+    empresa.valorMensalPersonalizado ??
+    null;
+
+  function textoValorPlano(valor?: number | null) {
+    if (valor === null || valor === undefined || Number.isNaN(Number(valor))) {
+      return 'Sob consulta';
+    }
+
+    return formatarMoeda(Number(valor));
+  }
+
+  function planoCardAtivo(plano: 'basico' | 'plus' | 'premium') {
+    if (plano === 'premium') return planoPremium();
+    if (plano === 'plus') return planoPlus();
+    return planoBasico() && !trialEstaAtivo;
+  }
+
+  function planoCardBloqueadoPorHierarquia(plano: 'basico' | 'plus' | 'premium') {
+    if (sistemaBloqueado) return true;
+
+    if (plano === 'basico') {
+      return planoPlus() || planoPremium();
+    }
+
+    if (plano === 'plus') {
+      return planoPremium();
+    }
+
+    return false;
+  }
+
+  function acaoPlano(plano: 'basico' | 'plus' | 'premium') {
+    if (sistemaBloqueado) {
+      recursoBloqueado();
+      return;
+    }
+
+    if (planoCardAtivo(plano)) return;
+
+    if (planoCardBloqueadoPorHierarquia(plano)) {
+      alert('Não é permitido regredir para um plano inferior pelo painel da empresa. Alterações de downgrade devem ser feitas pelo painel master para evitar perda de recursos do cliente.');
+      return;
+    }
+
+    ativarCobrancaAutomatica(plano);
+  }
+
   return (
     <main style={{ minHeight: '100vh', background: '#f1f5f9', padding: 30 }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <header style={header}>
-          <div>
-            <h1 style={{ margin: 0 }}>Administração</h1>
-            <p style={{ marginTop: 8 }}>
-              {usuario.nome} · {empresa.nome}
-            </p>
+      <div style={{ maxWidth: 1320, margin: '0 auto' }}>
+        <header
+  style={{
+    background: 'linear-gradient(135deg, #4f46e5, #9333ea)',
+    borderRadius: 28,
+    padding: 36,
+    marginBottom: 24,
+    position: 'relative',
+    overflow: 'hidden',
+    boxShadow: '0 20px 40px rgba(79,70,229,0.25)',
+  }}
+>
+  <div
+    style={{
+      position: 'absolute',
+      inset: 0,
+      background:
+        'radial-gradient(circle at top right, rgba(255,255,255,0.15), transparent 30%)',
+      pointerEvents: 'none',
+    }}
+  />
 
-            <div style={{ marginTop: 12 }}>
-              <span style={estiloBadge()}>{textoBadge()}</span>
-            </div>
+  <div
+    style={{
+      position: 'relative',
+      zIndex: 2,
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 24,
+      flexWrap: 'wrap',
+    }}
+  >
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 20,
+      }}
+    >
+      <div
+        style={{
+          width: 76,
+          height: 76,
+          borderRadius: 24,
+          overflow: 'hidden',
+          background: 'rgba(255,255,255,0.12)',
+          border: '2px solid rgba(255,255,255,0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backdropFilter: 'blur(10px)',
+        }}
+      >
+        {empresa?.logo ? (
+          <img
+            src={empresa.logo}
+            alt="Logo"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+        ) : (
+          <span
+            style={{
+              fontSize: 28,
+              fontWeight: 900,
+              color: '#fff',
+            }}
+          >
+            {empresa?.nome?.charAt(0) || 'M'}
+          </span>
+        )}
+      </div>
+
+      <div>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'rgba(255,255,255,0.14)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: '#fff',
+            padding: '6px 12px',
+            borderRadius: 999,
+            fontSize: 12,
+            fontWeight: 700,
+            marginBottom: 10,
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          👋 Bem-vindo(a) de volta, {usuario?.nome}
+        </div>
+
+        <h1
+          style={{
+            margin: 0,
+            fontSize: 42,
+            fontWeight: 900,
+            color: '#fff',
+            lineHeight: 1,
+          }}
+        >
+          Administração
+        </h1>
+
+        <p
+          style={{
+            marginTop: 10,
+            color: 'rgba(255,255,255,0.82)',
+            fontSize: 16,
+            fontWeight: 500,
+          }}
+        >
+          Gestão completa do seu estúdio e configurações da empresa.
+        </p>
+
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            flexWrap: 'wrap',
+            marginTop: 18,
+          }}
+        >
+          <div
+            style={{
+              background: 'rgba(255,255,255,0.12)',
+              padding: '8px 13px',
+              borderRadius: 999,
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: 14,
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            🏢 {empresa?.nome}
           </div>
 
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <button
-              onClick={() =>
-                acaoBloqueadaPorLicencaOuPermissao('configuracoes', () => {
-                  window.location.href = '/configuracoes';
-                })
-              }
-              style={configuracoesBloqueado ? botaoBrancoBloqueado : botaoBranco}
-            >
-              ⚙️ Configurações
-            </button>
-
-            <button
-              onClick={() =>
-                acaoBloqueadaPorLicencaOuPermissao('dashboard', () => {
-                  window.location.href = '/dashboard';
-                })
-              }
-              style={dashboardBloqueado ? botaoBrancoBloqueado : botaoBranco}
-            >
-              Dashboard
-            </button>
-
-            <button onClick={sair} style={botaoBranco}>
-              Sair
-            </button>
+          <div
+            style={{
+              background: planoPremium()
+                ? '#f59e0b'
+                : planoPlus()
+                ? '#0ea5e9'
+                : '#22c55e',
+              padding: '8px 13px',
+              borderRadius: 999,
+              color: '#fff',
+              fontWeight: 800,
+              fontSize: 14,
+            }}
+          >
+            🚀 Plano {nomePlanoAtual()}
           </div>
-        </header>
 
-        {podeVerResumoFinanceiro && financeiro && (
-          <section style={boxPremium}>
-            <div style={tituloLinha}>
-              <div>
-                <h2 style={{ margin: 0 }}>Dashboard premium</h2>
-                <p style={{ color: '#64748b', margin: '6px 0 0' }}>
-                  Visão financeira do mês com faturamento, comissões e lucro estimado.
-                </p>
-              </div>
+          <div
+            style={{
+              background: sistemaBloqueado ? '#ef4444' : '#22c55e',
+              padding: '8px 13px',
+              borderRadius: 999,
+              color: '#fff',
+              fontWeight: 800,
+              fontSize: 14,
+            }}
+          >
+            {sistemaBloqueado ? '🔒 Bloqueado' : '✅ Ativo'}
+          </div>
 
-              <button
-                onClick={() => (window.location.href = '/comissoes')}
-                style={botaoPequenoRoxo}
-              >
-                Ver comissões
-              </button>
-            </div>
+          <div
+            style={{
+              background: 'rgba(255,255,255,0.12)',
+              padding: '8px 13px',
+              borderRadius: 999,
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: 14,
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            📅 Vencimento: {formatarData(dataAssinaturaExpira())}
+          </div>
+        </div>
+      </div>
+    </div>
 
-            <div style={gridFinanceiroPremium}>
-              <CardFinanceiro
-                titulo="Faturamento bruto"
-                valor={formatarMoeda(financeiro.faturamentoBruto)}
-                descricao="Pagamentos recebidos no mês"
-                cor="#16a34a"
-              />
+    <div
+      style={{
+        display: 'flex',
+        gap: 12,
+        flexWrap: 'wrap',
+        alignItems: 'center',
+      }}
+    >
+      <button
+        onClick={() =>
+          acaoBloqueadaPorLicencaOuPermissao('configuracoes', () => {
+            window.location.href = '/configuracoes';
+          })
+        }
+        style={{
+          background: '#fff',
+          color: '#4f46e5',
+          border: 'none',
+          borderRadius: 14,
+          padding: '14px 18px',
+          fontWeight: 800,
+          cursor: 'pointer',
+        }}
+      >
+        ⚙️ Configurações
+      </button>
 
-              <CardFinanceiro
-                titulo="Total de comissões"
-                valor={formatarMoeda(financeiro.totalComissoes)}
-                descricao="Custo variável gerado"
-                cor="#dc2626"
-              />
+      <button
+        onClick={() =>
+          acaoBloqueadaPorLicencaOuPermissao('dashboard', () => {
+            window.location.href = '/dashboard';
+          })
+        }
+        style={{
+          background: '#fff',
+          color: '#4f46e5',
+          border: 'none',
+          borderRadius: 14,
+          padding: '14px 18px',
+          fontWeight: 800,
+          cursor: 'pointer',
+        }}
+      >
+        📊 Dashboard
+      </button>
 
-              <CardFinanceiro
-                titulo="Comissões pagas"
-                valor={formatarMoeda(financeiro.comissoesPagas)}
-                descricao="Repasses já realizados"
-                cor="#2563eb"
-              />
+      <button
+        onClick={sair}
+        style={{
+          background: '#ef4444',
+          color: '#fff',
+          border: 'none',
+          borderRadius: 14,
+          padding: '14px 18px',
+          fontWeight: 800,
+          cursor: 'pointer',
+        }}
+      >
+        🚪 Sair
+      </button>
+    </div>
+  </div>
+</header>
 
-              <CardFinanceiro
-                titulo="Comissões pendentes"
-                valor={formatarMoeda(financeiro.comissoesPendentes)}
-                descricao="Valor ainda em aberto"
-                cor="#f59e0b"
-              />
-
-              <CardFinanceiro
-                titulo="Líquido estimado"
-                valor={formatarMoeda(financeiro.liquidoEstimado)}
-                descricao="Faturamento menos comissões"
-                cor="#7c3aed"
-              />
-            </div>
-          </section>
-        )}
-
-        {!podeVerResumoFinanceiro && !sistemaBloqueado && (
-          <section style={boxResumoBloqueado}>
-            <strong>🔒 Dashboard premium</strong>
-            <p style={{ margin: '6px 0 0', color: '#64748b' }}>
-              Ative o plano Premium para liberar 🚀🔥
-            </p>
-          </section>
-        )}
 
         {sistemaBloqueado && (
           <section style={alertaPlanoExpirado}>
@@ -588,6 +943,13 @@ export default function AdminPage() {
             motivoBloqueio={sistemaBloqueado ? 'licenca' : 'permissao'}
           />
 
+<Card
+  titulo="Clientes"
+  descricao="Cadastre clientes e inicie agendamentos."
+  href="/clientes"
+  bloqueado={sistemaBloqueado}
+  motivoBloqueio={sistemaBloqueado ? 'licenca' : 'permissao'}
+/>
           <Card
             titulo="Promoções"
             descricao="Crie campanhas e envie por WhatsApp."
@@ -617,247 +979,25 @@ export default function AdminPage() {
           />
         </section>
 
-        <section style={box}>
-          <div>
-            <h2 style={{ marginTop: 0 }}>Link de agendamento</h2>
-            <p style={{ color: '#64748b', marginTop: 4 }}>
-              Compartilhe esse link com seus clientes para agendamento online.
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <input
-              value={linkAgendamento}
-              readOnly
-              style={{
-                flex: 1,
-                padding: 12,
-                borderRadius: 12,
-                border: '1px solid #cbd5e1',
-                fontWeight: 700,
-                background: '#f8fafc',
-              }}
-            />
-
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(linkAgendamento);
-                alert('Link copiado!');
-              }}
-              style={botaoPrincipal}
-            >
-              Copiar
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-            <button
-              onClick={() => {
-                const mensagem = montarMensagemConviteAgendamento({
-                  nomeEmpresa: empresa.nome,
-                  slugEmpresa: empresa.slug,
-                  whatsappEmpresa: empresa.whatsapp || empresa.telefone,
-                  enderecoEmpresa: empresa.endereco,
-                });
-
-                const url = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
-
-                window.open(url, '_blank');
-              }}
-              style={{
-                ...botaoPrincipal,
-                background: '#16a34a',
-              }}
-            >
-              📲 Compartilhar no WhatsApp
-            </button>
-          </div>
-
-          <div id="qr-print-area" style={qrPrintArea}>
-            <p style={{ fontWeight: 800, marginBottom: 10 }}>
-              Escaneie para agendar
-            </p>
-
-            <img
-              id="qr-image"
-              src={qrCodeUrl}
-              alt="QR Code"
-              style={{
-                borderRadius: 12,
-                border: '1px solid #e2e8f0',
-                padding: 8,
-                background: '#fff',
-              }}
-            />
-
-            <h2 style={{ margin: '12px 0 4px', color: '#0f172a' }}>
-              {empresa.nome}
-            </h2>
-
-            <p style={{ margin: 0, color: '#475569', fontWeight: 700 }}>
-              {linkAgendamento}
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', gap: 10, marginTop: 12, justifyContent: 'center' }}>
-            <button
-              onClick={() => {
-                const img = document.getElementById('qr-image') as HTMLImageElement;
-
-                if (!img?.src) {
-                  alert('QR Code não encontrado.');
-                  return;
-                }
-
-                const link = document.createElement('a');
-                link.href = img.src;
-                link.download = `qrcode-${empresa.slug}.png`;
-                link.click();
-              }}
-              style={{
-                ...botaoPrincipal,
-                background: '#0ea5e9',
-              }}
-            >
-              🖼️ Salvar imagem
-            </button>
-
-            <button
-              onClick={() => {
-                const conteudo = document.getElementById('qr-print-area')?.innerHTML;
-                const janela = window.open('', '_blank');
-
-                if (!janela || !conteudo) return;
-
-                janela.document.write(`
-                  <html>
-                    <head>
-                      <title>QR Code - ${empresa.nome}</title>
-                    </head>
-                    <body style="display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:Arial,sans-serif;background:#f8fafc;">
-                      <div style="text-align:center;background:#fff;padding:40px;border-radius:24px;border:1px solid #e2e8f0;">
-                        ${conteudo}
-                      </div>
-                    </body>
-                  </html>
-                `);
-
-                janela.document.close();
-                janela.print();
-              }}
-              style={{
-                ...botaoPrincipal,
-                background: '#ef4444',
-              }}
-            >
-              📄 Gerar PDF / Imprimir
-            </button>
-          </div>
-        </section>
-
-        <section style={configuracoesBloqueado ? boxBloqueado : box}>
-          <div>
-            <h2 style={{ marginTop: 0 }}>Dados da empresa</h2>
-            <p style={{ color: '#64748b', marginTop: 4 }}>
-              Esses dados aparecerão nas mensagens enviadas pelo WhatsApp.
-            </p>
-          </div>
-
-          <div style={gridInputs}>
-            <InputCampo
-              titulo="Nome"
-              value={dadosEmpresa.nome}
-              disabled={configuracoesBloqueado}
-              onChange={(value: string) =>
-                setDadosEmpresa({ ...dadosEmpresa, nome: value })
-              }
-            />
-
-            <InputCampo
-              titulo="Endereço"
-              value={dadosEmpresa.endereco}
-              disabled={configuracoesBloqueado}
-              onChange={(value: string) =>
-                setDadosEmpresa({ ...dadosEmpresa, endereco: value })
-              }
-            />
-
-            <InputCampo
-              titulo="Telefone"
-              value={dadosEmpresa.telefone}
-              disabled={configuracoesBloqueado}
-              onChange={(value: string) =>
-                setDadosEmpresa({ ...dadosEmpresa, telefone: value })
-              }
-            />
-
-            <InputCampo
-              titulo="Responsável"
-              value={dadosEmpresa.responsavel}
-              disabled={configuracoesBloqueado}
-              onChange={(value: string) =>
-                setDadosEmpresa({ ...dadosEmpresa, responsavel: value })
-              }
-            />
-          </div>
-
-          <button
-            onClick={salvarDadosEmpresa}
-            disabled={salvandoEmpresa || configuracoesBloqueado}
-            style={{
-              ...(configuracoesBloqueado ? botaoBloqueado : botaoPrincipal),
-              marginTop: 18,
-            }}
-          >
-            {configuracoesBloqueado
-              ? 'Indisponível'
-              : salvandoEmpresa
-              ? 'Salvando...'
-              : 'Salvar dados'}
-          </button>
-        </section>
-
-        <section style={box}>
-          <div>
-            <h2 style={{ marginTop: 0 }}>Plano e assinatura</h2>
-            <p style={{ color: '#64748b', marginTop: 4 }}>
-              Controle o plano da empresa, trial gratuito e status da assinatura.
-            </p>
-          </div>
-
-          <div style={sistemaBloqueado ? planoResumoExpirado : planoResumo}>
+        <section style={boxPlanosPremium}>
+          <div style={planosHeader}>
             <div>
-              <span style={estiloBadge()}>{textoBadge()}</span>
-              <h3 style={{ margin: '12px 0 6px' }}>{nomePlanoAtual()}</h3>
-              <p style={{ color: '#64748b', margin: 0 }}>{descricaoPlano()}</p>
+              <span style={planosEyebrow}>Planos e assinatura</span>
+              <h2 style={{ margin: 0, color: '#0f172a', fontSize: 28, letterSpacing: '-0.05em' }}>
+                Escolha o plano ideal para sua empresa
+              </h2>
+              <p style={{ color: '#64748b', margin: '8px 0 0', lineHeight: 1.6 }}>
+                Visualize recursos, acompanhe vencimento e gerencie a assinatura do Marcaê.
+              </p>
             </div>
 
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>
-                {planoPremium()
-                  ? 'Plano Premium'
-                  : planoPlus()
-                  ? 'Plano Plus'
-                  : 'Plano Básico'}
-              </div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: '#0f172a' }}>
-                {planoPremium()
-                  ? 'Completo'
-                  : planoPlus()
-                  ? 'Intermediário'
-                  : 'Entrada'}
-              </div>
-              <div style={{ fontSize: 13, color: '#64748b' }}>
-                {planoPremium()
-                  ? 'Financeiro, comissões, promoções e dashboard premium'
-                  : planoPlus()
-                  ? 'Pré-pagamento, WhatsApp automático e lembretes'
-                  : 'Agenda, serviços e envio manual'}
-              </div>
+            <div style={sistemaBloqueado ? planoStatusExpirado : planoStatusAtivo}>
+              <strong>{textoBadge()}</strong>
+              <span>{textoExpiracao()}</span>
             </div>
           </div>
 
-          <div style={gridInfo}>
+          <div style={gridInfoPlanos}>
             <Info titulo="Plano atual" valor={nomePlanoAtual()} />
             <Info titulo="Status" valor={empresa.assinaturaStatus || 'vencida'} />
             <Info titulo="Trial expira em" valor={formatarData(empresa.trialExpiraEm)} />
@@ -883,198 +1023,196 @@ export default function AdminPage() {
             </div>
           )}
 
-          <div style={beneficiosBox}>
-            <h3 style={{ marginTop: 0 }}>Recursos do plano Básico</h3>
+          <div style={planosGridPremium}>
+            <PlanoComercialCard
+              nome="Básico"
+              subtitulo="Essencial"
+              destaque="Agendador simplificado"
+              valor={textoValorPlano(valorPlanoBasico)}
+              cor="#14b8a6"
+              ativo={planoCardAtivo('basico')}
+              bloqueado={planoCardBloqueadoPorHierarquia('basico')}
+              acaoTexto={planoCardAtivo('basico') ? 'Plano atual' : 'Solicitar Básico'}
+              bloqueadoTexto={sistemaBloqueado ? 'Regularize para alterar' : 'Plano superior ativo'}
+              onClick={() => acaoPlano('basico')}
+              recursos={[
+                { texto: 'Agenda e controle de agendamentos', ativo: true },
+                { texto: 'Cadastro de serviços e profissionais', ativo: true },
+                { texto: 'Comprovante manual por WhatsApp', ativo: true },
+                { texto: 'Botão Google Agenda', ativo: true },
+                { texto: 'Pré-pagamento Mercado Pago', ativo: false },
+                { texto: 'WhatsApp automático', ativo: false },
+                { texto: 'Comissões e financeiro premium', ativo: false },
+              ]}
+            />
 
-            <div style={gridBeneficios}>
-              <Beneficio texto="Agenda e controle de agendamentos" ativo={true} />
-              <Beneficio texto="Cadastro de serviços e profissionais" ativo={true} />
-              <Beneficio texto="Comprovante manual por WhatsApp" ativo={true} />
-              <Beneficio texto="Botão Google Agenda" ativo={true} />
-            </div>
+            <PlanoComercialCard
+              nome="Plus"
+              subtitulo="Crescimento"
+              destaque="Pagamentos e automações"
+              valor={textoValorPlano(valorPlanoPlus)}
+              cor="#2563eb"
+              ativo={planoCardAtivo('plus')}
+              bloqueado={planoCardBloqueadoPorHierarquia('plus')}
+              acaoTexto={planoCardAtivo('plus') ? 'Plano atual' : 'Solicitar Plus'}
+              bloqueadoTexto={sistemaBloqueado ? 'Regularize para alterar' : 'Plano superior ativo'}
+              onClick={() => acaoPlano('plus')}
+              recursos={[
+                { texto: 'Tudo do Básico', ativo: true },
+                { texto: 'Comissões básicas por profissional', ativo: true },
+                { texto: 'Promoções de aniversário, por serviço e campanhas gerais com envio facilitado via WhatsApp', ativo: true },
+                { texto: 'Comprovantes automáticos via WhatsApp', ativo: true },
+                { texto: 'Confirmação de agendamento e lembretes automáticos 1h antes via API WhatsApp', ativo: true },
+                { texto: 'Recebimentos de agendamento online via API Mercado Pago', ativo: true },
+              ]}
+            />
+
+            <PlanoComercialCard
+              nome="Premium"
+              subtitulo="Completo"
+              destaque="Gestão avançada"
+              valor={textoValorPlano(valorPlanoPremium)}
+              cor="#f97316"
+              ativo={planoCardAtivo('premium')}
+              bloqueado={planoCardBloqueadoPorHierarquia('premium')}
+              acaoTexto={planoCardAtivo('premium') ? 'Plano atual' : 'Solicitar Premium'}
+              bloqueadoTexto={sistemaBloqueado ? 'Regularize para alterar' : ''}
+              onClick={() => acaoPlano('premium')}
+              recursos={[
+                { texto: 'Tudo do Plus', ativo: true },
+                { texto: 'Inclusão de serviços em agendamentos realizados e fechamento de atendimento com controle de caixa', ativo: true },
+                { texto: 'Dashboard premium financeiro', ativo: true },
+                { texto: 'Comissões automáticas', ativo: true },
+                { texto: 'Controle de repasse de comissão', ativo: true },
+                { texto: 'Envio de promoções via API WhatsApp', ativo: true },
+                { texto: 'Relatórios e visão gerencial', ativo: true },
+                { texto: 'Experiência completa Marcaê', ativo: true },
+              ]}
+            />
           </div>
 
-          <div style={beneficiosBox}>
-            <h3 style={{ marginTop: 0 }}>Recursos do plano Plus</h3>
+          <div style={planosAcoesBox}>
+            <div>
+              <strong style={tituloGestaoAssinatura}>Gestão da assinatura</strong>
+              <p style={descricaoGestaoAssinatura}>
+                Controle o plano, pagamentos e recursos premium da empresa em um só lugar.
+              </p>
 
-            <div style={gridBeneficios}>
-              <Beneficio texto="Agenda e controle de agendamentos" ativo={true} />
-              <Beneficio texto="Cadastro de serviços e profissionais" ativo={true} />
-              <Beneficio texto="Comprovante manual por WhatsApp" ativo={true} />
-              <Beneficio texto="Botão Google Agenda" ativo={true} />
+              {sincronizandoRecorrencia && (
+                <p style={{ margin: '8px 0 0', color: '#92400e', fontSize: 13, fontWeight: 900 }}>
+                  Sincronizando assinatura com o Mercado Pago...
+                </p>
+              )}
 
-              <Beneficio
-                texto="Pré-pagamento pelo Mercado Pago"
-                ativo={!sistemaBloqueado && plusOuPremiumAtivo}
-                cor="azul"
-                bloqueioTexto="Ative o plano Plus para liberar 🚀🔥"
-              />
-              <Beneficio
-                texto="Confirmação automática pelo WhatsApp"
-                ativo={!sistemaBloqueado && plusOuPremiumAtivo}
-                cor="azul"
-                bloqueioTexto="Ative o plano Plus para liberar 🚀🔥"
-              />
-              <Beneficio
-                texto="Lembretes automáticos via WhatsApp"
-                ativo={!sistemaBloqueado && plusOuPremiumAtivo}
-                cor="azul"
-                bloqueioTexto="Ative o plano Plus para liberar 🚀🔥"
-              />
-              <Beneficio
-                texto="Comprovantes automáticos"
-                ativo={!sistemaBloqueado && plusOuPremiumAtivo}
-                cor="azul"
-                bloqueioTexto="Ative o plano Plus para liberar 🚀🔥"
-              />
+              {cobrancaRecorrenteAtiva && (
+                <p style={{ margin: '8px 0 0', color: '#166534', fontSize: 13, fontWeight: 900 }}>
+                  Cobrança automática ativa
+                  {empresa?.assinaturaProximaCobrancaEm
+                    ? ` · Próxima cobrança: ${formatarData(empresa.assinaturaProximaCobrancaEm)}`
+                    : ''}
+                </p>
+              )}
             </div>
-          </div>
 
-          <div style={beneficiosBox}>
-            <h3 style={{ marginTop: 0 }}>Recursos do plano Premium</h3>
+            <div style={planosAcoesGrid}>
+              {!sistemaBloqueado && (!planoPremium() || trialEstaAtivo) && (
+                <div style={campoPlanoAcao}>
+                  <label style={labelPlanoAcao}>
+                    Escolha o plano desejado
+                  </label>
 
-            <div style={gridBeneficios}>
-              <Beneficio texto="Agenda e controle de agendamentos" ativo={true} />
-              <Beneficio texto="Cadastro de serviços e profissionais" ativo={true} />
-              <Beneficio texto="Comprovante manual por WhatsApp" ativo={true} />
-              <Beneficio texto="Botão Google Agenda" ativo={true} />
+                  <select
+                    value=""
+                    disabled={salvando}
+                    onChange={(e) => {
+                      if (!e.target.value) return;
+                      atualizarAssinatura({ plano: e.target.value });
+                    }}
+                    style={selectPlanoCompacto}
+                  >
+                    <option value="" disabled>
+                      Selecionar plano
+                    </option>
 
-              <Beneficio texto="Pré-pagamento pelo Mercado Pago" ativo={!sistemaBloqueado && plusOuPremiumAtivo} />
-              <Beneficio texto="Confirmação automática pelo WhatsApp" ativo={!sistemaBloqueado && plusOuPremiumAtivo} />
-              <Beneficio texto="Lembretes automáticos via WhatsApp" ativo={!sistemaBloqueado && plusOuPremiumAtivo} />
-              <Beneficio texto="Comprovantes automáticos" ativo={!sistemaBloqueado && plusOuPremiumAtivo} />
+                    {trialEstaAtivo && (
+                      <>
+                        <option value="plus">Plano Plus</option>
+                        <option value="premium">Plano Premium</option>
+                      </>
+                    )}
 
-              <Beneficio
-                texto="Dashboard premium financeiro"
-                ativo={!sistemaBloqueado && premiumAtivo}
-                cor="azul"
-                bloqueioTexto="Ative o plano Premium para liberar 🚀🔥"
-              />
-              <Beneficio
-                texto="Comissões automáticas"
-                ativo={!sistemaBloqueado && premiumAtivo}
-                cor="azul"
-                bloqueioTexto="Ative o plano Premium para liberar 🚀🔥"
-              />
-              <Beneficio
-                texto="Controle de repasse de comissão"
-                ativo={!sistemaBloqueado && premiumAtivo}
-                cor="azul"
-                bloqueioTexto="Ative o plano Premium para liberar 🚀🔥"
-              />
-              <Beneficio
-                texto="Envio de promoções via WhatsApp"
-                ativo={!sistemaBloqueado && premiumAtivo}
-                cor="azul"
-                bloqueioTexto="Ative o plano Premium para liberar 🚀🔥"
-              />
-            </div>
-          </div>
+                    {!trialEstaAtivo && planoBasico() && (
+                      <>
+                        <option value="plus">Plano Plus</option>
+                        <option value="premium">Plano Premium</option>
+                      </>
+                    )}
 
-          {!sistemaBloqueado && (!planoPremium() || trialEstaAtivo) && (
-            <div style={{ marginTop: 20 }}>
-              <label style={labelStyle}>
-                {trialEstaAtivo
-                  ? 'Escolher plano após o trial'
-                  : planoPlus()
-                  ? 'Fazer upgrade de plano'
-                  : 'Alterar plano'}
-              </label>
+                    {!trialEstaAtivo && planoPlus() && (
+                      <option value="premium">Plano Premium</option>
+                    )}
+                  </select>
+                </div>
+              )}
 
-              <select
-                value=""
-                disabled={salvando}
-                onChange={(e) => {
-                  if (!e.target.value) return;
-                  atualizarAssinatura({ plano: e.target.value });
-                }}
-                style={selectPlano}
-              >
-                <option value="" disabled>
-                  {trialEstaAtivo
-                    ? 'Escolha um plano após o trial'
-                    : planoPlus()
-                    ? 'Subir para o Plano Premium'
-                    : 'Escolha o plano para upgrade'}
-                </option>
-
-                {trialEstaAtivo && (
-                  <>
-                    <option value="plus">Plano Plus</option>
-                    <option value="premium">Plano Premium</option>
-                  </>
-                )}
-
-                {!trialEstaAtivo && planoBasico() && (
-                  <>
-                    <option value="plus">Plano Plus</option>
-                    <option value="premium">Plano Premium</option>
-                  </>
-                )}
-
-                {!trialEstaAtivo && planoPlus() && (
-                  <option value="premium">Plano Premium</option>
-                )}
-              </select>
-            </div>
-          )}
-
-          {!sistemaBloqueado && (
-            <div style={gridBotoesBasico}>
-              {!trialEstaAtivo && (
+              {!sistemaBloqueado && (
                 <button
-                  disabled={salvando}
-                  onClick={() => atualizarAssinatura({ acao: 'ativar_trial' })}
-                  style={botaoSecundario}
+                  disabled={ativandoRecorrencia || cobrancaRecorrenteAtiva}
+                  onClick={() => ativarCobrancaAutomatica(planoAtual())}
+                  style={{
+                    ...botaoPagamentoCompacto,
+                    background: cobrancaRecorrenteAtiva
+                      ? 'linear-gradient(135deg, #16a34a, #22c55e)'
+                      : botaoPagamentoCompacto.background,
+                    cursor:
+                      ativandoRecorrencia || cobrancaRecorrenteAtiva
+                        ? 'not-allowed'
+                        : 'pointer',
+                  }}
                 >
-                  Ativar trial 7 dias
+                  {ativandoRecorrencia
+                    ? 'Criando assinatura...'
+                    : sincronizandoRecorrencia
+                    ? 'Sincronizando assinatura...'
+                    : cobrancaRecorrenteAtiva
+                    ? '✅ Cobrança automática ativa'
+                    : '🚀 Ativar cobrança automática'}
                 </button>
               )}
 
-              {trialEstaAtivo && (
+              {!sistemaBloqueado && !trialEstaAtivo && (
+                <button
+                  disabled={salvando}
+                  onClick={() => atualizarAssinatura({ acao: 'ativar_trial' })}
+                  style={botaoSecundarioCompacto}
+                >
+                  ✨ Ativar trial 7 dias
+                </button>
+              )}
+
+              {!sistemaBloqueado && trialEstaAtivo && (
                 <button
                   disabled={salvando}
                   onClick={() => atualizarAssinatura({ acao: 'encerrar_trial' })}
-                  style={botaoCinza}
+                  style={botaoCinzaCompacto}
                 >
                   Encerrar trial
                 </button>
               )}
 
-              <button
-                disabled={gerandoPagamento}
-                onClick={pagarMensalidade}
-                style={botaoPagamento}
-              >
-                {gerandoPagamento ? 'Gerando pagamento...' : 'Pagar mensalidade'}
-              </button>
-            </div>
-          )}
-
-          {!sistemaBloqueado &&
-            empresa.modoPagamentoAssinatura !== 'recorrente' && (
-              <div style={gridBotoesBasico}>
+              {sistemaBloqueado && (
                 <button
-                  disabled={gerandoPagamento}
-                  onClick={pagarMensalidade}
-                  style={botaoPagamento}
+                  disabled={ativandoRecorrencia}
+                  onClick={() => ativarCobrancaAutomatica(planoAtual())}
+                  style={botaoPagamentoCompacto}
                 >
-                  {gerandoPagamento ? 'Gerando pagamento...' : 'Renovar mensalidade'}
+                  {ativandoRecorrencia
+                    ? 'Criando assinatura...'
+                    : '🔓 Regularizar com cobrança automática'}
                 </button>
-              </div>
-            )}
-
-          {sistemaBloqueado && (
-            <div style={gridBotoesBasico}>
-              <button
-                disabled={gerandoPagamento}
-                onClick={pagarMensalidade}
-                style={botaoPagamento}
-              >
-                {gerandoPagamento ? 'Gerando pagamento...' : 'Regularizar pagamento'}
-              </button>
+              )}
             </div>
-          )}
+          </div>
 
           {!premiumAtivo && (
             <div style={upgradeBox}>
@@ -1094,6 +1232,131 @@ export default function AdminPage() {
               </p>
             </div>
           )}
+        </section>
+
+        <section style={linkAgendamentoCompactoBox}>
+          <div style={linkAgendamentoHeader}>
+            <div>
+              <span style={linkAgendamentoEyebrow}>Compartilhamento</span>
+              <h2 style={{ margin: 0, color: '#0f172a', fontSize: 22 }}>
+                Link de agendamento
+              </h2>
+              <p style={{ color: '#64748b', margin: '6px 0 0', fontSize: 13 }}>
+                Use este link ou QR Code para divulgar a agenda online da empresa.
+              </p>
+            </div>
+
+            <div style={qrMiniBox}>
+              <img
+                id="qr-image"
+                src={qrCodeUrl}
+                alt="QR Code"
+                style={qrMiniImage}
+              />
+            </div>
+          </div>
+
+          <div style={linkAgendamentoLine}>
+            <input
+              value={linkAgendamento}
+              readOnly
+              style={linkAgendamentoInput}
+            />
+
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(linkAgendamento);
+                alert('Link copiado!');
+              }}
+              style={linkAgendamentoBotaoRoxo}
+            >
+              Copiar
+            </button>
+          </div>
+
+          <div id="qr-print-area" style={qrPrintAreaCompacto}>
+            <p style={{ fontWeight: 900, margin: '0 0 8px', color: '#0f172a' }}>
+              Escaneie para agendar
+            </p>
+            <img
+              src={qrCodeUrl}
+              alt="QR Code"
+              style={{ width: 150, height: 150, borderRadius: 16, background: '#fff', padding: 8 }}
+            />
+            <h2 style={{ margin: '10px 0 3px', color: '#0f172a' }}>
+              {empresa.nome}
+            </h2>
+            <p style={{ margin: 0, color: '#475569', fontWeight: 700, wordBreak: 'break-all' }}>
+              {linkAgendamento}
+            </p>
+          </div>
+
+          <div style={linkAgendamentoAcoes}>
+            <button
+              onClick={() => {
+                const mensagem = montarMensagemConviteAgendamento({
+                  nomeEmpresa: empresa.nome,
+                  slugEmpresa: empresa.slug,
+                  whatsappEmpresa: empresa.whatsapp || empresa.telefone,
+                  enderecoEmpresa: empresa.endereco,
+                });
+
+                const url = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
+
+                window.open(url, '_blank');
+              }}
+              style={linkAgendamentoBotaoVerde}
+            >
+              📲 WhatsApp
+            </button>
+
+            <button
+              onClick={() => {
+                const img = document.getElementById('qr-image') as HTMLImageElement;
+
+                if (!img?.src) {
+                  alert('QR Code não encontrado.');
+                  return;
+                }
+
+                const link = document.createElement('a');
+                link.href = img.src;
+                link.download = `qrcode-${empresa.slug}.png`;
+                link.click();
+              }}
+              style={linkAgendamentoBotaoAzul}
+            >
+              🖼️ Baixar QR
+            </button>
+
+            <button
+              onClick={() => {
+                const conteudo = document.getElementById('qr-print-area')?.innerHTML;
+                const janela = window.open('', '_blank');
+
+                if (!janela || !conteudo) return;
+
+                janela.document.write(`
+                  <html>
+                    <head>
+                      <title>QR Code - ${empresa.nome}</title>
+                    </head>
+                    <body style="display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:Arial,sans-serif;background:#f8fafc;">
+                      <div style="text-align:center;background:#fff;padding:40px;border-radius:24px;border:1px solid #e2e8f0;">
+                        ${conteudo}
+                      </div>
+                    </body>
+                  </html>
+                `);
+
+                janela.document.close();
+                janela.print();
+              }}
+              style={linkAgendamentoBotaoVermelho}
+            >
+              📄 Imprimir
+            </button>
+          </div>
         </section>
       </div>
     </main>
@@ -1124,6 +1387,64 @@ function InputCampo({ titulo, value, onChange, disabled }: any) {
 }
 
 function Card({ titulo, descricao, href, bloqueado, motivoBloqueio }: any) {
+  const config: any = {
+    Dashboard: {
+      icone: '📊',
+      tag: 'Financeiro',
+      cor: '#7c3aed',
+      fundo: '#ede9fe',
+    },
+    Administração: {
+      icone: '🛡️',
+      tag: 'Sistema',
+      cor: '#16a34a',
+      fundo: '#dcfce7',
+    },
+    Agenda: {
+      icone: '📅',
+      tag: 'Agenda',
+      cor: '#2563eb',
+      fundo: '#dbeafe',
+    },
+    Serviços: {
+      icone: '✂️',
+      tag: 'Operacional',
+      cor: '#f59e0b',
+      fundo: '#fef3c7',
+    },
+    Profissionais: {
+      icone: '👥',
+      tag: 'Equipe',
+      cor: '#4f46e5',
+      fundo: '#e0e7ff',
+    },
+    Clientes: {
+      icone: '👤',
+      tag: 'CRM',
+      cor: '#f97316',
+      fundo: '#ffedd5',
+    },
+    Promoções: {
+      icone: '📣',
+      tag: 'Marketing',
+      cor: '#f43f5e',
+      fundo: '#ffe4e6',
+    },
+    Comissões: {
+      icone: '💰',
+      tag: 'Financeiro',
+      cor: '#0891b2',
+      fundo: '#cffafe',
+    },
+  };
+
+  const item = config[titulo] || {
+    icone: '✨',
+    tag: 'Módulo',
+    cor: '#4f46e5',
+    fundo: '#eef2ff',
+  };
+
   function mensagemBloqueio() {
     if (motivoBloqueio === 'licenca') {
       alert('Função indisponível. Regularize o pagamento para liberar.');
@@ -1138,36 +1459,72 @@ function Card({ titulo, descricao, href, bloqueado, motivoBloqueio }: any) {
     alert('Você não tem permissão para acessar esta área.');
   }
 
-  function textoBotaoBloqueado() {
-    if (motivoBloqueio === 'premium') {
-      return 'Ative Premium para liberar 🚀🔥';
-    }
-
-    if (motivoBloqueio === 'licenca') {
-      return 'Regularize para liberar';
-    }
-
+  function textoBloqueio() {
+    if (motivoBloqueio === 'premium') return 'Premium';
+    if (motivoBloqueio === 'licenca') return 'Bloqueado';
     return 'Sem permissão';
   }
 
-  return (
-    <div style={bloqueado ? cardBloqueado : card}>
-      <h2 style={{ marginTop: 0 }}>
-        {bloqueado ? '🔒 ' : ''}
-        {titulo}
-      </h2>
-      <p style={{ color: '#64748b', minHeight: 48 }}>{descricao}</p>
+  function abrirModulo() {
+    if (bloqueado) {
+      mensagemBloqueio();
+      return;
+    }
 
-      {bloqueado ? (
-        <button style={botaoBloqueado} onClick={mensagemBloqueio}>
-          {textoBotaoBloqueado()}
-        </button>
-      ) : (
-        <a href={href}>
-          <button style={botaoPrincipal}>Acessar</button>
-        </a>
-      )}
-    </div>
+    window.location.href = href;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={abrirModulo}
+      style={{
+        ...cardModuloPremium,
+        opacity: bloqueado ? 0.74 : 1,
+        cursor: bloqueado ? 'not-allowed' : 'pointer',
+      }}
+    >
+      <div
+        style={{
+          ...glowModulo,
+          background: item.fundo,
+        }}
+      />
+
+      <div style={iconeModuloBox(item.fundo, item.cor)}>
+        {bloqueado ? '🔒' : item.icone}
+      </div>
+
+      <div style={conteudoModuloCompacto}>
+        <h2 style={tituloCardModulo}>{titulo}</h2>
+
+        <span
+          style={{
+            ...tagModulo,
+            background: item.fundo,
+            color: item.cor,
+          }}
+        >
+          {item.tag}
+        </span>
+
+      </div>
+
+      <div style={rodapeModuloCompacto}>
+        <span style={bloqueado ? statusModuloBloqueado : statusModuloAtivo}>
+          {bloqueado ? textoBloqueio() : 'Acessar'}
+        </span>
+
+        <span
+          style={{
+            ...setaModulo,
+            background: bloqueado ? '#cbd5e1' : item.cor,
+          }}
+        >
+          →
+        </span>
+      </div>
+    </button>
   );
 }
 
@@ -1185,6 +1542,85 @@ function Beneficio({ texto, ativo, cor, bloqueioTexto }: any) {
           <div style={textoBloqueioRecurso}>{bloqueioTexto}</div>
         )}
       </div>
+    </div>
+  );
+}
+
+function PlanoComercialCard({
+  nome,
+  subtitulo,
+  destaque,
+  valor,
+  cor,
+  recursos,
+  ativo,
+  bloqueado,
+  acaoTexto,
+  bloqueadoTexto,
+  onClick,
+}: any) {
+  return (
+    <div
+      style={{
+        ...planoCardPremium,
+        borderColor: ativo ? cor : '#e2e8f0',
+        boxShadow: ativo
+          ? `0 24px 60px ${cor}2f`
+          : '0 16px 42px rgba(15,23,42,0.07)',
+      }}
+    >
+      {ativo && <div style={{ ...planoCardAtualBadge, background: cor }}>Plano atual</div>}
+
+      <div
+        style={{
+          ...planoCardTopo,
+          background: `linear-gradient(135deg, ${cor}, ${cor}cc)`,
+        }}
+      >
+        <span>{subtitulo}</span>
+        <strong>{nome}</strong>
+      </div>
+
+      <div style={planoCardBody}>
+        <div style={planoCardDestaque}>{destaque}</div>
+
+        <div style={planoCardPrecoLinha}>
+          <strong>{valor}</strong>
+          <span>/mês</span>
+        </div>
+
+        <div style={planoCardRecursos}>
+          {recursos.map((recurso: any) => (
+            <RecursoPlano
+              key={recurso.texto}
+              texto={recurso.texto}
+              ativo={recurso.ativo}
+            />
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={onClick}
+          disabled={ativo || bloqueado}
+          style={{
+            ...planoCardBotao,
+            background: ativo || bloqueado ? '#cbd5e1' : cor,
+            cursor: ativo || bloqueado ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {ativo ? 'Plano atual' : bloqueado ? bloqueadoTexto || acaoTexto : acaoTexto}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function RecursoPlano({ texto, ativo }: any) {
+  return (
+    <div style={ativo ? recursoPlanoAtivo : recursoPlanoInativo}>
+      <span style={{ fontWeight: 950 }}>{ativo ? '✓' : '×'}</span>
+      <p style={{ margin: 0 }}>{texto}</p>
     </div>
   );
 }
@@ -1227,9 +1663,9 @@ const avisoPermissoes = {
 
 const gridCards = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(3, 1fr)',
-  gap: 18,
-  marginBottom: 24,
+  gridTemplateColumns: 'repeat(auto-fit, minmax(138px, 1fr))',
+  gap: 14,
+  marginBottom: 22,
 };
 
 const box = {
@@ -1293,14 +1729,16 @@ const boxBloqueado = {
 
 const planoResumo = {
   marginTop: 18,
-  background: 'linear-gradient(135deg, #f8fafc, #eef2ff)',
-  border: '1px solid #c7d2fe',
-  borderRadius: 20,
-  padding: 18,
+  background:
+    'radial-gradient(circle at top right, rgba(124,58,237,0.12), transparent 34%), linear-gradient(135deg, #ffffff, #f8fafc)',
+  border: '1px solid #e0e7ff',
+  borderRadius: 26,
+  padding: 22,
   display: 'flex',
   justifyContent: 'space-between',
   gap: 18,
   alignItems: 'center',
+  boxShadow: '0 16px 40px rgba(15,23,42,0.06)',
 };
 
 const planoResumoExpirado = {
@@ -1318,9 +1756,9 @@ const gridInputs = {
 
 const gridInfo = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(4, 1fr)',
-  gap: 14,
-  marginTop: 18,
+  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+  gap: 12,
+  marginTop: 16,
 };
 
 const gridBotoesBasico = {
@@ -1332,52 +1770,75 @@ const gridBotoesBasico = {
 
 const gridBeneficios = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(2, 1fr)',
-  gap: 10,
+  gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+  gap: 8,
+  marginTop: 14,
 };
 
 const beneficiosBox = {
-  marginTop: 18,
-  background: '#f8fafc',
+  marginTop: 12,
+  background: 'rgba(255,255,255,0.78)',
   border: '1px solid #e2e8f0',
-  borderRadius: 18,
-  padding: 18,
+  borderRadius: 20,
+  padding: 14,
+  boxShadow: '0 10px 26px rgba(15,23,42,0.04)',
+};
+
+const beneficiosSummary = {
+  cursor: 'pointer',
+  listStyle: 'none',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+  color: '#0f172a',
+  fontSize: 15,
+  fontWeight: 950,
+};
+
+const beneficiosSummaryHint = {
+  color: '#64748b',
+  fontSize: 12,
+  fontWeight: 800,
 };
 
 const beneficioAtivo = {
   display: 'flex',
-  gap: 8,
+  gap: 7,
   alignItems: 'center',
   background: '#ecfdf5',
   border: '1px solid #bbf7d0',
   color: '#166534',
-  borderRadius: 12,
-  padding: 10,
-  fontWeight: 700,
+  borderRadius: 999,
+  padding: '8px 10px',
+  fontWeight: 800,
+  fontSize: 12,
 };
 
 const beneficioAzul = {
   display: 'flex',
-  gap: 8,
+  gap: 7,
   alignItems: 'center',
   background: '#eff6ff',
   border: '1px solid #93c5fd',
   color: '#1d4ed8',
-  borderRadius: 12,
-  padding: 10,
-  fontWeight: 700,
+  borderRadius: 999,
+  padding: '8px 10px',
+  fontWeight: 800,
+  fontSize: 12,
 };
 
 const beneficioInativo = {
   display: 'flex',
-  gap: 8,
+  gap: 7,
   alignItems: 'flex-start',
   background: '#f8fafc',
   border: '1px solid #e2e8f0',
   color: '#64748b',
-  borderRadius: 12,
-  padding: 10,
-  fontWeight: 700,
+  borderRadius: 999,
+  padding: '8px 10px',
+  fontWeight: 800,
+  fontSize: 12,
 };
 
 const textoBloqueioRecurso = {
@@ -1431,10 +1892,11 @@ const qrPrintArea = {
 };
 
 const infoBox = {
-  background: '#f8fafc',
+  background: '#ffffff',
   border: '1px solid #e2e8f0',
-  borderRadius: 16,
+  borderRadius: 18,
   padding: 14,
+  boxShadow: '0 10px 24px rgba(15,23,42,0.04)',
 };
 
 const card = {
@@ -1620,4 +2082,451 @@ const upgradeBox = {
   color: '#78350f',
   borderRadius: 16,
   padding: 16,
+};
+
+const cardModuloPremium = {
+  width: '100%',
+  minHeight: 142,
+  background: 'linear-gradient(135deg, #ffffff, #f8fafc)',
+  borderRadius: 24,
+  padding: 16,
+  boxShadow: '0 14px 34px rgba(15,23,42,0.06)',
+  border: '1px solid #e2e8f0',
+  display: 'flex',
+  flexDirection: 'column' as const,
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 8,
+  textAlign: 'center' as const,
+  position: 'relative' as const,
+  overflow: 'hidden',
+  transition: '0.22s ease',
+};
+
+const glowModulo = {
+  position: 'absolute' as const,
+  top: -44,
+  right: -44,
+  width: 112,
+  height: 112,
+  borderRadius: 999,
+  opacity: 0.55,
+};
+
+const iconeModuloBox = (fundo: string, cor: string) => ({
+  width: 52,
+  height: 52,
+  borderRadius: 18,
+  background: fundo,
+  color: cor,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 25,
+  fontWeight: 900,
+  position: 'relative' as const,
+  zIndex: 2,
+  boxShadow: '0 10px 22px rgba(15,23,42,0.06)',
+});
+
+const conteudoModuloCompacto = {
+  position: 'relative' as const,
+  zIndex: 2,
+  display: 'flex',
+  flexDirection: 'column' as const,
+  alignItems: 'center',
+  gap: 7,
+};
+
+const tituloCardModulo = {
+  margin: 0,
+  color: '#0f172a',
+  fontSize: 17,
+  fontWeight: 950,
+  letterSpacing: '-0.045em',
+};
+
+const tagModulo = {
+  borderRadius: 999,
+  padding: '5px 9px',
+  fontSize: 10,
+  fontWeight: 950,
+};
+
+const descricaoCardModulo = {
+  color: '#64748b',
+  margin: 0,
+  lineHeight: 1.4,
+  fontSize: 12,
+  fontWeight: 700,
+};
+
+const rodapeModuloCompacto = {
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 8,
+  position: 'relative' as const,
+  zIndex: 2,
+  marginTop: 2,
+};
+
+const statusModuloAtivo = {
+  color: '#475569',
+  fontSize: 12,
+  fontWeight: 900,
+};
+
+const statusModuloBloqueado = {
+  color: '#f97316',
+  fontSize: 12,
+  fontWeight: 950,
+};
+
+const setaModulo = {
+  width: 30,
+  height: 30,
+  minWidth: 30,
+  borderRadius: 12,
+  color: '#fff',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 15,
+  fontWeight: 950,
+};
+
+
+const boxPlanosPremium = {
+  background: 'linear-gradient(135deg, #ffffff, #f8fafc)',
+  borderRadius: 28,
+  padding: 24,
+  marginBottom: 24,
+  boxShadow: '0 16px 42px rgba(15,23,42,0.08)',
+  border: '1px solid #e2e8f0',
+};
+
+const planosHeader = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  gap: 18,
+  flexWrap: 'wrap' as const,
+  marginBottom: 18,
+};
+
+const planosEyebrow = {
+  display: 'block',
+  color: '#7c3aed',
+  fontSize: 12,
+  fontWeight: 950,
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.08em',
+  marginBottom: 7,
+};
+
+const planoStatusAtivo = {
+  minWidth: 150,
+  borderRadius: 18,
+  padding: 14,
+  background: '#ecfdf5',
+  border: '1px solid #bbf7d0',
+  color: '#166534',
+  display: 'flex',
+  flexDirection: 'column' as const,
+  gap: 3,
+  fontSize: 13,
+};
+
+const planoStatusExpirado = {
+  ...planoStatusAtivo,
+  background: '#fff7ed',
+  border: '1px solid #fed7aa',
+  color: '#9a3412',
+};
+
+const gridInfoPlanos = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+  gap: 12,
+  marginBottom: 18,
+};
+
+const planosGridPremium = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+  gap: 18,
+  alignItems: 'stretch',
+};
+
+const planoCardPremium = {
+  background: '#ffffff',
+  border: '1px solid #e2e8f0',
+  borderRadius: 28,
+  overflow: 'hidden',
+  position: 'relative' as const,
+};
+
+const planoCardAtualBadge = {
+  position: 'absolute' as const,
+  top: 12,
+  right: 12,
+  zIndex: 3,
+  color: '#fff',
+  borderRadius: 999,
+  padding: '7px 10px',
+  fontSize: 11,
+  fontWeight: 950,
+};
+
+const planoCardTopo = {
+  minHeight: 116,
+  padding: '24px 22px',
+  color: '#fff',
+  display: 'flex',
+  flexDirection: 'column' as const,
+  justifyContent: 'center',
+  clipPath: 'polygon(0 0, 100% 0, 100% 78%, 50% 100%, 0 78%)',
+};
+
+const planoCardBody = {
+  padding: '24px 22px 22px',
+};
+
+const planoCardDestaque = {
+  color: '#64748b',
+  fontSize: 13,
+  fontWeight: 900,
+  marginBottom: 14,
+};
+
+const planoCardPrecoLinha = {
+  display: 'flex',
+  alignItems: 'flex-end',
+  gap: 5,
+  marginBottom: 18,
+};
+
+const planoCardRecursos = {
+  display: 'flex',
+  flexDirection: 'column' as const,
+  gap: 12,
+  minHeight: 300,
+};
+
+const recursoPlanoAtivo = {
+  display: 'flex',
+  gap: 10,
+  alignItems: 'flex-start',
+  color: '#166534',
+  fontSize: 13,
+  fontWeight: 800,
+  lineHeight: 1.42,
+};
+
+const recursoPlanoInativo = {
+  ...recursoPlanoAtivo,
+  color: '#991b1b',
+};
+
+const planoCardBotao = {
+  width: '100%',
+  marginTop: 20,
+  height: 46,
+  border: 'none',
+  borderRadius: 16,
+  color: '#fff',
+  fontWeight: 950,
+};
+
+const planosAcoesBox = {
+  marginTop: 22,
+  borderRadius: 28,
+  padding: 22,
+  background:
+    'radial-gradient(circle at top right, rgba(245,158,11,0.12), transparent 34%), linear-gradient(135deg, #ffffff, #f8fafc)',
+  border: '1px solid #e2e8f0',
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) minmax(360px, 1fr)',
+  gap: 20,
+  alignItems: 'center',
+  boxShadow: '0 16px 42px rgba(15,23,42,0.06)',
+};
+
+const tituloGestaoAssinatura = {
+  display: 'block',
+  color: '#0f172a',
+  fontSize: 18,
+  fontWeight: 950,
+  letterSpacing: '-0.035em',
+};
+
+const descricaoGestaoAssinatura = {
+  margin: '6px 0 0',
+  color: '#64748b',
+  fontSize: 13,
+  lineHeight: 1.5,
+};
+
+const planosAcoesGrid = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(180px, 1fr) minmax(180px, 1fr)',
+  gap: 12,
+  alignItems: 'end',
+};
+
+const campoPlanoAcao = {
+  display: 'flex',
+  flexDirection: 'column' as const,
+  gap: 7,
+};
+
+const labelPlanoAcao = {
+  color: '#475569',
+  fontSize: 12,
+  fontWeight: 950,
+};
+
+const botaoSecundarioCompacto = {
+  minHeight: 48,
+  borderRadius: 16,
+  border: '1px solid #cbd5e1',
+  background: '#ffffff',
+  color: '#475569',
+  fontWeight: 950,
+  cursor: 'pointer',
+  boxShadow: '0 10px 22px rgba(15,23,42,0.04)',
+};
+
+const botaoCinzaCompacto = {
+  ...botaoSecundarioCompacto,
+  background: '#f8fafc',
+  color: '#64748b',
+  boxShadow: 'none',
+};
+
+const botaoPagamentoCompacto = {
+  minHeight: 48,
+  borderRadius: 16,
+  border: 'none',
+  background: 'linear-gradient(135deg, #f59e0b, #f97316)',
+  color: '#ffffff',
+  fontWeight: 950,
+  cursor: 'pointer',
+  boxShadow: '0 14px 30px rgba(249,115,22,0.22)',
+};
+
+const selectPlanoCompacto = {
+  minHeight: 48,
+  borderRadius: 16,
+  border: '1px solid #cbd5e1',
+  background: '#fff',
+  padding: '0 14px',
+  fontWeight: 900,
+  color: '#0f172a',
+  boxShadow: '0 10px 22px rgba(15,23,42,0.04)',
+  outline: 'none',
+};
+
+const linkAgendamentoCompactoBox = {
+  background: '#ffffff',
+  borderRadius: 26,
+  padding: 20,
+  marginBottom: 24,
+  boxShadow: '0 14px 34px rgba(15,23,42,0.06)',
+  border: '1px solid #e2e8f0',
+};
+
+const linkAgendamentoHeader = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 16,
+  marginBottom: 14,
+};
+
+const linkAgendamentoEyebrow = {
+  display: 'block',
+  color: '#7c3aed',
+  fontSize: 11,
+  fontWeight: 950,
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.08em',
+  marginBottom: 5,
+};
+
+const qrMiniBox = {
+  width: 92,
+  height: 92,
+  borderRadius: 18,
+  background: '#f8fafc',
+  border: '1px solid #e2e8f0',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+const qrMiniImage = {
+  width: 76,
+  height: 76,
+  borderRadius: 12,
+};
+
+const linkAgendamentoLine = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) 130px',
+  gap: 10,
+};
+
+const linkAgendamentoInput = {
+  width: '100%',
+  minWidth: 0,
+  padding: '12px 13px',
+  borderRadius: 14,
+  border: '1px solid #cbd5e1',
+  background: '#f8fafc',
+  fontWeight: 800,
+  color: '#0f172a',
+  boxSizing: 'border-box' as const,
+};
+
+const linkAgendamentoBotaoRoxo = {
+  border: 'none',
+  borderRadius: 14,
+  background: '#4f46e5',
+  color: '#fff',
+  fontWeight: 950,
+  cursor: 'pointer',
+};
+
+const linkAgendamentoAcoes = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+  gap: 10,
+  marginTop: 12,
+};
+
+const linkAgendamentoBotaoVerde = {
+  minHeight: 42,
+  border: 'none',
+  borderRadius: 14,
+  background: '#16a34a',
+  color: '#fff',
+  fontWeight: 950,
+  cursor: 'pointer',
+};
+
+const linkAgendamentoBotaoAzul = {
+  ...linkAgendamentoBotaoVerde,
+  background: '#0ea5e9',
+};
+
+const linkAgendamentoBotaoVermelho = {
+  ...linkAgendamentoBotaoVerde,
+  background: '#ef4444',
+};
+
+const qrPrintAreaCompacto = {
+  display: 'none',
 };

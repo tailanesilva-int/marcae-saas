@@ -10,7 +10,12 @@ type PermissoesUsuario = {
   profissionais: boolean;
   promocoes: boolean;
   configuracoes: boolean;
+  comissoes: boolean;
   visualizarFinanceiro: boolean;
+  finalizarAtendimento: boolean;
+  reagendarAtendimento: boolean;
+  cancelarAtendimento: boolean;
+  fecharComissao: boolean;
 };
 
 type UsuarioSistema = {
@@ -29,7 +34,12 @@ const permissoesPadrao: PermissoesUsuario = {
   profissionais: false,
   promocoes: false,
   configuracoes: false,
+  comissoes: false,
   visualizarFinanceiro: false,
+  finalizarAtendimento: false,
+  reagendarAtendimento: false,
+  cancelarAtendimento: false,
+  fecharComissao: false,
 };
 
 export default function ConfiguracoesPage() {
@@ -40,6 +50,27 @@ export default function ConfiguracoesPage() {
   const [tipoCobranca, setTipoCobranca] = useState('cartao');
   const [salvando, setSalvando] = useState(false);
   const [mostrarUsuarios, setMostrarUsuarios] = useState(false);
+
+  const [dadosEmpresa, setDadosEmpresa] = useState({
+  nome: '',
+  endereco: '',
+  telefone: '',
+  responsavel: '',
+  logoUrl: '',
+  instagramUrl: '',
+  /*
+  =========================================
+  MERCADO PAGO
+  =========================================
+  */
+
+  mercadoPagoAtivo: false,
+  mercadoPagoAccessToken: '',
+  mercadoPagoPublicKey: '',
+  mercadoPagoModo: 'sandbox',
+});
+
+  const [salvandoEmpresa, setSalvandoEmpresa] = useState(false);
 
   const [usuarios, setUsuarios] = useState<UsuarioSistema[]>([]);
   const [usuarioEditandoId, setUsuarioEditandoId] = useState('');
@@ -53,18 +84,81 @@ export default function ConfiguracoesPage() {
   const [salvandoUsuario, setSalvandoUsuario] = useState(false);
 
   useEffect(() => {
-    const empresaIdLocal = localStorage.getItem('empresaId');
-    const empresaLogadaRaw = localStorage.getItem('empresaLogada');
-    const empresaLogada = empresaLogadaRaw ? JSON.parse(empresaLogadaRaw) : null;
+  const empresaIdLocal = localStorage.getItem('empresaId');
+  const empresaLogadaRaw = localStorage.getItem('empresaLogada');
+  const empresaLogada = empresaLogadaRaw ? JSON.parse(empresaLogadaRaw) : null;
 
-    setEmpresaId(empresaIdLocal || empresaLogada?.id || '');
-  }, []);
+  const id = empresaIdLocal || empresaLogada?.id || '';
+
+  setEmpresaId(id);
+
+  if (empresaLogada) {
+    setDadosEmpresa({
+      nome: empresaLogada.nome || '',
+      endereco: empresaLogada.endereco || '',
+      telefone: empresaLogada.telefone || empresaLogada.whatsapp || '',
+      responsavel: empresaLogada.responsavel || '',
+      logoUrl: empresaLogada.logoUrl || '',
+      instagramUrl: empresaLogada.instagramUrl || '',
+
+      mercadoPagoAtivo:
+        empresaLogada.mercadoPagoAtivo || false,
+
+      mercadoPagoAccessToken:
+        empresaLogada.mercadoPagoAccessToken || '',
+
+      mercadoPagoPublicKey:
+        empresaLogada.mercadoPagoPublicKey || '',
+
+      mercadoPagoModo:
+        empresaLogada.mercadoPagoModo || 'sandbox',
+    });
+  }
+}, []);
 
   useEffect(() => {
     if (empresaId) {
+      carregarEmpresa();
       carregarUsuarios();
     }
   }, [empresaId]);
+
+  async function carregarEmpresa() {
+    try {
+      const res = await fetch(`/api/admin/empresas/${empresaId}`, {
+        cache: 'no-store',
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.empresa) {
+        setDadosEmpresa({
+  nome: data.empresa.nome || '',
+  endereco: data.empresa.endereco || '',
+  telefone: data.empresa.telefone || data.empresa.whatsapp || '',
+  responsavel: data.empresa.responsavel || '',
+  logoUrl: data.empresa.logoUrl || '',
+  instagramUrl: data.empresa.instagramUrl || '',
+
+  mercadoPagoAtivo:
+    data.empresa.mercadoPagoAtivo || false,
+
+  mercadoPagoAccessToken:
+    data.empresa.mercadoPagoAccessToken || '',
+
+  mercadoPagoPublicKey:
+    data.empresa.mercadoPagoPublicKey || '',
+
+  mercadoPagoModo:
+    data.empresa.mercadoPagoModo || 'sandbox',
+});
+
+        localStorage.setItem('empresaLogada', JSON.stringify(data.empresa));
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados da empresa:', error);
+    }
+  }
 
   async function carregarUsuarios() {
     try {
@@ -110,6 +204,64 @@ export default function ConfiguracoesPage() {
     });
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function selecionarLogo(arquivo?: File | null) {
+    if (!arquivo) return;
+
+    if (!arquivo.type.startsWith('image/')) {
+      alert('Selecione um arquivo de imagem.');
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      setDadosEmpresa((atual) => ({
+        ...atual,
+        logoUrl: String(reader.result || ''),
+      }));
+    };
+
+    reader.readAsDataURL(arquivo);
+  }
+
+  async function salvarDadosEmpresa() {
+    if (!empresaId) {
+      alert('Empresa não encontrada. Faça login novamente.');
+      return;
+    }
+
+    if (!dadosEmpresa.nome) {
+      alert('Informe o nome da empresa.');
+      return;
+    }
+
+    try {
+      setSalvandoEmpresa(true);
+
+      const res = await fetch(`/api/admin/empresas/${empresaId}/dados`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dadosEmpresa),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.error || 'Erro ao salvar dados da empresa.');
+        return;
+      }
+
+      localStorage.setItem('empresaLogada', JSON.stringify(data.empresa));
+
+      alert('Dados da empresa atualizados com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar dados da empresa:', error);
+      alert('Erro ao salvar dados da empresa.');
+    } finally {
+      setSalvandoEmpresa(false);
+    }
   }
 
   async function salvarConfigPagamento() {
@@ -202,7 +354,7 @@ export default function ConfiguracoesPage() {
             <p style={eyebrow}>Painel administrativo</p>
             <h1 style={title}>Configurações</h1>
             <p style={subtitle}>
-              Gerencie cobranças, usuários e permissões de acesso do Marcaê.
+              Gerencie dados da empresa, logo, cobranças, usuários e permissões de acesso do Marcaê.
             </p>
           </div>
 
@@ -216,60 +368,249 @@ export default function ConfiguracoesPage() {
         </div>
       </div>
 
-      <div style={grid}>
-        <section style={card}>
-          <div style={cardHeader}>
-            <div>
-              <h2 style={cardTitle}>Pagamento</h2>
-              <p style={cardDescription}>
-                Configure a forma de cobrança da mensalidade.
-              </p>
-            </div>
-
-            <span style={badge}>Assinatura</span>
+      <section style={cardWideSemMargem}>
+        <div style={cardHeader}>
+          <div>
+            <h2 style={cardTitle}>Dados da empresa</h2>
+            <p style={cardDescription}>
+              Esses dados aparecem no agendador público, QR Code e mensagens enviadas pelo WhatsApp.
+            </p>
           </div>
 
-          <label style={checkboxRow}>
+          <span style={badge}>Empresa</span>
+        </div>
+
+        <div style={empresaGrid}>
+          <div style={field}>
+            <label style={label}>Nome</label>
             <input
-              type="checkbox"
-              checked={recorrente}
-              onChange={(e) => setRecorrente(e.target.checked)}
+              value={dadosEmpresa.nome}
+              onChange={(e) => setDadosEmpresa({ ...dadosEmpresa, nome: e.target.value })}
+              placeholder="Nome da empresa"
+              style={input}
             />
-            <span>Cobrança automática mensal</span>
-          </label>
+          </div>
 
           <div style={field}>
-            <label style={label}>Tipo de cobrança</label>
-            <select
-              value={tipoCobranca}
-              onChange={(e) => setTipoCobranca(e.target.value)}
-              style={select}
-            >
-              <option value="cartao">Cartão</option>
-              <option value="saldo">Saldo</option>
-              <option value="pix">Pix</option>
-            </select>
+            <label style={label}>Telefone/WhatsApp</label>
+            <input
+              value={dadosEmpresa.telefone}
+              onChange={(e) => setDadosEmpresa({ ...dadosEmpresa, telefone: e.target.value })}
+              placeholder="Telefone da empresa"
+              style={input}
+            />
           </div>
 
-          <button
-            onClick={salvarConfigPagamento}
-            disabled={salvando}
-            style={{
-              ...primaryButton,
-              opacity: salvando ? 0.7 : 1,
-              cursor: salvando ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {salvando ? 'Salvando...' : 'Salvar pagamento'}
-          </button>
-        </section>
+          <div style={field}>
+            <label style={label}>Responsável</label>
+<div style={field}>
+  <label style={label}>Instagram da empresa</label>
+
+  <input
+    value={dadosEmpresa.instagramUrl}
+    onChange={(e) =>
+      setDadosEmpresa({
+        ...dadosEmpresa,
+        instagramUrl: e.target.value,
+      })
+    }
+    placeholder="@meuestudio ou link do Instagram"
+    style={input}
+  />
+</div>
+            <input
+              value={dadosEmpresa.responsavel}
+              onChange={(e) => setDadosEmpresa({ ...dadosEmpresa, responsavel: e.target.value })}
+              placeholder="Responsável pela empresa"
+              style={input}
+            />
+          </div>
+
+          <div style={field}>
+            <label style={label}>Logo da empresa</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => selecionarLogo(e.target.files?.[0])}
+              style={input}
+            />
+          </div>
+
+          <div style={{ ...field, gridColumn: '1 / -1' }}>
+            <label style={label}>Endereço</label>
+            <input
+              value={dadosEmpresa.endereco}
+              onChange={(e) => setDadosEmpresa({ ...dadosEmpresa, endereco: e.target.value })}
+              placeholder="Endereço da empresa"
+              style={input}
+            />
+          </div>
+        </div>
+
+        <div style={logoPreviewBox}>
+          {dadosEmpresa.logoUrl ? (
+            <img src={dadosEmpresa.logoUrl} alt="Logo da empresa" style={logoPreview} />
+          ) : (
+            <div style={logoVazio}>Sem logo cadastrada</div>
+          )}
+
+          <div>
+            <strong>Logo no agendador</strong>
+            <p style={cardDescription}>
+              Essa imagem será usada como identidade visual da empresa no link público de agendamento.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={salvarDadosEmpresa}
+          disabled={salvandoEmpresa}
+          style={{
+            ...primaryButton,
+            opacity: salvandoEmpresa ? 0.7 : 1,
+            cursor: salvandoEmpresa ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {salvandoEmpresa ? 'Salvando dados...' : 'Salvar dados da empresa'}
+        </button>
+      </section>
+
+      <div style={grid}>
+        <section style={card}>
+  <div style={cardHeader}>
+    <div>
+      <section style={card}>
+  <div style={cardHeader}>
+    <div>
+      <h2 style={cardTitle}>
+        Recebimento online
+      </h2>
+
+      <p style={cardDescription}>
+        Integração financeira via
+        Mercado Pago.
+      </p>
+    </div>
+
+    <span style={badge}>
+      Mercado Pago
+    </span>
+  </div>
+
+  {dadosEmpresa.mercadoPagoAtivo ? (
+    <div
+      style={{
+        background: '#ecfdf5',
+        border: '1px solid #10b981',
+        borderRadius: 16,
+        padding: 20,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 18,
+          fontWeight: 700,
+          color: '#065f46',
+          marginBottom: 10,
+        }}
+      >
+        Mercado Pago configurado
+      </div>
+
+      <div
+        style={{
+          color: '#065f46',
+          fontSize: 14,
+        }}
+      >
+        Sua empresa já pode receber
+        pagamentos online dos clientes.
+      </div>
+    </div>
+  ) : (
+    <div
+      style={{
+        background: '#fff7ed',
+        border: '1px solid #fb923c',
+        borderRadius: 16,
+        padding: 20,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 18,
+          fontWeight: 700,
+          color: '#9a3412',
+          marginBottom: 10,
+        }}
+      >
+        Integração Mercado Pago pendente
+      </div>
+
+      <div
+        style={{
+          color: '#9a3412',
+          fontSize: 14,
+          marginBottom: 18,
+        }}
+      >
+        O recebimento online ainda
+        não foi configurado pelo
+        Marcaê.
+      </div>
+
+      <button
+        style={primaryButton}
+        onClick={async () => {
+          try {
+            await fetch(
+              `/api/admin/empresas/${empresaId}/dados`,
+              {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type':
+                    'application/json',
+                },
+                body: JSON.stringify({
+                  solicitouIntegracaoMp: true,
+                }),
+              }
+            );
+
+            alert(
+              'Solicitação enviada ao Marcaê.'
+            );
+
+            carregarEmpresa();
+          } catch (error) {
+            alert(
+              'Erro ao solicitar integração.'
+            );
+          }
+        }}
+      >
+        Solicitar integração Mercado Pago
+      </button>
+    </div>
+  )}
+</section>
+
+      <p style={cardDescription}>
+        Configure como sua empresa receberá os pagamentos online dos clientes via Mercado Pago.
+      </p>
+    </div>
+
+    <span style={badge}>Mercado Pago</span>
+  </div>
+
+</section>
 
         <section style={card}>
           <div style={cardHeader}>
             <div>
               <h2 style={cardTitle}>Usuários e permissões</h2>
               <p style={cardDescription}>
-                Cadastre usuários e controle o acesso aos módulos do sistema.
+                Cadastre usuários e controle o acesso aos módulos e ações sensíveis.
               </p>
             </div>
 
@@ -375,68 +716,18 @@ export default function ConfiguracoesPage() {
 
           {perfilUsuario === 'usuario' && (
             <div style={permissionsBox}>
-              <label style={checkboxRow}>
-                <input
-                  type="checkbox"
-                  checked={permissoes.dashboard}
-                  onChange={() => alterarPermissao('dashboard')}
-                />
-                Dashboard
-              </label>
-
-              <label style={checkboxRow}>
-                <input
-                  type="checkbox"
-                  checked={permissoes.agenda}
-                  onChange={() => alterarPermissao('agenda')}
-                />
-                Agenda
-              </label>
-
-              <label style={checkboxRow}>
-                <input
-                  type="checkbox"
-                  checked={permissoes.servicos}
-                  onChange={() => alterarPermissao('servicos')}
-                />
-                Serviços
-              </label>
-
-              <label style={checkboxRow}>
-                <input
-                  type="checkbox"
-                  checked={permissoes.profissionais}
-                  onChange={() => alterarPermissao('profissionais')}
-                />
-                Profissionais
-              </label>
-
-              <label style={checkboxRow}>
-                <input
-                  type="checkbox"
-                  checked={permissoes.promocoes}
-                  onChange={() => alterarPermissao('promocoes')}
-                />
-                Promoções
-              </label>
-
-              <label style={checkboxRow}>
-                <input
-                  type="checkbox"
-                  checked={permissoes.configuracoes}
-                  onChange={() => alterarPermissao('configuracoes')}
-                />
-                Configurações
-              </label>
-
-              <label style={checkboxRow}>
-                <input
-                  type="checkbox"
-                  checked={permissoes.visualizarFinanceiro}
-                  onChange={() => alterarPermissao('visualizarFinanceiro')}
-                />
-                Visualizar valores financeiros
-              </label>
+              <PermissaoCheck label="Dashboard" checked={permissoes.dashboard} onChange={() => alterarPermissao('dashboard')} />
+              <PermissaoCheck label="Agenda" checked={permissoes.agenda} onChange={() => alterarPermissao('agenda')} />
+              <PermissaoCheck label="Serviços" checked={permissoes.servicos} onChange={() => alterarPermissao('servicos')} />
+              <PermissaoCheck label="Profissionais" checked={permissoes.profissionais} onChange={() => alterarPermissao('profissionais')} />
+              <PermissaoCheck label="Promoções" checked={permissoes.promocoes} onChange={() => alterarPermissao('promocoes')} />
+              <PermissaoCheck label="Configurações" checked={permissoes.configuracoes} onChange={() => alterarPermissao('configuracoes')} />
+              <PermissaoCheck label="Comissões" checked={permissoes.comissoes} onChange={() => alterarPermissao('comissoes')} />
+              <PermissaoCheck label="Visualizar valores financeiros" checked={permissoes.visualizarFinanceiro} onChange={() => alterarPermissao('visualizarFinanceiro')} />
+              <PermissaoCheck label="Finalizar atendimento/venda" checked={permissoes.finalizarAtendimento} onChange={() => alterarPermissao('finalizarAtendimento')} />
+              <PermissaoCheck label="Reagendar atendimento" checked={permissoes.reagendarAtendimento} onChange={() => alterarPermissao('reagendarAtendimento')} />
+              <PermissaoCheck label="Cancelar atendimento" checked={permissoes.cancelarAtendimento} onChange={() => alterarPermissao('cancelarAtendimento')} />
+              <PermissaoCheck label="Fechar comissão" checked={permissoes.fecharComissao} onChange={() => alterarPermissao('fecharComissao')} />
             </div>
           )}
 
@@ -487,6 +778,19 @@ export default function ConfiguracoesPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+function PermissaoCheck({ label, checked, onChange }: any) {
+  return (
+    <label style={checkboxRow}>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+      />
+      {label}
+    </label>
   );
 }
 
@@ -558,6 +862,11 @@ const cardWide = {
   marginTop: '24px',
 };
 
+const cardWideSemMargem = {
+  ...card,
+  marginBottom: '24px',
+};
+
 const cardHeader = {
   display: 'flex',
   justifyContent: 'space-between',
@@ -614,6 +923,7 @@ const input = {
   borderRadius: '12px',
   border: '1px solid #cbd5e1',
   fontSize: '14px',
+  boxSizing: 'border-box' as const,
 };
 
 const select = {
@@ -671,6 +981,12 @@ const formGrid = {
   gap: '18px',
 };
 
+const empresaGrid = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+  gap: '18px',
+};
+
 const permissionsBox = {
   display: 'grid',
   gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
@@ -722,4 +1038,39 @@ const editButton = {
   color: '#fff',
   fontWeight: 700,
   cursor: 'pointer',
+};
+
+const logoPreviewBox = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 16,
+  background: '#f8fafc',
+  border: '1px solid #e2e8f0',
+  borderRadius: 16,
+  padding: 16,
+  marginBottom: 18,
+};
+
+const logoPreview = {
+  width: 72,
+  height: 72,
+  borderRadius: 18,
+  objectFit: 'cover' as const,
+  background: '#fff',
+  border: '1px solid #e2e8f0',
+};
+
+const logoVazio = {
+  width: 72,
+  height: 72,
+  borderRadius: 18,
+  background: '#eef2ff',
+  color: '#4f46e5',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  textAlign: 'center' as const,
+  fontSize: 11,
+  fontWeight: 800,
+  border: '1px solid #c7d2fe',
 };

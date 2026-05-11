@@ -124,6 +124,177 @@ Esperamos você 💜`;
 }
 
 /* =========================
+   💰 WHATSAPP FINANCEIRO SAAS
+========================= */
+type DadosMensagemFinanceira = {
+  nomeEmpresa: string;
+  plano?: string | null;
+  valor?: number | null;
+  vencimento?: string | null;
+  diasAtraso?: number | null;
+  linkPagamento?: string | null;
+};
+
+function formatarPlano(plano?: string | null) {
+  const normalizado = String(plano || '').toLowerCase();
+
+  if (normalizado === 'basico') return 'Básico';
+  if (normalizado === 'plus') return 'Plus';
+  if (normalizado === 'premium') return 'Premium';
+  if (normalizado === 'trial') return 'Trial';
+
+  return plano || 'Plano Marcaê';
+}
+
+function formatarValor(valor?: number | null) {
+  if (valor === undefined || valor === null || Number.isNaN(Number(valor))) {
+    return null;
+  }
+
+  return Number(valor).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
+}
+
+function montarRodapeFinanceiro(linkPagamento?: string | null) {
+  const baseUrl = getPublicBaseUrl();
+  const linkAdmin = `${baseUrl}/admin`;
+
+  if (linkPagamento) {
+    return `💳 *Regularizar agora:*
+${linkPagamento}`;
+  }
+
+  return `🔗 *Acesse seu painel:*
+${linkAdmin}`;
+}
+
+export function montarMensagemLembreteFinanceiro({
+  nomeEmpresa,
+  plano,
+  valor,
+  vencimento,
+  linkPagamento,
+}: DadosMensagemFinanceira) {
+  const valorFormatado = formatarValor(valor);
+
+  return `Olá! 😊
+
+💜 *Lembrete financeiro Marcaê*
+
+A assinatura da empresa *${nomeEmpresa}* está próxima do vencimento.
+
+📌 *Plano:* ${formatarPlano(plano)}
+${valorFormatado ? `💰 *Valor:* ${valorFormatado}\n` : ''}📅 *Vencimento:* ${vencimento || 'Não informado'}
+
+${montarRodapeFinanceiro(linkPagamento)}
+
+Se o pagamento já foi realizado ou a cobrança recorrente estiver ativa, pode desconsiderar esta mensagem.
+
+Equipe Marcaê 🚀`;
+}
+
+export function montarMensagemPagamentoRecusado({
+  nomeEmpresa,
+  plano,
+  valor,
+  vencimento,
+  linkPagamento,
+}: DadosMensagemFinanceira) {
+  const valorFormatado = formatarValor(valor);
+
+  return `Olá! 😊
+
+⚠️ *Pagamento não aprovado*
+
+Não conseguimos confirmar a cobrança da assinatura da empresa *${nomeEmpresa}*.
+
+📌 *Plano:* ${formatarPlano(plano)}
+${valorFormatado ? `💰 *Valor:* ${valorFormatado}\n` : ''}📅 *Vencimento:* ${vencimento || 'Não informado'}
+
+Para evitar bloqueio de acesso, regularize sua assinatura:
+
+${montarRodapeFinanceiro(linkPagamento)}
+
+Se precisar de ajuda, fale com o suporte do Marcaê. 💜`;
+}
+
+export function montarMensagemAvisoBloqueioAutomatico({
+  nomeEmpresa,
+  plano,
+  valor,
+  vencimento,
+  diasAtraso,
+  linkPagamento,
+}: DadosMensagemFinanceira) {
+  const valorFormatado = formatarValor(valor);
+
+  return `Olá! 😊
+
+🚨 *Aviso de pendência financeira*
+
+A assinatura da empresa *${nomeEmpresa}* está com pagamento pendente.
+
+📌 *Plano:* ${formatarPlano(plano)}
+${valorFormatado ? `💰 *Valor:* ${valorFormatado}\n` : ''}📅 *Vencimento:* ${vencimento || 'Não informado'}
+⏳ *Dias em atraso:* ${diasAtraso || 0}
+
+Para manter o acesso ao sistema ativo, regularize sua assinatura:
+
+${montarRodapeFinanceiro(linkPagamento)}
+
+Equipe Marcaê 💜`;
+}
+
+export function montarMensagemBloqueioAutomatico({
+  nomeEmpresa,
+  plano,
+  valor,
+  vencimento,
+  diasAtraso,
+  linkPagamento,
+}: DadosMensagemFinanceira) {
+  const valorFormatado = formatarValor(valor);
+
+  return `Olá! 😊
+
+🔒 *Acesso bloqueado temporariamente*
+
+A empresa *${nomeEmpresa}* foi bloqueada automaticamente por pendência financeira.
+
+📌 *Plano:* ${formatarPlano(plano)}
+${valorFormatado ? `💰 *Valor:* ${valorFormatado}\n` : ''}📅 *Vencimento:* ${vencimento || 'Não informado'}
+⏳ *Dias em atraso:* ${diasAtraso || 0}
+
+Após a regularização, o sistema poderá ser reativado automaticamente pelo financeiro do Marcaê.
+
+${montarRodapeFinanceiro(linkPagamento)}
+
+Equipe Marcaê 💜`;
+}
+
+export function montarMensagemPagamentoAprovadoFinanceiro({
+  nomeEmpresa,
+  plano,
+  valor,
+  vencimento,
+}: DadosMensagemFinanceira) {
+  const valorFormatado = formatarValor(valor);
+
+  return `Olá! 😊
+
+✅ *Pagamento confirmado com sucesso!*
+
+A assinatura da empresa *${nomeEmpresa}* foi regularizada.
+
+📌 *Plano:* ${formatarPlano(plano)}
+${valorFormatado ? `💰 *Valor:* ${valorFormatado}\n` : ''}📅 *Próxima cobrança:* ${vencimento || 'Não informado'}
+
+Seu acesso segue ativo normalmente. Bora vender muito com o Marcaê! 🚀💜`;
+}
+
+/* =========================
    🚀 ENVIO WHATSAPP
 ========================= */
 const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL;
