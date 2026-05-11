@@ -21,9 +21,14 @@ async function recalcularValorTotalAgendamento(agendamentoId: string) {
 
   if (!agendamento) return null;
 
-  const valorServicoPrincipal = numero(agendamento.servico?.valor || agendamento.valorTotal);
+  const servicoPrincipal = (agendamento as any).servico;
+  const servicosAdicionais = ((agendamento as any).servicosAdicionais || []) as any[];
 
-  const totalAdicionais = agendamento.servicosAdicionais.reduce(
+  const valorServicoPrincipal = numero(
+    servicoPrincipal?.valor || (agendamento as any).valorTotal
+  );
+
+  const totalAdicionais = servicosAdicionais.reduce(
     (total: number, item: any) => total + numero(item.valor),
     0
   );
@@ -69,7 +74,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const itens = await prisma.agendamentoServico.findMany({
+    const itens = await (prisma as any).agendamentoServico.findMany({
       where: {
         empresaId,
         agendamentoId,
@@ -200,7 +205,7 @@ export async function POST(req: Request) {
 
     const statusFinal = statusPagamento || 'pendente';
 
-    const item = await prisma.agendamentoServico.create({
+    const item = await (prisma as any).agendamentoServico.create({
       data: {
         empresaId,
         agendamentoId,
@@ -269,7 +274,7 @@ export async function PATCH(req: Request) {
       );
     }
 
-    const itemAtual = await prisma.agendamentoServico.findFirst({
+    const itemAtual = await (prisma as any).agendamentoServico.findFirst({
       where: {
         id,
         empresaId,
@@ -285,7 +290,7 @@ export async function PATCH(req: Request) {
 
     const statusFinal = statusPagamento ?? itemAtual.statusPagamento;
 
-    const item = await prisma.agendamentoServico.update({
+    const item = await (prisma as any).agendamentoServico.update({
       where: { id },
       data: {
         statusPagamento: statusFinal,
@@ -341,7 +346,7 @@ export async function DELETE(req: Request) {
       );
     }
 
-    const item = await prisma.agendamentoServico.findFirst({
+    const item = await (prisma as any).agendamentoServico.findFirst({
       where: {
         id,
         empresaId,
@@ -355,7 +360,7 @@ export async function DELETE(req: Request) {
       );
     }
 
-    await prisma.agendamentoServico.delete({
+    await (prisma as any).agendamentoServico.delete({
       where: { id },
     });
 
