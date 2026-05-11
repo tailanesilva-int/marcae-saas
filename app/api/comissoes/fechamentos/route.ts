@@ -46,7 +46,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       success: true,
-      fechamentos: fechamentos.map((item) => ({
+      fechamentos: fechamentos.map((item: any) => ({
         id: item.id,
         empresaId: item.empresaId,
         profissionalId: item.profissionalId,
