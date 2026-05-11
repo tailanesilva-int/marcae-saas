@@ -52,7 +52,7 @@ export async function GET(req: Request) {
       });
     }
 
-    const ultimoFechamento = await prisma.comissaoPagamento.findFirst({
+    const ultimoFechamento = await (prisma as any).comissaoPagamento.findFirst({
       where: {
         empresaId,
       },
