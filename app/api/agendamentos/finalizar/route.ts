@@ -285,6 +285,8 @@ const dataAtendimento = new Date(
       ? 0
       : valorPrincipal;
 
+const servicosAdicionais = ((agendamento as any).servicosAdicionais || []) as any[];
+
     for (const item of agendamento.servicosAdicionais) {
       const valor = numero((item as any).valor);
 
@@ -412,6 +414,8 @@ const dataAtendimento = new Date(
     COMISSÃO SERVIÇOS ADICIONAIS
     =========================================
     */
+
+const servicosAdicionais = ((agendamento as any).servicosAdicionais || []) as any[];
 
     for (const adicional of agendamento.servicosAdicionais) {
       await gerarComissaoIndividual({
