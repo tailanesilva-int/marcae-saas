@@ -17,14 +17,13 @@ async function criarClientMercadoPago(
   if (empresaId) {
     const empresa = await prisma.empresa.findUnique({
       where: { id: empresaId },
-      select: {
-        mercadoPagoAccessToken: true,
-      },
     });
 
-    if (empresa?.mercadoPagoAccessToken) {
+    const empresaPagamento = empresa as any;
+
+    if (empresaPagamento?.mercadoPagoAccessToken) {
       return new MercadoPagoConfig({
-        accessToken: empresa.mercadoPagoAccessToken,
+        accessToken: empresaPagamento.mercadoPagoAccessToken,
       });
     }
   }
@@ -61,23 +60,23 @@ export async function POST(req: Request) {
     console.log('💳 Payment ID:', paymentId);
 
     const empresaId =
-  body?.empresaId ||
-  url.searchParams.get('empresaId');
+      body?.empresaId ||
+      url.searchParams.get('empresaId');
 
-const tipoPagamento =
-  body?.tipo ||
-  url.searchParams.get('tipo');
+    const tipoPagamento =
+      body?.tipo ||
+      url.searchParams.get('tipo');
 
-const client = await criarClientMercadoPago(
-  empresaId,
-  tipoPagamento
-);
+    const client = await criarClientMercadoPago(
+      empresaId,
+      tipoPagamento
+    );
 
-const payment = new Payment(client);
+    const payment = new Payment(client);
 
-const pagamentoMP = await payment.get({
-  id: paymentId,
-});
+    const pagamentoMP = (await payment.get({
+      id: paymentId,
+    })) as any;
 
     console.log('📦 Dados MP:', pagamentoMP);
 
@@ -149,7 +148,6 @@ const pagamentoMP = await payment.get({
     console.log('✅ Atualizado com sucesso');
 
     return NextResponse.json({ received: true });
-
   } catch (error) {
     console.error('❌ Erro webhook Mercado Pago:', error);
 
