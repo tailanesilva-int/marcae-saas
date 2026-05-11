@@ -77,7 +77,9 @@ export async function GET(req: NextRequest) {
     const mapaAgendamentos: Record<string, number> = {};
     const mapaStatus: Record<string, number> = {};
 
-    agendamentos.forEach((ag) => {
+    agendamentos.forEach((agendamentoBase) => {
+      const ag = agendamentoBase as any;
+
       if (!ag.dataHoraInicio) return;
 
       const data = ag.dataHoraInicio.toISOString().split('T')[0];
@@ -95,17 +97,23 @@ export async function GET(req: NextRequest) {
         mapaFaturamento[data] += valorPago;
       }
 
-      for (const adicional of ag.servicosAdicionais || []) {
+      const servicosAdicionais = (ag.servicosAdicionais || []) as any[];
+
+      for (const adicional of servicosAdicionais) {
         if (pagamentoFoiRealizado(adicional.statusPagamento)) {
           faturamentoTotal += numero(adicional.valor);
-          custoOperacionalTotal += numero(adicional.custo || adicional.servico?.custo);
+          custoOperacionalTotal += numero(
+            adicional.custo || adicional.servico?.custo
+          );
 
           if (!mapaFaturamento[data]) mapaFaturamento[data] = 0;
           mapaFaturamento[data] += numero(adicional.valor);
         }
       }
 
-      for (const comissao of ag.comissoes || []) {
+      const comissoes = (ag.comissoes || []) as any[];
+
+      for (const comissao of comissoes) {
         totalComissoes += numero(comissao.valorComissao);
       }
 
@@ -117,8 +125,11 @@ export async function GET(req: NextRequest) {
       mapaStatus[status]++;
     });
 
-    const lucroLiquido = faturamentoTotal - custoOperacionalTotal - totalComissoes;
-    const ticketMedio = totalPagos > 0 ? faturamentoTotal / totalPagos : 0;
+    const lucroLiquido =
+      faturamentoTotal - custoOperacionalTotal - totalComissoes;
+
+    const ticketMedio =
+      totalPagos > 0 ? faturamentoTotal / totalPagos : 0;
 
     const graficoFaturamento = Object.entries(mapaFaturamento).map(
       ([data, total]) => ({ data, total })
