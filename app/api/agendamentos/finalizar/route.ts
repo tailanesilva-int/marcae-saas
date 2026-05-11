@@ -58,10 +58,10 @@ async function gerarComissaoIndividual(params: {
   if (existeComissao) return;
 
   let tipoComissao =
-    profissional.tipoComissao || 'fixo';
+    (profissional as any).tipoComissao || 'fixo';
 
   let valorConfigurado =
-    numero(profissional.valorComissao);
+    numero((profissional as any).valorComissao);
 
   if (servicoId) {
     const servico =
@@ -71,13 +71,18 @@ async function gerarComissaoIndividual(params: {
         },
       });
 
-    if (servico?.tipoComissao) {
-      tipoComissao = servico.tipoComissao;
+    const servicoComissao = servico as any;
+
+    if (servicoComissao?.tipoComissao) {
+      tipoComissao = servicoComissao.tipoComissao;
     }
 
-    if (servico?.valorComissao) {
+    if (
+      servicoComissao?.valorComissao !== undefined &&
+      servicoComissao?.valorComissao !== null
+    ) {
       valorConfigurado = numero(
-        servico.valorComissao
+        servicoComissao.valorComissao
       );
     }
   }
@@ -224,34 +229,36 @@ export async function POST(req: Request) {
       );
     }
 
-/*
-=========================================
-BLOQUEAR FINALIZAÇÃO FUTURA
-=========================================
-*/
+    /*
+    =========================================
+    BLOQUEAR FINALIZAÇÃO FUTURA
+    =========================================
+    */
 
-const agora = new Date();
+    const agora = new Date();
 
-const dataAtendimento = new Date(
-  agendamento.dataHoraInicio
-);
+    const dataAtendimento = new Date(
+      agendamento.dataHoraInicio
+    );
 
-if (
-  dataAtendimento.getTime() >
-  agora.getTime()
-) {
-  return NextResponse.json(
-    {
-      success: false,
-      error:
-        'Atendimentos futuros não podem ser finalizados.',
-    },
-    { status: 400 }
-  );
-}
+    if (
+      dataAtendimento.getTime() >
+      agora.getTime()
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Atendimentos futuros não podem ser finalizados.',
+        },
+        { status: 400 }
+      );
+    }
+
+    const servicoPrincipal = agendamento.servico as any;
 
     const valorPrincipal = numero(
-      agendamento.servico?.valor ||
+      servicoPrincipal?.valor ||
         agendamento.valorTotal
     );
 
@@ -269,11 +276,11 @@ if (
       : valorPrincipal;
 
     for (const item of agendamento.servicosAdicionais) {
-      const valor = numero(item.valor);
+      const valor = numero((item as any).valor);
 
       if (
         pagamentoFoiRealizado(
-          item.statusPagamento
+          (item as any).statusPagamento
         )
       ) {
         totalPago += valor;
@@ -412,7 +419,7 @@ if (
           adicional.id,
 
         valorServico: numero(
-          adicional.valor
+          (adicional as any).valor
         ),
 
         origemServico:
