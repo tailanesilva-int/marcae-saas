@@ -27,7 +27,7 @@ export async function GET(req: Request) {
       };
     }
 
-    const fechamentos = await prisma.comissaoPagamento.findMany({
+    const fechamentos = await (prisma as any).comissaoPagamento.findMany({
       where,
       include: {
         profissional: true,
