@@ -60,18 +60,20 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Nenhuma comissão pendente encontrada para este profissional no período.',
+          error:
+            'Nenhuma comissão pendente encontrada para este profissional no período.',
         },
         { status: 400 }
       );
     }
 
     const valorPago = comissoesPendentes.reduce(
-      (total, comissao) => total + numero(comissao.valorComissao),
+      (total: number, comissao: any) =>
+        total + numero(comissao.valorComissao),
       0
     );
 
-    const fechamento = await prisma.comissaoPagamento.create({
+    const fechamento = await (prisma as any).comissaoPagamento.create({
       data: {
         empresaId,
         profissionalId,
@@ -85,7 +87,7 @@ export async function POST(req: Request) {
     await prisma.comissao.updateMany({
       where: {
         id: {
-          in: comissoesPendentes.map((comissao) => comissao.id),
+          in: comissoesPendentes.map((comissao: any) => comissao.id),
         },
       },
       data: {
