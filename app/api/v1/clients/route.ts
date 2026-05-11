@@ -79,16 +79,20 @@ export async function GET(req: Request) {
       },
     });
 
-    const historico = agendamentos.map((agendamento) => {
+    const historico = agendamentos.map((agendamentoBase) => {
+      const agendamento = agendamentoBase as any;
+      const servicoPrincipal = agendamento.servico as any;
+      const servicosAdicionais = (agendamento.servicosAdicionais || []) as any[];
+
       const valorPrincipal = numero(
-        agendamento.servico?.valor || agendamento.valorTotal
+        servicoPrincipal?.valor || agendamento.valorTotal
       );
 
       const principalPago = pagamentoFoiRealizado(agendamento.statusPagamento)
         ? valorPrincipal
         : 0;
 
-      const adicionais = (agendamento.servicosAdicionais || []).map((item) => {
+      const adicionais = servicosAdicionais.map((item: any) => {
         const valor = numero(item.valor);
 
         return {
@@ -104,13 +108,13 @@ export async function GET(req: Request) {
       });
 
       const totalAdicionais = adicionais.reduce(
-        (total, item) => total + numero(item.valor),
+        (total: number, item: any) => total + numero(item.valor),
         0
       );
 
       const totalPagoAdicionais = adicionais
-        .filter((item) => item.pago)
-        .reduce((total, item) => total + numero(item.valor), 0);
+        .filter((item: any) => item.pago)
+        .reduce((total: number, item: any) => total + numero(item.valor), 0);
 
       const total = Math.max(
         numero(agendamento.valorTotal),
@@ -126,7 +130,7 @@ export async function GET(req: Request) {
         dataHoraFim: agendamento.dataHoraFim,
         status: agendamento.status,
         statusPagamento: agendamento.statusPagamento,
-        servico: agendamento.servico?.nome || 'Serviço não informado',
+        servico: servicoPrincipal?.nome || 'Serviço não informado',
         profissional: agendamento.profissional?.nome || 'Não informado',
         valorPrincipal,
         total,
