@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
         faturamentoTotal += valorPago;
         totalPagos++;
 
-        custoOperacionalTotal += numero(ag.servico?.custo);
+        custoOperacionalTotal += numero((ag.servico as any)?.custo);
 
         if (!mapaFaturamento[data]) mapaFaturamento[data] = 0;
         mapaFaturamento[data] += valorPago;
