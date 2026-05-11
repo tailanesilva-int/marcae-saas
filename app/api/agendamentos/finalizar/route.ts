@@ -237,9 +237,19 @@ export async function POST(req: Request) {
 
     const agora = new Date();
 
-    const dataAtendimento = new Date(
-      agendamento.dataHoraInicio
-    );
+    if (!agendamento.dataHoraInicio) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Data do atendimento não encontrada.',
+    },
+    { status: 400 }
+  );
+}
+
+const dataAtendimento = new Date(
+  agendamento.dataHoraInicio
+);
 
     if (
       dataAtendimento.getTime() >
