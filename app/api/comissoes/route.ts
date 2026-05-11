@@ -78,20 +78,25 @@ export async function GET(req: Request) {
     let totalPago = 0;
     let totalPendente = 0;
 
-    for (const comissao of comissoes) {
+    for (const comissaoBase of comissoes) {
+      const comissao = comissaoBase as any;
+
       const profissional = comissao.profissional;
       const agendamento = comissao.agendamento;
+      const agendamentoServico = comissao.agendamentoServico;
 
       if (!profissional) continue;
 
       const valorServico = Number(comissao.valorServico || 0);
       const valorComissao = Number(comissao.valorComissao || 0);
+
       const custoServico = Number(
-        comissao.agendamentoServico?.custo ||
-          comissao.agendamentoServico?.servico?.custo ||
-          comissao.agendamento?.servico?.custo ||
+        agendamentoServico?.custo ||
+          agendamentoServico?.servico?.custo ||
+          agendamento?.servico?.custo ||
           0
       );
+
       const lucroEstimado = valorServico - custoServico - valorComissao;
 
       totalFaturadoGeral += valorServico;
@@ -106,23 +111,21 @@ export async function GET(req: Request) {
 
       if (!profissionaisMap[profissional.id]) {
         profissionaisMap[profissional.id] = {
-  profissionalId: profissional.id,
-  profissionalNome: profissional.nome,
+          profissionalId: profissional.id,
+          profissionalNome: profissional.nome,
 
-  tipoComissao:
-    profissional.tipoComissao || 'percentual',
+          tipoComissao: profissional.tipoComissao || 'percentual',
 
-  valorComissaoConfigurado:
-    Number(profissional.valorComissao || 0),
+          valorComissaoConfigurado: Number(profissional.valorComissao || 0),
 
-  totalServicos: 0,
-  totalFaturado: 0,
-  totalComissao: 0,
-  totalPago: 0,
-  totalPendente: 0,
+          totalServicos: 0,
+          totalFaturado: 0,
+          totalComissao: 0,
+          totalPago: 0,
+          totalPendente: 0,
 
-  servicos: [],
-};
+          servicos: [],
+        };
       }
 
       profissionaisMap[profissional.id].totalServicos += 1;
@@ -144,7 +147,10 @@ export async function GET(req: Request) {
           agendamento?.nomeCliente ||
           agendamento?.clienteNome ||
           'Cliente não informado',
-        servico: agendamento?.servico?.nome || 'Serviço não informado',
+        servico:
+          agendamentoServico?.servico?.nome ||
+          agendamento?.servico?.nome ||
+          'Serviço não informado',
         profissional: profissional.nome,
         valorServico,
         custoServico,
@@ -173,34 +179,46 @@ export async function GET(req: Request) {
         totalPendente,
       },
       profissionais: Object.values(profissionaisMap),
-      comissoes: comissoes.map((comissao) => ({
-        id: comissao.id,
-        empresaId: comissao.empresaId,
-        agendamentoId: comissao.agendamentoId,
-        profissionalId: comissao.profissionalId,
-        profissionalNome:
-          comissao.profissional?.nome || 'Profissional não informado',
-        cliente:
-          comissao.agendamento?.cliente?.nome ||
-          comissao.agendamento?.nomeCliente ||
-          comissao.agendamento?.clienteNome ||
-          'Cliente não informado',
-        servico: comissao.agendamento?.servico?.nome || 'Serviço não informado',
-        valorServico: Number(comissao.valorServico || 0),
-        custoServico: Number(
-          comissao.agendamentoServico?.custo ||
-            comissao.agendamentoServico?.servico?.custo ||
-            comissao.agendamento?.servico?.custo ||
+      comissoes: comissoes.map((comissaoBase) => {
+        const comissao = comissaoBase as any;
+
+        const agendamento = comissao.agendamento;
+        const agendamentoServico = comissao.agendamentoServico;
+
+        const custoServico = Number(
+          agendamentoServico?.custo ||
+            agendamentoServico?.servico?.custo ||
+            agendamento?.servico?.custo ||
             0
-        ),
-        valorComissao: Number(comissao.valorComissao || 0),
-        tipoComissao: comissao.tipoComissao || 'não informado',
-        status: comissao.status,
-        dataPagamento: comissao.dataPagamento,
-        observacao: comissao.observacao,
-        data: comissao.agendamento?.dataHoraInicio || comissao.createdAt,
-        createdAt: comissao.createdAt,
-      })),
+        );
+
+        return {
+          id: comissao.id,
+          empresaId: comissao.empresaId,
+          agendamentoId: comissao.agendamentoId,
+          profissionalId: comissao.profissionalId,
+          profissionalNome:
+            comissao.profissional?.nome || 'Profissional não informado',
+          cliente:
+            agendamento?.cliente?.nome ||
+            agendamento?.nomeCliente ||
+            agendamento?.clienteNome ||
+            'Cliente não informado',
+          servico:
+            agendamentoServico?.servico?.nome ||
+            agendamento?.servico?.nome ||
+            'Serviço não informado',
+          valorServico: Number(comissao.valorServico || 0),
+          custoServico,
+          valorComissao: Number(comissao.valorComissao || 0),
+          tipoComissao: comissao.tipoComissao || 'não informado',
+          status: comissao.status,
+          dataPagamento: comissao.dataPagamento,
+          observacao: comissao.observacao,
+          data: agendamento?.dataHoraInicio || comissao.createdAt,
+          createdAt: comissao.createdAt,
+        };
+      }),
     });
   } catch (error) {
     console.error('Erro ao buscar histórico de comissões:', error);
