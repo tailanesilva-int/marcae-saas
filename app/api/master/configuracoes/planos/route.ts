@@ -6,7 +6,13 @@ function normalizarValor(valor: any, fallback: number) {
     return fallback;
   }
 
-  const numero = Number(String(valor).replace('R$', '').replace('.', '').replace(',', '.').trim());
+  const numero = Number(
+    String(valor)
+      .replace('R$', '')
+      .replace('.', '')
+      .replace(',', '.')
+      .trim()
+  );
 
   if (Number.isNaN(numero) || numero < 0) {
     return fallback;
@@ -16,7 +22,7 @@ function normalizarValor(valor: any, fallback: number) {
 }
 
 async function buscarOuCriarConfiguracao() {
-  const existente = await prisma.configuracaoSaas.findFirst({
+  const existente = await (prisma as any).configuracaoSaas.findFirst({
     orderBy: { createdAt: 'asc' },
   });
 
@@ -24,7 +30,7 @@ async function buscarOuCriarConfiguracao() {
     return existente;
   }
 
-  return prisma.configuracaoSaas.create({
+  return (prisma as any).configuracaoSaas.create({
     data: {
       valorPlanoBasico: 49.9,
       valorPlanoPlus: 99.9,
@@ -45,7 +51,10 @@ export async function GET() {
     console.error('Erro ao carregar configuração dos planos:', error);
 
     return NextResponse.json(
-      { success: false, error: 'Erro ao carregar configuração dos planos.' },
+      {
+        success: false,
+        error: 'Erro ao carregar configuração dos planos.',
+      },
       { status: 500 }
     );
   }
@@ -56,12 +65,21 @@ export async function PATCH(req: Request) {
     const body = await req.json();
     const atual = await buscarOuCriarConfiguracao();
 
-    const configuracao = await prisma.configuracaoSaas.update({
+    const configuracao = await (prisma as any).configuracaoSaas.update({
       where: { id: atual.id },
       data: {
-        valorPlanoBasico: normalizarValor(body.valorPlanoBasico, Number(atual.valorPlanoBasico)),
-        valorPlanoPlus: normalizarValor(body.valorPlanoPlus, Number(atual.valorPlanoPlus)),
-        valorPlanoPremium: normalizarValor(body.valorPlanoPremium, Number(atual.valorPlanoPremium)),
+        valorPlanoBasico: normalizarValor(
+          body.valorPlanoBasico,
+          Number(atual.valorPlanoBasico)
+        ),
+        valorPlanoPlus: normalizarValor(
+          body.valorPlanoPlus,
+          Number(atual.valorPlanoPlus)
+        ),
+        valorPlanoPremium: normalizarValor(
+          body.valorPlanoPremium,
+          Number(atual.valorPlanoPremium)
+        ),
       },
     });
 
@@ -73,7 +91,10 @@ export async function PATCH(req: Request) {
     console.error('Erro ao salvar configuração dos planos:', error);
 
     return NextResponse.json(
-      { success: false, error: 'Erro ao salvar configuração dos planos.' },
+      {
+        success: false,
+        error: 'Erro ao salvar configuração dos planos.',
+      },
       { status: 500 }
     );
   }
