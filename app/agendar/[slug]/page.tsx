@@ -2981,6 +2981,93 @@ const styles = `
     justify-content: center;
   }
 
+/* =========================================
+   CORREÇÃO FINAL ANTI-CORTE MOBILE
+========================================= */
+
+:global(html),
+:global(body) {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+:global(*) {
+  max-width: 100%;
+}
+
+.page {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+.shell {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.hero,
+.empresaHeroCard,
+.card,
+.benefits,
+.footerBrand,
+.cpfBox,
+.section {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+button,
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .shell {
+    width: 100%;
+    padding-left: 12px;
+    padding-right: 12px;
   }
+
+  .hero,
+  .empresaHeroCard,
+  .card,
+  .benefitsMinimal {
+    width: 100%;
+    max-width: calc(100vw - 24px);
+  }
+
+  .heroBackgroundGlow {
+    display: none;
+  }
+
+  .heroBanner {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .empresaHeroCentered h1,
+  .cardHeader h2,
+  .heroBannerText strong,
+  .heroBannerText span,
+  .clienteInfo strong,
+  .clienteInfo span {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .cpfLine,
+  .progressSteps,
+  .rescheduleCard,
+  .servicoPublicoCard,
+  .profissionalPublicoCard {
+    width: 100%;
+    max-width: 100%;
+  }
+}
 
 `;
