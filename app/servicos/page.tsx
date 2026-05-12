@@ -6,8 +6,7 @@ export default function ServicosPage() {
   const [empresa, setEmpresa] = useState<any>(null);
   const [servicos, setServicos] = useState<any[]>([]);
   const [carregando, setCarregando] = useState(true);
-const [editandoId, setEditandoId] = useState('');
-const [salvandoEdicao, setSalvandoEdicao] = useState(false);
+  const [editandoId, setEditandoId] = useState('');
 
   const [form, setForm] = useState({
     nome: '',
@@ -50,57 +49,7 @@ const [salvandoEdicao, setSalvandoEdicao] = useState(false);
     });
   }
 
-function iniciarEdicao(servico: any) {
-  setEditandoId(servico.id);
-
-  setForm({
-    nome: servico.nome || '',
-    descricao: servico.descricao || '',
-    duracaoMin: servico.duracaoMin || 30,
-    valor: String(servico.valor || ''),
-    custo: String(servico.custo || ''),
-    exigePrePagamento:
-      servico.exigePrePagamento || false,
-    valorPrePagamento: String(
-      servico.valorPrePagamento || ''
-    ),
-  });
-
-  window.scrollTo({
-    top: 0,
-    behavior: 'smooth',
-  });
-}
-
-  async function salvar() {
-  if (!form.nome || !form.valor) {
-    alert('Preencha nome e valor.');
-    return;
-  }
-
-    const res = await fetch('/api/servicos', {
-  method: editandoId ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-  id: editandoId,
-  empresaId: empresa.id,
-  ...form,
-}),
-
-    const data = await res.json();
-
-    if (res.status !== 200) {
-      alert(data.error);
-      return;
-    }
-
-    alert(
-  editandoId
-    ? 'Serviço atualizado!'
-    : 'Serviço criado!'
-);
-    carregarServicos(empresa.id);
-
+  function limparFormulario() {
     setEditandoId('');
     setForm({
       nome: '',
@@ -113,6 +62,54 @@ function iniciarEdicao(servico: any) {
     });
   }
 
+  function iniciarEdicao(servico: any) {
+    setEditandoId(servico.id);
+
+    setForm({
+      nome: servico.nome || '',
+      descricao: servico.descricao || '',
+      duracaoMin: servico.duracaoMin || 30,
+      valor: String(servico.valor || ''),
+      custo: String(servico.custo || ''),
+      exigePrePagamento: servico.exigePrePagamento || false,
+      valorPrePagamento: String(servico.valorPrePagamento || ''),
+    });
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  }
+
+  async function salvar() {
+    if (!form.nome || !form.valor) {
+      alert('Preencha nome e valor.');
+      return;
+    }
+
+    const res = await fetch('/api/servicos', {
+      method: editandoId ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: editandoId,
+        empresaId: empresa.id,
+        ...form,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || 'Erro ao salvar serviço.');
+      return;
+    }
+
+    alert(editandoId ? 'Serviço atualizado!' : 'Serviço criado!');
+
+    await carregarServicos(empresa.id);
+    limparFormulario();
+  }
+
   if (!empresa) {
     return <p style={{ padding: 40 }}>Carregando...</p>;
   }
@@ -121,68 +118,65 @@ function iniciarEdicao(servico: any) {
     <main style={{ minHeight: '100vh', background: '#f1f5f9', padding: 30 }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <header style={headerPremium}>
-  <div style={headerConteudo}>
-    <div style={logoHeader}>
-      {empresa?.logoUrl || empresa?.logo || empresa?.imagemUrl ? (
-        <img
-          src={empresa.logoUrl || empresa.logo || empresa.imagemUrl}
-          alt={empresa.nome}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-          }}
-        />
-      ) : (
-        <span>{empresa?.nome?.charAt(0)?.toUpperCase() || 'M'}</span>
-      )}
-    </div>
+          <div style={headerConteudo}>
+            <div style={logoHeader}>
+              {empresa?.logoUrl || empresa?.logo || empresa?.imagemUrl ? (
+                <img
+                  src={empresa.logoUrl || empresa.logo || empresa.imagemUrl}
+                  alt={empresa.nome}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                  }}
+                />
+              ) : (
+                <span>{empresa?.nome?.charAt(0)?.toUpperCase() || 'M'}</span>
+              )}
+            </div>
 
-    <div>
-      <span style={badgeBoasVindas}>
-        ✂️ Gestão operacional
-      </span>
+            <div>
+              <span style={badgeBoasVindas}>✂️ Gestão operacional</span>
 
-      <h1 style={tituloHeader}>Serviços</h1>
+              <h1 style={tituloHeader}>Serviços</h1>
 
-      <p style={subtituloHeader}>
-        Gerencie preços, duração, custos operacionais e pré-pagamentos.
-      </p>
+              <p style={subtituloHeader}>
+                Gerencie preços, duração, custos operacionais e pré-pagamentos.
+              </p>
 
-      <div style={linhaBadgesHeader}>
-        <span style={badgeEmpresa}>
-          🏢 {empresa?.nome || 'Meu Estúdio'}
-        </span>
+              <div style={linhaBadgesHeader}>
+                <span style={badgeEmpresa}>
+                  🏢 {empresa?.nome || 'Meu Estúdio'}
+                </span>
 
-        <span style={badgeModulo}>
-          ✂️ Operacional
-        </span>
+                <span style={badgeModulo}>✂️ Operacional</span>
 
-        <span style={badgeStatusHeader}>
-          ✅ Ativo
-        </span>
-      </div>
-    </div>
-  </div>
+                <span style={badgeStatusHeader}>✅ Ativo</span>
+              </div>
+            </div>
+          </div>
 
-  <div style={acoesHeader}>
-    <a href="/admin">
-      <button style={botaoHeaderClaro}>
-        Admin
-      </button>
-    </a>
+          <div style={acoesHeader}>
+            <a href="/admin">
+              <button style={botaoHeaderClaro}>Admin</button>
+            </a>
 
-    <a href="/dashboard">
-      <button style={botaoHeaderRoxo}>
-        Dashboard
-      </button>
-    </a>
-  </div>
-</header>
+            <a href="/dashboard">
+              <button style={botaoHeaderRoxo}>Dashboard</button>
+            </a>
+          </div>
+        </header>
 
-        {/* FORM */}
         <section style={box}>
-          <h2>Novo serviço</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+            <h2>{editandoId ? 'Editar serviço' : 'Novo serviço'}</h2>
+
+            {editandoId && (
+              <button onClick={limparFormulario} style={botaoSecundario}>
+                Cancelar edição
+              </button>
+            )}
+          </div>
 
           <div style={grid}>
             <div style={campo}>
@@ -272,20 +266,17 @@ function iniciarEdicao(servico: any) {
           </div>
 
           <button onClick={salvar} style={botaoPrincipal}>
-            Salvar serviço
+            {editandoId ? 'Atualizar serviço' : 'Salvar serviço'}
           </button>
         </section>
 
-        {/* LISTA */}
         <section style={box}>
           <h2>Lista de serviços</h2>
 
           {carregando && <p>Carregando...</p>}
 
           {!carregando && servicos.length === 0 && (
-            <p style={{ color: '#64748b' }}>
-              Nenhum serviço cadastrado.
-            </p>
+            <p style={{ color: '#64748b' }}>Nenhum serviço cadastrado.</p>
           )}
 
           <div style={{ display: 'grid', gap: 12 }}>
@@ -293,6 +284,7 @@ function iniciarEdicao(servico: any) {
               <div key={s.id} style={card}>
                 <div>
                   <strong>{s.nome}</strong>
+
                   <div style={{ fontSize: 13, color: '#64748b' }}>
                     {s.descricao || 'Sem descrição'}
                   </div>
@@ -301,39 +293,49 @@ function iniciarEdicao(servico: any) {
                     ⏱ {s.duracaoMin} min — 💰 {dinheiro(s.valor)}
                   </div>
 
-                  <div style={{ marginTop: 6, color: '#64748b', fontSize: 13, fontWeight: 700 }}>
-                    Custo operacional: {Number(s.custo || 0) > 0 ? dinheiro(s.custo) : 'Não informado'}
+                  <div
+                    style={{
+                      marginTop: 6,
+                      color: '#64748b',
+                      fontSize: 13,
+                      fontWeight: 700,
+                    }}
+                  >
+                    Custo operacional:{' '}
+                    {Number(s.custo || 0) > 0
+                      ? dinheiro(s.custo)
+                      : 'Não informado'}
                   </div>
 
                   {s.exigePrePagamento && (
-  <span style={badge}>
-    Pré: {dinheiro(s.valorPrePagamento)}
-  </span>
-)}
+                    <span style={badge}>
+                      Pré: {dinheiro(s.valorPrePagamento)}
+                    </span>
+                  )}
 
-<div
-  style={{
-    display: 'flex',
-    gap: 10,
-    marginTop: 14,
-    flexWrap: 'wrap',
-  }}
->
-  <button
-    onClick={() => iniciarEdicao(s)}
-    style={{
-      padding: '10px 14px',
-      borderRadius: 10,
-      border: 'none',
-      background: '#4f46e5',
-      color: '#fff',
-      fontWeight: 700,
-      cursor: 'pointer',
-    }}
-  >
-    ✏️ Editar serviço
-  </button>
-</div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 10,
+                      marginTop: 14,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <button
+                      onClick={() => iniciarEdicao(s)}
+                      style={{
+                        padding: '10px 14px',
+                        borderRadius: 10,
+                        border: 'none',
+                        background: '#4f46e5',
+                        color: '#fff',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ✏️ Editar serviço
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -343,19 +345,6 @@ function iniciarEdicao(servico: any) {
     </main>
   );
 }
-
-/* estilos */
-
-const header = {
-  background: 'linear-gradient(135deg, #4f46e5, #8b5cf6)',
-  color: '#fff',
-  borderRadius: 20,
-  padding: 24,
-  marginBottom: 20,
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-};
 
 const box = {
   background: '#fff',
