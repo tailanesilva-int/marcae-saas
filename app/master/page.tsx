@@ -24,6 +24,7 @@ mercadoPagoAtivo?: boolean;
 mercadoPagoAccessToken?: string | null;
 mercadoPagoPublicKey?: string | null;
 mercadoPagoModo?: string | null;
+solicitouIntegracaoMp?: boolean | null;
   telefone?: string | null;
   whatsapp?: string | null;
   endereco?: string | null;
