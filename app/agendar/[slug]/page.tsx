@@ -1078,6 +1078,9 @@ const profissionaisFiltrados = profissionais.filter((p: any) =>
   )}
 </div>
 
+              <div className="section">
+                <div className="sectionTitle">Data do atendimento</div>
+
                 <input
                   className="field"
                   type="date"
