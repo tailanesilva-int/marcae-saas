@@ -464,6 +464,14 @@ export default function AgendarPage() {
 
   const servicoSelecionado = servicos.find((s) => s.id === servicoId);
   const profissionalSelecionado = profissionais.find((p) => p.id === profissionalId);
+const profissionaisFiltrados = profissionais.filter((p: any) =>
+  Array.isArray(p.servicos) &&
+  p.servicos.some(
+    (ps: any) =>
+      ps.servicoId === servicoId ||
+      ps.servico?.id === servicoId
+  )
+);
   const podeMostrarAgenda =
     !modoReagendamento && cpfConsultado && (clienteEncontrado || mostrarCamposExtras);
   const clienteVeioDoPainel = Boolean(clienteIdUrl);
@@ -985,15 +993,26 @@ export default function AgendarPage() {
 </div>
 
               <div className="section">
+{!servicoId && (
+  <div className="emptySlots">
+    Primeiro escolha um serviço para visualizar os profissionais disponíveis.
+  </div>
+)}
   <div className="sectionTitle">Profissional</div>
 
-  {profissionais.length === 0 ? (
+  {servicoId && profissionaisFiltrados.length === 0 ? (
     <div className="emptySlots">
       Nenhum profissional disponível para este serviço no momento.
     </div>
   ) : (
+
+{!servicoId && (
+  <div className="emptySlots">
+    Primeiro escolha um serviço para visualizar os profissionais disponíveis.
+  </div>
+)}
     <div className="profissionaisPublicos">
-      {profissionais.map((p) => {
+      {profissionaisFiltrados.map((p) => {
         const fotoProfissional =
           p.fotoUrl || p.foto || p.imagemUrl || p.avatarUrl || '';
 
