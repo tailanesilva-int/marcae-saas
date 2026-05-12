@@ -8,11 +8,24 @@ export default function LoginPage() {
   const [empresaSlug, setEmpresaSlug] = useState('');
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState('');
+  const [mobile, setMobile] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const empresa = params.get('empresa') || '';
     setEmpresaSlug(empresa);
+
+    const verificarTela = () => {
+      setMobile(window.innerWidth <= 768);
+    };
+
+    verificarTela();
+
+    window.addEventListener('resize', verificarTela);
+
+    return () => {
+      window.removeEventListener('resize', verificarTela);
+    };
   }, []);
 
   async function handleLogin(e: React.FormEvent) {
@@ -57,15 +70,37 @@ export default function LoginPage() {
 
   return (
     <div style={container}>
-      <div style={wrapper}>
-        <div style={left}>
-          <h1 style={logo}>
+      <div
+        style={{
+          ...wrapper,
+          flexDirection: mobile ? 'column' : 'row',
+          width: mobile ? '100%' : '100%',
+          margin: mobile ? '20px' : '0',
+        }}
+      >
+        <div
+          style={{
+            ...left,
+            padding: mobile ? '32px 24px' : '50px',
+          }}
+        >
+          <h1
+            style={{
+              ...logo,
+              fontSize: mobile ? '38px' : '42px',
+            }}
+          >
             Marca<span style={{ color: '#A5B4FC' }}>ê</span>
           </h1>
 
-          <p style={description}>
-            Plataforma profissional de agendamentos com pagamentos, WhatsApp
-            automático e controle de clientes.
+          <p
+            style={{
+              ...description,
+              fontSize: mobile ? '15px' : '16px',
+            }}
+          >
+            Plataforma profissional de agendamentos com pagamentos,
+            WhatsApp automático e controle de clientes.
           </p>
 
           {empresaSlug && (
@@ -86,10 +121,17 @@ export default function LoginPage() {
         </div>
 
         <div style={right}>
-          <div style={card}>
+          <div
+            style={{
+              ...card,
+              padding: mobile ? '28px 22px' : '40px',
+            }}
+          >
             <h2 style={title}>Entrar no painel</h2>
+
             <p style={subtitle}>
-              Acesse sua conta para gerenciar agenda, serviços e profissionais.
+              Acesse sua conta para gerenciar agenda, serviços e
+              profissionais.
             </p>
 
             <form onSubmit={handleLogin} style={form}>
@@ -113,7 +155,11 @@ export default function LoginPage() {
 
               {erro && <div style={erroBox}>{erro}</div>}
 
-              <button type="submit" style={button} disabled={carregando}>
+              <button
+                type="submit"
+                style={button}
+                disabled={carregando}
+              >
                 {carregando ? 'Entrando...' : 'Entrar'}
               </button>
 
@@ -121,7 +167,9 @@ export default function LoginPage() {
                 type="button"
                 style={secondaryButton}
                 onClick={() =>
-                  alert('Recuperação de senha será implementada na próxima etapa.')
+                  alert(
+                    'Recuperação de senha será implementada na próxima etapa.'
+                  )
                 }
               >
                 Esqueci minha senha
@@ -135,25 +183,26 @@ export default function LoginPage() {
 }
 
 const container = {
-  height: '100vh',
+  minHeight: '100vh',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   background: 'linear-gradient(135deg, #0F172A, #312E81)',
+  padding: '20px',
 };
 
 const wrapper = {
   display: 'flex',
   width: '100%',
   maxWidth: '1100px',
-  borderRadius: '20px',
+  borderRadius: '24px',
   overflow: 'hidden',
   boxShadow: '0 30px 80px rgba(0,0,0,0.4)',
+  background: '#fff',
 };
 
 const left = {
   flex: 1,
-  padding: '50px',
   color: '#fff',
   background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
   display: 'flex',
@@ -162,15 +211,14 @@ const left = {
 };
 
 const logo = {
-  fontSize: '42px',
   fontWeight: 'bold',
   marginBottom: '20px',
 };
 
 const description = {
-  fontSize: '16px',
   opacity: 0.9,
   marginBottom: '24px',
+  lineHeight: 1.6,
 };
 
 const empresaBox = {
@@ -190,7 +238,7 @@ const features = {
 
 const feature = {
   fontSize: '14px',
-  opacity: 0.9,
+  opacity: 0.95,
 };
 
 const right = {
@@ -203,19 +251,20 @@ const right = {
 
 const card = {
   width: '100%',
-  maxWidth: '400px',
-  padding: '40px',
+  maxWidth: '420px',
 };
 
 const title = {
-  fontSize: '24px',
+  fontSize: '30px',
   fontWeight: 'bold',
-  marginBottom: '5px',
+  marginBottom: '6px',
+  color: '#111827',
 };
 
 const subtitle = {
-  color: '#666',
-  marginBottom: '25px',
+  color: '#6B7280',
+  marginBottom: '26px',
+  lineHeight: 1.5,
 };
 
 const form = {
@@ -225,34 +274,37 @@ const form = {
 };
 
 const input = {
-  padding: '12px',
-  borderRadius: '10px',
-  border: '1px solid #ddd',
-  fontSize: '14px',
+  padding: '14px',
+  borderRadius: '12px',
+  border: '1px solid #D1D5DB',
+  fontSize: '15px',
+  outline: 'none',
 };
 
 const button = {
-  padding: '12px',
-  borderRadius: '10px',
+  padding: '14px',
+  borderRadius: '12px',
   border: 'none',
   background: '#6366F1',
   color: '#fff',
   fontWeight: 'bold',
   cursor: 'pointer',
+  fontSize: '15px',
 };
 
 const secondaryButton = {
-  padding: '10px',
-  borderRadius: '10px',
-  border: '1px solid #ddd',
+  padding: '12px',
+  borderRadius: '12px',
+  border: '1px solid #E5E7EB',
   background: '#fff',
   cursor: 'pointer',
+  fontSize: '14px',
 };
 
 const erroBox = {
   background: '#FEE2E2',
   color: '#991B1B',
-  padding: '10px',
-  borderRadius: '8px',
+  padding: '12px',
+  borderRadius: '10px',
   fontSize: '13px',
 };
