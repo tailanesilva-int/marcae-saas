@@ -48,11 +48,23 @@ function normalizarValorMonetario(valor: any) {
 async function obterValorPadraoPlano(plano: string) {
   const planoNormalizado = String(plano || "basico").toLowerCase();
 
-  const configuracao = await (prisma as any).configuracaoSaas.findFirst({
-    orderBy: {
-      createdAt: "asc",
-    },
-  });
+  const registros = await prisma.$queryRaw<
+    {
+      valorPlanoBasico: any;
+      valorPlanoPlus: any;
+      valorPlanoPremium: any;
+    }[]
+  >`
+    SELECT
+      "valorPlanoBasico",
+      "valorPlanoPlus",
+      "valorPlanoPremium"
+    FROM "ConfiguracaoSaas"
+    ORDER BY "createdAt" ASC
+    LIMIT 1
+  `;
+
+  const configuracao = registros?.[0] || null;
 
   if (planoNormalizado === "trial") {
     return 0;
