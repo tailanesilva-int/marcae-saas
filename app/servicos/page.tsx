@@ -73,10 +73,43 @@ function iniciarEdicao(servico: any) {
 }
 
   async function salvar() {
-    if (!form.nome || !form.valor) {
-      alert('Preencha nome e valor.');
-      return;
-    }
+  if (!form.nome || !form.valor) {
+    alert('Preencha nome e valor.');
+    return;
+  }
+
+  const res = await fetch('/api/servicos', {
+    method: editandoId ? 'PUT' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: editandoId,
+      empresaId: empresa.id,
+      ...form,
+    }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.error || 'Erro ao salvar serviço.');
+    return;
+  }
+
+  alert(editandoId ? 'Serviço atualizado!' : 'Serviço criado!');
+
+  carregarServicos(empresa.id);
+  setEditandoId('');
+
+  setForm({
+    nome: '',
+    descricao: '',
+    duracaoMin: 30,
+    valor: '',
+    custo: '',
+    exigePrePagamento: false,
+    valorPrePagamento: '',
+  });
+}
 
     const res = await fetch('/api/servicos', {
   method: editandoId ? 'PUT' : 'POST',
