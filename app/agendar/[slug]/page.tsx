@@ -39,6 +39,10 @@ export default function AgendarPage() {
     dataNascimento: '',
   });
 
+  const [etapaAtual, setEtapaAtual] = useState<
+    'identificacao' | 'servico' | 'profissional' | 'data' | 'horario' | 'confirmacao'
+  >('identificacao');
+
   useEffect(() => {
     carregarEmpresa();
   }, [slug]);
@@ -163,6 +167,10 @@ export default function AgendarPage() {
           ? String(data.cliente.dataNascimento).slice(0, 10)
           : '',
       });
+
+      setEtapaAtual('servico');
+
+      setEtapaAtual('servico');
     } catch (error) {
       alert('Erro ao carregar cliente selecionado.');
     }
@@ -221,6 +229,7 @@ export default function AgendarPage() {
           dataNascimento: '',
         });
         setMostrarCamposExtras(true);
+        setEtapaAtual('identificacao');
       }
     } catch (error) {
       alert('Erro ao consultar CPF. Tente novamente.');
@@ -241,6 +250,7 @@ export default function AgendarPage() {
 
     try {
       setModoReagendamento(true);
+      setEtapaAtual('identificacao');
       setCpfConsultado(false);
       setClienteEncontrado(null);
       setMostrarCamposExtras(false);
@@ -271,7 +281,7 @@ export default function AgendarPage() {
   async function buscarHorarios() {
     if (!servicoId || !profissionalId || !data) {
       alert('Selecione serviço, profissional e data para buscar horários.');
-      return;
+      return false;
     }
 
     if (data < hojeFormatoInput()) {
@@ -279,7 +289,7 @@ export default function AgendarPage() {
       setData('');
       setHorarios([]);
       setHorarioSelecionado('');
-      return;
+      return false;
     }
 
     const res = await fetch(
@@ -289,6 +299,7 @@ export default function AgendarPage() {
     const dataRes = await res.json();
     setHorarios(dataRes.horarios || []);
     setHorarioSelecionado('');
+    return true;
   }
 
   async function buscarHorariosReagendamento() {
@@ -462,9 +473,89 @@ export default function AgendarPage() {
     window.location.href = `/sucesso/${agendamento.id}`;
   }
 
+  function clienteNovoValido() {
+    if (clienteEncontrado) return true;
+
+    if (!cpfConsultado) {
+      alert('Clique em continuar para validar o CPF.');
+      return false;
+    }
+
+    if (!cliente.nome.trim()) {
+      alert('Informe seu nome completo.');
+      return false;
+    }
+
+    if (!cliente.whatsapp.trim()) {
+      alert('Informe seu WhatsApp.');
+      return false;
+    }
+
+    if (!cliente.dataNascimento) {
+      alert('Informe sua data de nascimento.');
+      return false;
+    }
+
+    return true;
+  }
+
+  function avancarParaServico() {
+    if (!clienteEncontrado && !cpf) {
+      alert('Informe o CPF.');
+      return;
+    }
+
+    if (!clienteNovoValido()) return;
+
+    setModoReagendamento(false);
+    setEtapaAtual('servico');
+  }
+
+  function selecionarServicoPublico(servicoIdSelecionado: string) {
+    setServicoId(servicoIdSelecionado);
+    setProfissionalId('');
+    setData('');
+    setHorarios([]);
+    setHorarioSelecionado('');
+  }
+
+  function avancarParaProfissional() {
+    if (!servicoId) {
+      alert('Escolha um serviço para continuar.');
+      return;
+    }
+
+    setEtapaAtual('profissional');
+  }
+
+  function avancarParaData() {
+    if (!profissionalId) {
+      alert('Escolha um profissional para continuar.');
+      return;
+    }
+
+    setEtapaAtual('data');
+  }
+
+  async function avancarParaHorarios() {
+    const ok = await buscarHorarios();
+    if (ok) {
+      setEtapaAtual('horario');
+    }
+  }
+
+  function avancarParaConfirmacao() {
+    if (!horarioSelecionado) {
+      alert('Escolha um horário para continuar.');
+      return;
+    }
+
+    setEtapaAtual('confirmacao');
+  }
+
   const servicoSelecionado = servicos.find((s) => s.id === servicoId);
   const profissionalSelecionado = profissionais.find((p) => p.id === profissionalId);
-const profissionaisFiltrados = profissionais.filter((p: any) =>
+  const profissionaisFiltrados = profissionais.filter((p: any) =>
   Array.isArray(p.servicos) &&
   p.servicos.some(
     (ps: any) =>
@@ -564,85 +655,98 @@ const profissionaisFiltrados = profissionais.filter((p: any) =>
   </div>
 </section>
 
-        <section className="card">
+        <section className="card wizardCard">
           <div className="cardHeader">
             <div>
               <h2>Reserve seu horário</h2>
-              <p>{clienteVeioDoPainel ? 'Cliente selecionado pelo painel. Escolha serviço e horário.' : 'Comece pelo CPF para localizar seu cadastro ou criar um novo.'}</p>
+              <p>
+                {etapaAtual === 'identificacao' && 'Comece pelo CPF para localizar seu cadastro ou criar um novo.'}
+                {etapaAtual === 'servico' && 'Agora escolha o serviço que deseja agendar.'}
+                {etapaAtual === 'profissional' && 'Escolha o profissional disponível para o serviço selecionado.'}
+                {etapaAtual === 'data' && 'Escolha o melhor dia para seu atendimento.'}
+                {etapaAtual === 'horario' && 'Agora selecione o horário que funciona melhor para você.'}
+                {etapaAtual === 'confirmacao' && 'Confira tudo antes de finalizar sua reserva.'}
+              </p>
             </div>
 
-            <div className="step">1/3</div>
+            <div className="step">
+              {etapaAtual === 'identificacao' && '1/6'}
+              {etapaAtual === 'servico' && '2/6'}
+              {etapaAtual === 'profissional' && '3/6'}
+              {etapaAtual === 'data' && '4/6'}
+              {etapaAtual === 'horario' && '5/6'}
+              {etapaAtual === 'confirmacao' && '6/6'}
+            </div>
           </div>
 
-          <div className="progressSteps">
-            <div className="progressStep active">
+          <div className="progressSteps wizardSteps">
+            <div className={['identificacao', 'servico', 'profissional', 'data', 'horario', 'confirmacao'].includes(etapaAtual) ? 'progressStep active' : 'progressStep'}>
               <span>1</span>
-              <p>Identificação</p>
+              <p>CPF</p>
             </div>
 
-            <div className={podeMostrarAgenda ? 'progressStep active' : 'progressStep'}>
+            <div className={['servico', 'profissional', 'data', 'horario', 'confirmacao'].includes(etapaAtual) ? 'progressStep active' : 'progressStep'}>
               <span>2</span>
-              <p>Serviço e horário</p>
+              <p>Serviço</p>
             </div>
 
-            <div className={horarioSelecionado ? 'progressStep active' : 'progressStep'}>
+            <div className={['profissional', 'data', 'horario', 'confirmacao'].includes(etapaAtual) ? 'progressStep active' : 'progressStep'}>
               <span>3</span>
-              <p>Confirmação</p>
+              <p>Profissional</p>
+            </div>
+
+            <div className={['data', 'horario', 'confirmacao'].includes(etapaAtual) ? 'progressStep active' : 'progressStep'}>
+              <span>4</span>
+              <p>Data</p>
+            </div>
+
+            <div className={['horario', 'confirmacao'].includes(etapaAtual) ? 'progressStep active' : 'progressStep'}>
+              <span>5</span>
+              <p>Horário</p>
+            </div>
+
+            <div className={etapaAtual === 'confirmacao' ? 'progressStep active' : 'progressStep'}>
+              <span>6</span>
+              <p>Confirmar</p>
             </div>
           </div>
 
           {clienteVeioDoPainel && clienteEncontrado && (
-  <div className="clienteSelecionadoCard">
-    <div className="clienteSelecionadoTop">
-      <div className="clienteAvatar">
-        {String(clienteEncontrado.nome || 'C')
-          .charAt(0)
-          .toUpperCase()}
-      </div>
+            <div className="clienteSelecionadoCard">
+              <div className="clienteSelecionadoTop">
+                <div className="clienteAvatar">
+                  {String(clienteEncontrado.nome || 'C').charAt(0).toUpperCase()}
+                </div>
 
-      <div className="clienteInfo">
-        <strong>{clienteEncontrado.nome}</strong>
+                <div className="clienteInfo">
+                  <strong>{clienteEncontrado.nome}</strong>
+                  <span>📲 {formatarWhatsapp(clienteEncontrado.whatsapp || '')}</span>
+                  {clienteEncontrado.cpf && <span>🪪 {formatarCpf(clienteEncontrado.cpf)}</span>}
+                  {clienteEncontrado.dataNascimento && (
+                    <span>🎂 {new Date(clienteEncontrado.dataNascimento).toLocaleDateString('pt-BR')}</span>
+                  )}
+                </div>
+              </div>
 
-        <span>
-          📲 {formatarWhatsapp(clienteEncontrado.whatsapp || '')}
-        </span>
+              <div className="clienteSelecionadoFooter">
+                <div className="clienteBadge">✅ Cliente identificado</div>
+                <button className="trocarClienteButton" onClick={() => (window.location.href = `/agendar/${slug}`)}>
+                  Trocar cliente
+                </button>
+              </div>
+            </div>
+          )}
 
-        {clienteEncontrado.cpf && (
-          <span>
-            🪪 {formatarCpf(clienteEncontrado.cpf)}
-          </span>
-        )}
+          {etapaAtual === 'identificacao' && !clienteVeioDoPainel && (
+            <div className="cpfBox etapaBox">
+              <div className="etapaIntro">
+                <span>👋</span>
+                <div>
+                  <strong>Vamos começar?</strong>
+                  <p>Informe seu CPF para localizarmos seu cadastro ou criar um novo rapidinho.</p>
+                </div>
+              </div>
 
-        {clienteEncontrado.dataNascimento && (
-          <span>
-            🎂{' '}
-            {new Date(clienteEncontrado.dataNascimento).toLocaleDateString(
-              'pt-BR'
-            )}
-          </span>
-        )}
-      </div>
-    </div>
-
-    <div className="clienteSelecionadoFooter">
-      <div className="clienteBadge">
-        ✅ Cliente identificado
-      </div>
-
-      <button
-        className="trocarClienteButton"
-        onClick={() => {
-          window.location.href = `/agendar/${slug}`;
-        }}
-      >
-        Trocar cliente
-      </button>
-    </div>
-  </div>
-)}
-
-          {!clienteVeioDoPainel && (
-            <div className="cpfBox">
               <label>Informe seu CPF</label>
 
               <div className="cpfLine">
@@ -665,26 +769,55 @@ const profissionaisFiltrados = profissionais.filter((p: any) =>
                 </button>
               </div>
 
-              <button
-                className="outlineButton"
-                onClick={buscarAgendamentosParaReagendar}
-                disabled={buscandoReagendamentos}
-              >
+              <button className="outlineButton" onClick={buscarAgendamentosParaReagendar} disabled={buscandoReagendamentos}>
                 {buscandoReagendamentos ? 'Buscando agendamentos...' : 'Já tenho horário e quero reagendar'}
               </button>
 
               {clienteEncontrado && (
                 <div className="successBox">
                   <strong>Cadastro encontrado</strong>
-                  <span>Olá, {clienteEncontrado.nome}. Agora escolha o serviço e o melhor horário para você.</span>
+                  <span>Olá, {clienteEncontrado.nome}. Você já pode escolher seu serviço.</span>
                 </div>
               )}
 
               {mostrarCamposExtras && (
-                <div className="warningBox">
-                  <strong>Novo cadastro</strong>
-                  <span>Não encontramos seu CPF. Complete seus dados uma única vez para continuar.</span>
+                <div className="section dadosClienteBox">
+                  <div className="warningBox">
+                    <strong>Novo cadastro</strong>
+                    <span>Não encontramos seu CPF. Complete seus dados uma única vez para continuar.</span>
+                  </div>
+
+                  <input
+                    className="field"
+                    placeholder="Nome completo"
+                    value={cliente.nome}
+                    onChange={(e) => setCliente({ ...cliente, nome: e.target.value })}
+                  />
+
+                  <input
+                    className="field"
+                    placeholder="WhatsApp"
+                    value={cliente.whatsapp}
+                    onChange={(e) => setCliente({ ...cliente, whatsapp: formatarWhatsapp(e.target.value) })}
+                  />
+
+                  <div className="fieldGroup">
+                    <label className="fieldLabel">Data de nascimento</label>
+                    <input
+                      className="field"
+                      type="date"
+                      value={cliente.dataNascimento}
+                      onChange={(e) => setCliente({ ...cliente, dataNascimento: e.target.value })}
+                    />
+                    <span className="fieldHint">Usamos essa informação apenas para identificação do cadastro.</span>
+                  </div>
                 </div>
+              )}
+
+              {(clienteEncontrado || mostrarCamposExtras) && (
+                <button className="primaryButton" onClick={avancarParaServico}>
+                  Escolher serviço
+                </button>
               )}
             </div>
           )}
@@ -695,31 +828,16 @@ const profissionaisFiltrados = profissionais.filter((p: any) =>
 
               <div className="policyBox">
                 <strong>Política de reagendamento</strong>
-                <span>
-                  Você pode reagendar seu horário gratuitamente com até <b>24 horas</b> de antecedência.
-                </span>
-                <span>
-                  Após esse período, o reagendamento não estará disponível pelo link e o valor pago não será reembolsado.
-                </span>
-                <span>
-                  Em caso de dúvidas, entre em contato diretamente com a empresa.
-                </span>
-
-                <button className="whatsappButton" onClick={abrirWhatsappEmpresa}>
-                  Falar com a empresa no WhatsApp
-                </button>
+                <span>Você pode reagendar seu horário gratuitamente com até <b>24 horas</b> de antecedência.</span>
+                <span>Após esse período, o reagendamento não estará disponível pelo link e o valor pago não será reembolsado.</span>
+                <span>Em caso de dúvidas, entre em contato diretamente com a empresa.</span>
+                <button className="whatsappButton" onClick={abrirWhatsappEmpresa}>Falar com a empresa no WhatsApp</button>
               </div>
 
-              {buscandoReagendamentos && (
-                <div className="emptySlots">
-                  Buscando seus agendamentos...
-                </div>
-              )}
+              {buscandoReagendamentos && <div className="emptySlots">Buscando seus agendamentos...</div>}
 
               {!buscandoReagendamentos && agendamentosReagendamento.length === 0 && (
-                <div className="emptySlots">
-                  Não encontramos agendamentos pagos e futuros para este CPF.
-                </div>
+                <div className="emptySlots">Não encontramos agendamentos pagos e futuros para este CPF.</div>
               )}
 
               {!buscandoReagendamentos && agendamentosReagendamento.length > 0 && (
@@ -727,19 +845,12 @@ const profissionaisFiltrados = profissionais.filter((p: any) =>
                   {agendamentosReagendamento.map((agendamento) => (
                     <div
                       key={agendamento.id}
-                      className={
-                        agendamentoSelecionado?.id === agendamento.id
-                          ? 'rescheduleCard selected'
-                          : 'rescheduleCard'
-                      }
+                      className={agendamentoSelecionado?.id === agendamento.id ? 'rescheduleCard selected' : 'rescheduleCard'}
                     >
                       <div>
                         <strong>{agendamento.servico?.nome || 'Serviço'}</strong>
                         <p>{formatarDataHora(agendamento.dataHoraInicio)}</p>
-
-                        {agendamento.profissional?.nome && (
-                          <span>Profissional: {agendamento.profissional.nome}</span>
-                        )}
+                        {agendamento.profissional?.nome && <span>Profissional: {agendamento.profissional.nome}</span>}
                       </div>
 
                       {agendamento.podeReagendarPublico ? (
@@ -755,15 +866,12 @@ const profissionaisFiltrados = profissionais.filter((p: any) =>
                           Selecionar
                         </button>
                       ) : (
-                        <div className="blockedText">
-                          Menos de 24h
-                        </div>
+                        <div className="blockedText">Menos de 24h</div>
                       )}
 
                       {!agendamento.podeReagendarPublico && (
                         <div className="dangerBox">
-                          {agendamento.motivoBloqueio ||
-                            'Este agendamento não pode ser reagendado pelo link público.'}
+                          {agendamento.motivoBloqueio || 'Este agendamento não pode ser reagendado pelo link público.'}
                         </div>
                       )}
                     </div>
@@ -797,21 +905,15 @@ const profissionaisFiltrados = profissionais.filter((p: any) =>
                     }}
                   />
 
-                  <button className="secondaryButton" onClick={buscarHorariosReagendamento}>
-                    Buscar novos horários
-                  </button>
+                  <button className="secondaryButton" onClick={buscarHorariosReagendamento}>Buscar novos horários</button>
 
                   <div className="sectionTitleRow">
                     <div className="sectionTitle">Novos horários</div>
-                    {novosHorariosReagendamento.length > 0 && (
-                      <span>{novosHorariosReagendamento.length} opções</span>
-                    )}
+                    {novosHorariosReagendamento.length > 0 && <span>{novosHorariosReagendamento.length} opções</span>}
                   </div>
 
                   {novosHorariosReagendamento.length === 0 ? (
-                    <div className="emptySlots">
-                      Selecione uma nova data para visualizar os horários disponíveis.
-                    </div>
+                    <div className="emptySlots">Selecione uma nova data para visualizar os horários disponíveis.</div>
                   ) : (
                     <div className="slots">
                       {novosHorariosReagendamento.map((h) => (
@@ -826,11 +928,7 @@ const profissionaisFiltrados = profissionais.filter((p: any) =>
                     </div>
                   )}
 
-                  <button
-                    className="primaryButton"
-                    onClick={confirmarReagendamento}
-                    disabled={reagendando}
-                  >
+                  <button className="primaryButton" onClick={confirmarReagendamento} disabled={reagendando}>
                     {reagendando ? 'Reagendando...' : 'Confirmar novo horário'}
                   </button>
                 </div>
@@ -838,321 +936,319 @@ const profissionaisFiltrados = profissionais.filter((p: any) =>
             </div>
           )}
 
-          {podeMostrarAgenda && (
-            <>
-              {mostrarCamposExtras && (
-                <div className="section">
-                  <div className="sectionTitle">Seus dados</div>
+          {podeMostrarAgenda && etapaAtual === 'servico' && (
+            <div className="section etapaBox">
+              <div className="etapaIntro">
+                <span>✨</span>
+                <div>
+                  <strong>Agora escolha o serviço</strong>
+                  <p>Selecione o atendimento que deseja reservar.</p>
+                </div>
+              </div>
 
-                  <input
-                    className="field"
-                    placeholder="Nome completo"
-                    value={cliente.nome}
-                    onChange={(e) =>
-                      setCliente({ ...cliente, nome: e.target.value })
-                    }
-                  />
+              <div className="sectionTitleRow">
+                <div className="sectionTitle">Serviços disponíveis</div>
+                {servicos.length > 0 && <span>{servicos.length} opções</span>}
+              </div>
 
-                  <input
-                    className="field"
-                    placeholder="WhatsApp"
-                    value={cliente.whatsapp}
-                    onChange={(e) =>
-                      setCliente({
-                        ...cliente,
-                        whatsapp: formatarWhatsapp(e.target.value),
-                      })
-                    }
-                  />
+              {servicos.length === 0 ? (
+                <div className="emptySlots">Nenhum serviço disponível para agendamento no momento.</div>
+              ) : (
+                <div className="servicosPublicos">
+                  {servicos.map((s) => {
+                    const servicoAtivo = servicoId === s.id;
+                    const valorServico =
+                      typeof s.valor === 'number'
+                        ? s.valor
+                        : typeof s.preco === 'number'
+                          ? s.preco
+                          : typeof s.valorTotal === 'number'
+                            ? s.valorTotal
+                            : null;
 
-                  <div className="fieldGroup">
-                    <label className="fieldLabel">Data de nascimento</label>
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className={servicoAtivo ? 'servicoPublicoCard active' : 'servicoPublicoCard'}
+                        onClick={() => selecionarServicoPublico(s.id)}
+                      >
+                        <div className="servicoPublicoIcon">✨</div>
 
-                    <input
-                      className="field"
-                      type="date"
-                      value={cliente.dataNascimento}
-                      onChange={(e) =>
-                        setCliente({
-                          ...cliente,
-                          dataNascimento: e.target.value,
-                        })
-                      }
-                    />
+                        <div className="servicoPublicoInfo">
+                          <strong>{s.nome}</strong>
+                          {s.descricao && <p>{s.descricao}</p>}
 
-                    <span className="fieldHint">
-                      Usamos essa informação para identificação e possíveis benefícios futuros 🎁
-                    </span>
-                  </div>
+                          <div className="servicoPublicoMeta">
+                            {s.duracaoMin && <span>⏱ {s.duracaoMin}min</span>}
+                            {valorServico !== null && (
+                              <span>
+                                💰{' '}
+                                {valorServico.toLocaleString('pt-BR', {
+                                  style: 'currency',
+                                  currency: 'BRL',
+                                })}
+                              </span>
+                            )}
+                            {s.exigePrePagamento && <span className="prePagamentoTag">Pré-pagamento</span>}
+                          </div>
+                        </div>
+
+                        <div className="servicoPublicoCheck">{servicoAtivo ? '✓' : ''}</div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
-              <div className="section">
-  <div className="sectionTitleRow">
-    <div className="sectionTitle">Escolha o serviço</div>
-
-    {servicos.length > 0 && (
-      <span>{servicos.length} opções</span>
-    )}
-  </div>
-
-  {servicos.length === 0 ? (
-    <div className="emptySlots">
-      Nenhum serviço disponível para agendamento no momento.
-    </div>
-  ) : (
-    <div className="servicosPublicos">
-      {servicos.map((s) => {
-        const servicoAtivo = servicoId === s.id;
-        const valorServico =
-          typeof s.valor === 'number'
-            ? s.valor
-            : typeof s.preco === 'number'
-              ? s.preco
-              : typeof s.valorTotal === 'number'
-                ? s.valorTotal
-                : null;
-
-        return (
-          <button
-            key={s.id}
-            type="button"
-            className={
-              servicoAtivo
-                ? 'servicoPublicoCard active'
-                : 'servicoPublicoCard'
-            }
-            onClick={() => {
-              setServicoId(s.id);
-              setHorarios([]);
-              setHorarioSelecionado('');
-            }}
-          >
-            <div className="servicoPublicoIcon">
-              ✨
-            </div>
-
-            <div className="servicoPublicoInfo">
-              <strong>{s.nome}</strong>
-
-              {s.descricao && (
-                <p>{s.descricao}</p>
+              {servicoSelecionado && (
+                <div className="selectedInfo">
+                  <span>Serviço selecionado</span>
+                  <strong>{servicoSelecionado.nome} • {servicoSelecionado.duracaoMin}min</strong>
+                </div>
               )}
 
-              <div className="servicoPublicoMeta">
-                {s.duracaoMin && (
-                  <span>⏱ {s.duracaoMin}min</span>
-                )}
-
-                {valorServico !== null && (
+              {servicoSelecionado?.exigePrePagamento && (
+                <div className="policyBox">
+                  <strong>Importante sobre o pré-pagamento</strong>
                   <span>
-                    💰{' '}
-                    {valorServico.toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                    })}
+                    A taxa de pré-pagamento não é reembolsável em caso de falta no dia do agendamento
+                    ou se o reagendamento não for solicitado com pelo menos 24h de antecedência.
                   </span>
-                )}
+                </div>
+              )}
 
-                {s.exigePrePagamento && (
-                  <span className="prePagamentoTag">
-                    Pré-pagamento
-                  </span>
-                )}
+              <div className="wizardActions">
+                <button className="outlineButton" onClick={() => setEtapaAtual('identificacao')}>Voltar</button>
+                <button className="primaryButton" onClick={avancarParaProfissional}>Próximo: profissional</button>
               </div>
             </div>
+          )}
 
-            <div className="servicoPublicoCheck">
-              {servicoAtivo ? '✓' : ''}
-            </div>
-          </button>
-        );
-      })}
-    </div>
-  )}
+          {podeMostrarAgenda && etapaAtual === 'profissional' && (
+            <div className="section etapaBox">
+              <div className="etapaIntro">
+                <span>👩‍💼</span>
+                <div>
+                  <strong>Escolha seu profissional</strong>
+                  <p>Mostramos apenas profissionais que realizam o serviço escolhido.</p>
+                </div>
+              </div>
 
-  {servicoSelecionado && (
-    <div className="selectedInfo">
-      <span>Serviço selecionado</span>
-      <strong>
-        {servicoSelecionado.nome} • {servicoSelecionado.duracaoMin}min
-      </strong>
-    </div>
-  )}
+              <div className="sectionTitle">Profissional</div>
 
-  {servicoSelecionado?.exigePrePagamento && (
-    <div className="policyBox">
-      <strong>Importante sobre o pré-pagamento</strong>
-      <span>
-        A taxa de pré-pagamento não é reembolsável em caso de falta
-        no dia do agendamento ou se o reagendamento não for solicitado
-        com pelo menos 24h de antecedência.
-      </span>
-    </div>
-  )}
-</div>
-
-              <div className="section">
-  <div className="sectionTitle">Profissional</div>
-
-  {!servicoId ? (
-    <div className="emptySlots">
-      Primeiro escolha um serviço para visualizar os profissionais disponíveis.
-    </div>
-  ) : profissionaisFiltrados.length === 0 ? (
-    <div className="emptySlots">
-      Nenhum profissional disponível para este serviço no momento.
-    </div>
-  ) : (
-    <div className="profissionaisPublicos">
-      {profissionaisFiltrados.map((p) => {
-        const fotoProfissional =
-          p.fotoUrl || p.foto || p.imagemUrl || p.avatarUrl || '';
-
-        const bioProfissional =
-          p.bio || p.descricao || 'Profissional disponível para atendimento.';
-
-        const servicosProfissional = Array.isArray(p.servicos)
-          ? p.servicos
-              .map((item: any) => item?.nome || item?.servico?.nome)
-              .filter(Boolean)
-          : [];
-
-        return (
-          <button
-            key={p.id}
-            type="button"
-            className={
-              profissionalId === p.id
-                ? 'profissionalPublicoCard active'
-                : 'profissionalPublicoCard'
-            }
-            onClick={() => {
-              setProfissionalId(p.id);
-              setHorarios([]);
-              setHorarioSelecionado('');
-            }}
-          >
-            <div className="profissionalFotoBox">
-              {fotoProfissional ? (
-                <img
-                  src={fotoProfissional}
-                  alt={p.nome}
-                  className="profissionalFoto"
-                />
+              {!servicoId ? (
+                <div className="emptySlots">Primeiro escolha um serviço para visualizar os profissionais disponíveis.</div>
+              ) : profissionaisFiltrados.length === 0 ? (
+                <div className="emptySlots">Nenhum profissional disponível para este serviço no momento.</div>
               ) : (
-                <div className="profissionalFotoFallback">
-                  {String(p.nome || 'P').charAt(0).toUpperCase()}
+                <div className="profissionaisPublicos">
+                  {profissionaisFiltrados.map((p) => {
+                    const fotoProfissional = p.fotoUrl || p.foto || p.imagemUrl || p.avatarUrl || '';
+                    const bioProfissional = p.bio || p.descricao || 'Profissional disponível para atendimento.';
+                    const servicosProfissional = Array.isArray(p.servicos)
+                      ? p.servicos.map((item: any) => item?.nome || item?.servico?.nome).filter(Boolean)
+                      : [];
+
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className={profissionalId === p.id ? 'profissionalPublicoCard active' : 'profissionalPublicoCard'}
+                        onClick={() => {
+                          setProfissionalId(p.id);
+                          setData('');
+                          setHorarios([]);
+                          setHorarioSelecionado('');
+                        }}
+                      >
+                        <div className="profissionalFotoBox">
+                          {fotoProfissional ? (
+                            <img src={fotoProfissional} alt={p.nome} className="profissionalFoto" />
+                          ) : (
+                            <div className="profissionalFotoFallback">{String(p.nome || 'P').charAt(0).toUpperCase()}</div>
+                          )}
+                        </div>
+
+                        <div className="profissionalPublicoInfo">
+                          <strong>{p.nome}</strong>
+                          <p>{bioProfissional}</p>
+
+                          {servicosProfissional.length > 0 && (
+                            <div className="profissionalServicos">
+                              {servicosProfissional.slice(0, 4).map((nomeServico: string) => (
+                                <span key={nomeServico}>{nomeServico}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="profissionalCheck">{profissionalId === p.id ? '✓' : ''}</div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
+
+              {profissionalSelecionado && (
+                <div className="selectedInfo">
+                  <span>Profissional selecionado</span>
+                  <strong>{profissionalSelecionado.nome}</strong>
+                </div>
+              )}
+
+              <div className="wizardActions">
+                <button className="outlineButton" onClick={() => setEtapaAtual('servico')}>Voltar</button>
+                <button className="primaryButton" onClick={avancarParaData}>Próximo: data</button>
+              </div>
             </div>
+          )}
 
-            <div className="profissionalPublicoInfo">
-              <strong>{p.nome}</strong>
+          {podeMostrarAgenda && etapaAtual === 'data' && (
+            <div className="section etapaBox">
+              <div className="etapaIntro">
+                <span>📅</span>
+                <div>
+                  <strong>Escolha a data</strong>
+                  <p>Selecione o melhor dia para visualizar os horários disponíveis.</p>
+                </div>
+              </div>
 
-              <p>{bioProfissional}</p>
+              <div className="selectedInfo">
+                <span>Resumo até aqui</span>
+                <strong>
+                  {servicoSelecionado?.nome || 'Serviço'} • {profissionalSelecionado?.nome || 'Profissional'}
+                </strong>
+              </div>
 
-              {servicosProfissional.length > 0 && (
-                <div className="profissionalServicos">
-                  {servicosProfissional.slice(0, 4).map((nomeServico: string) => (
-                    <span key={nomeServico}>{nomeServico}</span>
+              <div className="sectionTitle">Data do atendimento</div>
+
+              <input
+                className="field"
+                type="date"
+                min={hojeFormatoInput()}
+                value={data}
+                onChange={(e) => {
+                  const novaData = e.target.value;
+
+                  if (novaData && novaData < hojeFormatoInput()) {
+                    alert('A data do atendimento não pode ser anterior ao dia atual.');
+                    setData('');
+                    setHorarios([]);
+                    setHorarioSelecionado('');
+                    return;
+                  }
+
+                  setData(novaData);
+                  setHorarios([]);
+                  setHorarioSelecionado('');
+                }}
+              />
+
+              <div className="wizardActions">
+                <button className="outlineButton" onClick={() => setEtapaAtual('profissional')}>Voltar</button>
+                <button className="primaryButton" onClick={avancarParaHorarios}>Buscar horários</button>
+              </div>
+            </div>
+          )}
+
+          {podeMostrarAgenda && etapaAtual === 'horario' && (
+            <div className="section etapaBox">
+              <div className="etapaIntro">
+                <span>⏰</span>
+                <div>
+                  <strong>Escolha o horário</strong>
+                  <p>Toque no horário desejado para continuar.</p>
+                </div>
+              </div>
+
+              <div className="sectionTitleRow">
+                <div className="sectionTitle">Horários disponíveis</div>
+                {horarios.length > 0 && <span>{horarios.length} opções</span>}
+              </div>
+
+              {horarios.length === 0 ? (
+                <div className="emptySlots">Não encontramos horários disponíveis para essa combinação. Volte e tente outra data.</div>
+              ) : (
+                <div className="slots">
+                  {horarios.map((h) => (
+                    <button
+                      key={h}
+                      onClick={() => setHorarioSelecionado(h)}
+                      className={horarioSelecionado === h ? 'slot active' : 'slot'}
+                    >
+                      {h}
+                    </button>
                   ))}
                 </div>
               )}
-            </div>
-
-            <div className="profissionalCheck">
-              {profissionalId === p.id ? '✓' : ''}
-            </div>
-          </button>
-        );
-      })}
-    </div>
-  )}
-
-  {profissionalSelecionado && (
-    <div className="selectedInfo">
-      <span>Profissional selecionado</span>
-      <strong>{profissionalSelecionado.nome}</strong>
-    </div>
-  )}
-</div>
-
-              <div className="section">
-                <div className="sectionTitle">Data do atendimento</div>
-
-                <input
-                  className="field"
-                  type="date"
-                  min={hojeFormatoInput()}
-                  value={data}
-                  onChange={(e) => {
-                    const novaData = e.target.value;
-
-                    if (novaData && novaData < hojeFormatoInput()) {
-                      alert('A data do atendimento não pode ser anterior ao dia atual.');
-                      setData('');
-                      setHorarios([]);
-                      setHorarioSelecionado('');
-                      return;
-                    }
-
-                    setData(novaData);
-                    setHorarios([]);
-                    setHorarioSelecionado('');
-                  }}
-                />
-
-                <button className="secondaryButton" onClick={buscarHorarios}>
-                  Ver horários disponíveis
-                </button>
-              </div>
-
-              <div className="section">
-                <div className="sectionTitleRow">
-                  <div className="sectionTitle">Horários disponíveis</div>
-                  {horarios.length > 0 && <span>{horarios.length} opções</span>}
-                </div>
-
-                {horarios.length === 0 ? (
-                  <div className="emptySlots">
-                    Selecione serviço, profissional e data para visualizar os horários disponíveis.
-                  </div>
-                ) : (
-                  <div className="slots">
-                    {horarios.map((h) => (
-                      <button
-                        key={h}
-                        onClick={() => setHorarioSelecionado(h)}
-                        className={horarioSelecionado === h ? 'slot active' : 'slot'}
-                      >
-                        {h}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
 
               {horarioSelecionado && (
                 <div className="readyBox">
-                  <strong>Seu horário está quase reservado</strong>
-                  <span>
-                    Confira as informações e finalize para garantir seu atendimento.
-                  </span>
+                  <strong>Horário selecionado</strong>
+                  <span>{horarioSelecionado} • {servicoSelecionado?.nome}</span>
                 </div>
               )}
 
-              <button className="primaryButton" onClick={agendar}>
-                {servicoSelecionado?.exigePrePagamento
-                  ? 'Reservar e seguir para pagamento'
-                  : 'Finalizar meu horário agora'}
-              </button>
+              <div className="wizardActions">
+                <button className="outlineButton" onClick={() => setEtapaAtual('data')}>Voltar</button>
+                <button className="primaryButton" onClick={avancarParaConfirmacao}>Próximo: conferir</button>
+              </div>
+            </div>
+          )}
+
+          {podeMostrarAgenda && etapaAtual === 'confirmacao' && (
+            <div className="section etapaBox">
+              <div className="etapaIntro">
+                <span>✅</span>
+                <div>
+                  <strong>Confira sua reserva</strong>
+                  <p>Veja se está tudo certo antes de finalizar.</p>
+                </div>
+              </div>
+
+              <div className="resumoReserva">
+                <div>
+                  <span>Cliente</span>
+                  <strong>{clienteEncontrado?.nome || cliente.nome}</strong>
+                </div>
+
+                <div>
+                  <span>Serviço</span>
+                  <strong>{servicoSelecionado?.nome || 'Não selecionado'}</strong>
+                </div>
+
+                <div>
+                  <span>Profissional</span>
+                  <strong>{profissionalSelecionado?.nome || 'Não selecionado'}</strong>
+                </div>
+
+                <div>
+                  <span>Data e horário</span>
+                  <strong>
+                    {data ? new Date(`${data}T00:00:00`).toLocaleDateString('pt-BR') : 'Data não selecionada'} • {horarioSelecionado || 'Horário'}
+                  </strong>
+                </div>
+              </div>
+
+              {servicoSelecionado?.exigePrePagamento && (
+                <div className="policyBox">
+                  <strong>Este serviço exige pré-pagamento</strong>
+                  <span>Ao finalizar, você será direcionado para o pagamento seguro.</span>
+                </div>
+              )}
+
+              <div className="wizardActions">
+                <button className="outlineButton" onClick={() => setEtapaAtual('horario')}>Voltar</button>
+                <button className="primaryButton" onClick={agendar}>
+                  {servicoSelecionado?.exigePrePagamento ? 'Reservar e seguir para pagamento' : 'Finalizar meu horário agora'}
+                </button>
+              </div>
 
               <p className="security">
-                Seus dados serão usados apenas para identificação do agendamento e
-                comunicação sobre o atendimento.
+                Seus dados serão usados apenas para identificação do agendamento e comunicação sobre o atendimento.
               </p>
-            </>
+            </div>
           )}
         </section>
 
@@ -3082,4 +3178,115 @@ textarea {
   }
 }
 
+
+
+  .wizardCard {
+    gap: 18px;
+  }
+
+  .wizardSteps {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .etapaBox {
+    animation: etapaEntrada 0.22s ease;
+  }
+
+  .etapaIntro {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 16px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #faf5ff, #ffffff);
+    border: 1px solid #e9d5ff;
+  }
+
+  .etapaIntro > span {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #7c3aed, #db2777);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 14px 26px rgba(124, 58, 237, 0.2);
+  }
+
+  .etapaIntro strong {
+    display: block;
+    color: #111827;
+    font-size: 17px;
+    margin-bottom: 4px;
+  }
+
+  .etapaIntro p {
+    margin: 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .dadosClienteBox {
+    padding-top: 4px;
+  }
+
+  .wizardActions {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .resumoReserva {
+    display: grid;
+    gap: 10px;
+  }
+
+  .resumoReserva > div {
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    background: #f8fafc;
+    padding: 13px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .resumoReserva span {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .resumoReserva strong {
+    color: #111827;
+    font-size: 14px;
+  }
+
+  @keyframes etapaEntrada {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .wizardSteps {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .wizardActions {
+      grid-template-columns: 1fr;
+    }
+
+    .etapaIntro {
+      padding: 14px;
+    }
+  }
 `;
