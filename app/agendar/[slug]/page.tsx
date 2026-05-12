@@ -993,24 +993,17 @@ const profissionaisFiltrados = profissionais.filter((p: any) =>
 </div>
 
               <div className="section">
-{!servicoId && (
-  <div className="emptySlots">
-    Primeiro escolha um serviço para visualizar os profissionais disponíveis.
-  </div>
-)}
   <div className="sectionTitle">Profissional</div>
 
-  {servicoId && profissionaisFiltrados.length === 0 ? (
+  {!servicoId ? (
+    <div className="emptySlots">
+      Primeiro escolha um serviço para visualizar os profissionais disponíveis.
+    </div>
+  ) : profissionaisFiltrados.length === 0 ? (
     <div className="emptySlots">
       Nenhum profissional disponível para este serviço no momento.
     </div>
   ) : (
-
-{!servicoId && (
-  <div className="emptySlots">
-    Primeiro escolha um serviço para visualizar os profissionais disponíveis.
-  </div>
-)}
     <div className="profissionaisPublicos">
       {profissionaisFiltrados.map((p) => {
         const fotoProfissional =
@@ -1084,9 +1077,6 @@ const profissionaisFiltrados = profissionais.filter((p: any) =>
     </div>
   )}
 </div>
-
-              <div className="section">
-                <div className="sectionTitle">Data do atendimento</div>
 
                 <input
                   className="field"
