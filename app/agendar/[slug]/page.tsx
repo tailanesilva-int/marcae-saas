@@ -2726,5 +2726,261 @@ const styles = `
   font-size: 20px;
 }
 
+/* =========================================
+   MOBILE RESPONSIVO PREMIUM
+========================================= */
+
+@media (max-width: 768px) {
+
+  .shell {
+    padding: 18px 14px 120px;
   }
+
+  .topBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .marca,
+  .secureBadge {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .empresaHeroCard {
+    padding: 18px;
+    border-radius: 28px;
+    overflow: hidden;
+  }
+
+  .empresaHeroCentered h1 {
+    font-size: 42px;
+    line-height: 0.95;
+    word-break: break-word;
+  }
+
+  .empresaHeroCentered .subtitle {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .heroMiniBadges {
+    gap: 8px;
+  }
+
+  .heroMiniBadge {
+    width: 100%;
+    min-height: auto;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .heroBanner {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 14px;
+    padding: 18px;
+  }
+
+  .heroBannerText {
+    text-align: center;
+  }
+
+  .heroBannerIllustration {
+    margin: 0 auto;
+  }
+
+  .card {
+    padding: 18px;
+    border-radius: 26px;
+  }
+
+  .cardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cardHeader h2 {
+    font-size: 24px;
+  }
+
+  .step {
+    width: 52px;
+    height: 52px;
+  }
+
+  .progressSteps {
+    grid-template-columns: 1fr;
+  }
+
+  .cpfLine {
+    grid-template-columns: 1fr;
+  }
+
+  .cpfLine button,
+  .secondaryButton,
+  .outlineButton,
+  .primaryButton,
+  .whatsappButton {
+    width: 100%;
+  }
+
+  .servicoPublicoCard {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .servicoPublicoIcon {
+    margin: 0 auto;
+  }
+
+  .servicoPublicoCheck {
+    margin: 0 auto;
+  }
+
+  .profissionalPublicoCard {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .profissionalFotoBox {
+    margin: 0 auto;
+  }
+
+  .profissionalCheck {
+    margin: 0 auto;
+  }
+
+  .clienteSelecionadoTop {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .clienteSelecionadoFooter {
+    flex-direction: column;
+  }
+
+  .trocarClienteButton {
+    width: 100%;
+  }
+
+  .rescheduleCard {
+    grid-template-columns: 1fr;
+  }
+
+  .benefits {
+    grid-template-columns: 1fr;
+  }
+
+  .benefitsMinimal {
+    padding: 12px;
+  }
+
+  .benefitMinimal {
+    padding: 18px 12px;
+  }
+
+  .benefitMinimal:not(:last-child)::after {
+    display: none;
+  }
+
+  .mobileStickyBar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 999;
+    background: rgba(15, 23, 42, 0.96);
+    backdrop-filter: blur(14px);
+    border-radius: 22px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 25px 60px rgba(15, 23, 42, 0.4);
+  }
+
+  .mobileStickyBar div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .mobileStickyBar span {
+    color: rgba(255,255,255,0.7);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .mobileStickyBar strong {
+    color: white;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .mobileStickyBar button {
+    width: 100%;
+    height: 50px;
+    border: 0;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #7c3aed, #db2777);
+    color: white;
+    font-weight: 900;
+    font-size: 15px;
+  }
+
+  .footerBrandPremium {
+    flex-wrap: wrap;
+    text-align: center;
+  }
+
+  input,
+  button,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* EXTRA SMALL DEVICES */
+
+@media (max-width: 480px) {
+
+  .empresaHeroCentered h1 {
+    font-size: 34px;
+  }
+
+  .cardHeader h2 {
+    font-size: 22px;
+  }
+
+  .subtitle {
+    font-size: 14px !important;
+  }
+
+  .heroBannerText strong {
+    font-size: 16px;
+  }
+
+  .heroBannerText span {
+    font-size: 13px;
+  }
+
+  .slot {
+    width: 100%;
+  }
+
+  .servicoPublicoMeta {
+    justify-content: center;
+  }
+
+  .profissionalServicos {
+    justify-content: center;
+  }
+
+  }
+
 `;
