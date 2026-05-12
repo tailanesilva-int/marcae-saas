@@ -65,4 +65,102 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json({ servico });
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+
+    const {
+      id,
+      empresaId,
+      nome,
+      descricao,
+      duracaoMin,
+      valor,
+      custo,
+      exigePrePagamento,
+      valorPrePagamento,
+      ativo,
+    } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID do serviço obrigatório.' },
+        { status: 400 }
+      );
+    }
+
+    const servicoExistente = await prisma.servico.findFirst({
+      where: {
+        id,
+        empresaId,
+      },
+    });
+
+    if (!servicoExistente) {
+      return NextResponse.json(
+        { error: 'Serviço não encontrado.' },
+        { status: 404 }
+      );
+    }
+
+    const empresa = await prisma.empresa.findUnique({
+      where: {
+        id: empresaId,
+      },
+    });
+
+    if (
+      exigePrePagamento &&
+      empresa?.plano === 'basico'
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'Pré-pagamento disponível apenas no plano premium',
+        },
+        { status: 403 }
+      );
+    }
+
+    const servico = await prisma.servico.update({
+      where: {
+        id,
+      },
+      data: {
+        nome,
+        descricao,
+        duracaoMin: Number(duracaoMin),
+        valor: numero(valor),
+        custo: custo ? numero(custo) : null,
+        exigePrePagamento:
+          exigePrePagamento || false,
+        valorPrePagamento:
+          valorPrePagamento
+            ? numero(valorPrePagamento)
+            : null,
+        ativo:
+          ativo === undefined
+            ? servicoExistente.ativo
+            : ativo,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      servico,
+    });
+  } catch (error) {
+    console.error(
+      'Erro ao atualizar serviço:',
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error: 'Erro ao atualizar serviço.',
+      },
+      { status: 500 }
+    );
+  }
+
 }

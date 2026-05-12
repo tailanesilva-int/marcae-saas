@@ -6,6 +6,8 @@ export default function ServicosPage() {
   const [empresa, setEmpresa] = useState<any>(null);
   const [servicos, setServicos] = useState<any[]>([]);
   const [carregando, setCarregando] = useState(true);
+const [editandoId, setEditandoId] = useState('');
+const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
   const [form, setForm] = useState({
     nome: '',
@@ -48,6 +50,28 @@ export default function ServicosPage() {
     });
   }
 
+function iniciarEdicao(servico: any) {
+  setEditandoId(servico.id);
+
+  setForm({
+    nome: servico.nome || '',
+    descricao: servico.descricao || '',
+    duracaoMin: servico.duracaoMin || 30,
+    valor: String(servico.valor || ''),
+    custo: String(servico.custo || ''),
+    exigePrePagamento:
+      servico.exigePrePagamento || false,
+    valorPrePagamento: String(
+      servico.valorPrePagamento || ''
+    ),
+  });
+
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  });
+}
+
   async function salvar() {
     if (!form.nome || !form.valor) {
       alert('Preencha nome e valor.');
@@ -55,13 +79,13 @@ export default function ServicosPage() {
     }
 
     const res = await fetch('/api/servicos', {
-      method: 'POST',
+  method: editandoId ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        empresaId: empresa.id,
-        ...form,
-      }),
-    });
+  id: editandoId,
+  empresaId: empresa.id,
+  ...form,
+}),
 
     const data = await res.json();
 
@@ -70,9 +94,14 @@ export default function ServicosPage() {
       return;
     }
 
-    alert('Serviço criado!');
+    alert(
+  editandoId
+    ? 'Serviço atualizado!'
+    : 'Serviço criado!'
+);
     carregarServicos(empresa.id);
 
+    setEditandoId('');
     setForm({
       nome: '',
       descricao: '',
@@ -277,10 +306,34 @@ export default function ServicosPage() {
                   </div>
 
                   {s.exigePrePagamento && (
-                    <span style={badge}>
-                      Pré: {dinheiro(s.valorPrePagamento)}
-                    </span>
-                  )}
+  <span style={badge}>
+    Pré: {dinheiro(s.valorPrePagamento)}
+  </span>
+)}
+
+<div
+  style={{
+    display: 'flex',
+    gap: 10,
+    marginTop: 14,
+    flexWrap: 'wrap',
+  }}
+>
+  <button
+    onClick={() => iniciarEdicao(s)}
+    style={{
+      padding: '10px 14px',
+      borderRadius: 10,
+      border: 'none',
+      background: '#4f46e5',
+      color: '#fff',
+      fontWeight: 700,
+      cursor: 'pointer',
+    }}
+  >
+    ✏️ Editar serviço
+  </button>
+</div>
                 </div>
               </div>
             ))}
