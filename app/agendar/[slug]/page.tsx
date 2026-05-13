@@ -663,8 +663,7 @@ export default function AgendarPage() {
       <h1>{empresa.nome}</h1>
 
       <p className="subtitle">
-        Agende seu atendimento em poucos minutos, escolha o melhor horário disponível
-        e receba sua confirmação automática.
+        Agende seu atendimento em poucos minutos!
       </p>
 
       <div className="heroMiniBadges heroMiniBadgesCompact">
