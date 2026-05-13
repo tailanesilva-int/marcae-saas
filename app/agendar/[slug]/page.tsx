@@ -47,6 +47,13 @@ export default function AgendarPage() {
     carregarEmpresa();
   }, [slug]);
 
+useEffect(() => {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  });
+}, [etapaAtual]);
+
   function hojeFormatoInput() {
     const hoje = new Date();
     const ano = hoje.getFullYear();
@@ -612,10 +619,10 @@ export default function AgendarPage() {
               key={etapa.id}
               className={`wizardStep ${
                 etapaAtual === etapa.id
-                  ? 'active'
-                  : etapaAtual === etapa.id
-                    ? 'done'
-                    : ''
+  ? 'active'
+  : ativoIndex > index
+    ? 'done'
+    : ''
               }`}
             >
               <div className="wizardBall">
