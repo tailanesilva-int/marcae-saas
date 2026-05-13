@@ -71,10 +71,6 @@ export async function POST(req: NextRequest) {
           {
             error:
               'Pré-pagamento disponível apenas para empresas com Premium ativo.',
-            planoAtual: empresaPagamento.plano || 'basico',
-            assinaturaStatus:
-              empresaPagamento.assinaturaStatus || 'vencida',
-            assinaturaExpiraEm: empresaPagamento.assinaturaExpiraEm,
           },
           { status: 403 }
         );
@@ -84,7 +80,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             error:
-              'Mercado Pago da empresa ainda não está ativo. Configure o recebimento online em Configurações.',
+              'Mercado Pago da empresa ainda não está ativo.',
           },
           { status: 400 }
         );
@@ -94,17 +90,36 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             error:
-              'Access Token Mercado Pago da empresa não configurado. Configure o recebimento online em Configurações.',
+              'Access Token Mercado Pago da empresa não configurado.',
           },
           { status: 400 }
         );
       }
 
-      const valorPrePago = Number(agendamento.valorPrePago || 0);
-      const valorTotal = Number(agendamento.valorTotal || 0);
-      const valor = valorPrePago > 0 ? valorPrePago : valorTotal;
+      const grupoAgendamentoId = agendamento.grupoAgendamentoId;
 
-      if (!valor || valor <= 0) {
+      const agendamentosGrupo = grupoAgendamentoId
+        ? await prisma.agendamento.findMany({
+            where: {
+              grupoAgendamentoId,
+            },
+            include: {
+              servico: true,
+            },
+          })
+        : [agendamento];
+
+      const valorTotalGrupo = agendamentosGrupo.reduce((total, item) => {
+        const valorPrePago =
+          Number(item.valorPrePago || 0);
+
+        const valorTotal =
+          Number(item.valorTotal || 0);
+
+        return total + (valorPrePago > 0 ? valorPrePago : valorTotal);
+      }, 0);
+
+      if (!valorTotalGrupo || valorTotalGrupo <= 0) {
         return NextResponse.json(
           { error: 'Valor do pagamento inválido' },
           { status: 400 }
@@ -117,34 +132,46 @@ export async function POST(req: NextRequest) {
 
       const preference = new Preference(clientEmpresa);
 
-      const notificationUrl = `${baseUrl}/api/webhook/mercadopago?tipo=agendamento&empresaId=${agendamento.empresaId}&agendamentoId=${agendamento.id}`;
+      const notificationUrl =
+        `${baseUrl}/api/webhook/mercadopago?tipo=agendamento&empresaId=${agendamento.empresaId}&grupoAgendamentoId=${grupoAgendamentoId}`;
 
       const response = await preference.create({
         body: {
           items: [
             {
-              id: agendamento.id,
-              title: agendamento.servico?.nome || 'Agendamento',
+              id: grupoAgendamentoId || agendamento.id,
+              title:
+                agendamentosGrupo.length > 1
+                  ? `Agendamento com ${agendamentosGrupo.length} serviços`
+                  : agendamento.servico?.nome || 'Agendamento',
               quantity: 1,
-              unit_price: valor,
+              unit_price: valorTotalGrupo,
             },
           ],
+
           payer: {
             name: agendamento.cliente?.nome || 'Cliente',
             email: 'test_user_3373866382@testuser.com',
           },
-          external_reference: agendamento.id,
+
+          external_reference:
+            grupoAgendamentoId || agendamento.id,
+
           metadata: {
             tipo: 'agendamento',
             agendamentoId: agendamento.id,
+            grupoAgendamentoId,
             empresaId: agendamento.empresaId,
           },
+
           notification_url: notificationUrl,
+
           back_urls: {
             success: `${baseUrl}/sucesso/${agendamento.id}`,
             failure: `${baseUrl}/erro/${agendamento.id}`,
             pending: `${baseUrl}/pendente/${agendamento.id}`,
           },
+
           auto_return: 'approved',
         },
       });
@@ -159,8 +186,8 @@ export async function POST(req: NextRequest) {
           empresaId: agendamento.empresaId,
           agendamentoId: agendamento.id,
           clienteId: agendamento.clienteId,
-          valorTotal: agendamento.valorTotal,
-          valorPago: valor,
+          valorTotal: valorTotalGrupo,
+          valorPago: valorTotalGrupo,
           status: 'pendente',
           preferenceId: response.id,
           linkPagamento,
@@ -170,103 +197,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         linkPagamento,
         preferenceId: response.id,
+        grupoAgendamentoId,
+        valorTotalGrupo,
+        quantidadeServicos: agendamentosGrupo.length,
         notificationUrl,
         tipo: 'agendamento',
-        recebedor: 'empresa',
-        mercadoPagoModo: empresaPagamento.mercadoPagoModo || 'sandbox',
-      });
-    }
-
-    if (tipo === 'assinatura') {
-      if (!empresaId) {
-        return NextResponse.json(
-          { error: 'empresaId é obrigatório' },
-          { status: 400 }
-        );
-      }
-
-      const empresa = await prisma.empresa.findUnique({
-        where: { id: empresaId },
-      });
-
-      if (!empresa) {
-        return NextResponse.json(
-          { error: 'Empresa não encontrada' },
-          { status: 404 }
-        );
-      }
-
-      const tokenMarcae = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-
-      if (!tokenMarcae) {
-        return NextResponse.json(
-          {
-            error:
-              'Token Mercado Pago do Marcaê não configurado no ambiente.',
-          },
-          { status: 500 }
-        );
-      }
-
-      const clientMarcae = criarClienteMercadoPago(tokenMarcae);
-      const preference = new Preference(clientMarcae);
-
-      const notificationUrl = `${baseUrl}/api/webhook/mercadopago?tipo=assinatura&empresaId=${empresa.id}`;
-
-      const valorPlano = 49.9;
-
-      const response = await preference.create({
-        body: {
-          items: [
-            {
-              id: `assinatura-${empresa.id}`,
-              title: `Assinatura Premium - ${empresa.nome}`,
-              quantity: 1,
-              unit_price: valorPlano,
-            },
-          ],
-          payer: {
-            email: 'test_user_3373866382@testuser.com',
-          },
-          external_reference: empresa.id,
-          metadata: {
-            tipo: 'assinatura',
-            empresaId: empresa.id,
-          },
-          notification_url: notificationUrl,
-          back_urls: {
-            success: `${baseUrl}/api/assinatura/confirmar?empresaId=${empresa.id}`,
-            failure: `${baseUrl}/admin?pagamento=erro`,
-            pending: `${baseUrl}/admin?pagamento=pendente`,
-          },
-          auto_return: 'approved',
-        },
-      });
-
-      const linkPagamento = obterLinkPagamento(response, 'producao');
-
-      await prisma.pagamentoAssinatura.create({
-        data: {
-          empresaId: empresa.id,
-          valor: valorPlano,
-          status: 'pendente',
-          preferenceId: response.id,
-          linkPagamento,
-          tipo: 'manual',
-        },
-      });
-
-      return NextResponse.json({
-        linkPagamento,
-        preferenceId: response.id,
-        notificationUrl,
-        tipo: 'assinatura',
-        recebedor: 'marcae',
       });
     }
 
     return NextResponse.json(
-      { error: 'tipo inválido. Use agendamento ou assinatura.' },
+      { error: 'tipo inválido.' },
       { status: 400 }
     );
   } catch (error: any) {

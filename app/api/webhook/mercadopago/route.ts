@@ -383,6 +383,12 @@ export async function POST(req: Request) {
     const tipoPagamento = tipoUrl || metadata.tipo || null;
     const empresaId = empresaIdUrl || metadata.empresaId || null;
 
+    const grupoAgendamentoId =
+      metadata.grupoAgendamentoId ||
+      metadata.grupo_agendamento_id ||
+      url.searchParams.get('grupoAgendamentoId') ||
+      null;
+
     const agendamentoId =
       metadata.agendamentoId ||
       pagamentoMP.external_reference ||
@@ -394,6 +400,7 @@ export async function POST(req: Request) {
     console.log('📌 Tipo pagamento:', tipoPagamento);
     console.log('🏢 Empresa ID final:', empresaId);
     console.log('🔗 Agendamento ID:', agendamentoId);
+    console.log('🧩 Grupo agendamento ID:', grupoAgendamentoId);
 
     if (tipoPagamento === 'assinatura') {
       if (!empresaId) {
@@ -457,9 +464,9 @@ export async function POST(req: Request) {
       });
     }
 
-    if (!agendamentoId) {
+    if (!agendamentoId && !grupoAgendamentoId) {
       return NextResponse.json(
-        { error: 'agendamentoId não encontrado' },
+        { error: 'agendamentoId ou grupoAgendamentoId não encontrado' },
         { status: 400 }
       );
     }
@@ -482,7 +489,13 @@ export async function POST(req: Request) {
     }
 
     const pagamento = await prisma.pagamento.findFirst({
-      where: { agendamentoId },
+      where: agendamentoId
+        ? { agendamentoId }
+        : {
+            agendamento: {
+              grupoAgendamentoId,
+            },
+          },
     });
 
     if (!pagamento) {
@@ -503,20 +516,35 @@ export async function POST(req: Request) {
       },
     });
 
-    await prisma.agendamento.update({
-      where: { id: agendamentoId },
-      data: {
-        status: statusAgendamento,
-        statusPagamento: statusMP === 'approved' ? 'pago' : statusPagamento,
-      },
-    });
+    if (grupoAgendamentoId) {
+      await prisma.agendamento.updateMany({
+        where: {
+          grupoAgendamentoId,
+        },
+        data: {
+          status: statusAgendamento,
+          statusPagamento: statusMP === 'approved' ? 'pago' : statusPagamento,
+        },
+      });
 
-    console.log('✅ Agendamento atualizado com sucesso');
+      console.log('✅ Grupo de agendamentos atualizado com sucesso');
+    } else if (agendamentoId) {
+      await prisma.agendamento.update({
+        where: { id: agendamentoId },
+        data: {
+          status: statusAgendamento,
+          statusPagamento: statusMP === 'approved' ? 'pago' : statusPagamento,
+        },
+      });
+
+      console.log('✅ Agendamento atualizado com sucesso');
+    }
 
     return NextResponse.json({
       received: true,
       tipo: 'agendamento',
       agendamentoId,
+      grupoAgendamentoId,
     });
   } catch (error) {
     console.error('❌ Erro webhook Mercado Pago:', error);
