@@ -676,7 +676,7 @@ export default function AgendarPage() {
 
   </div>
 </section>
-)}
+
         <section className="card wizardCard">
           <div className="cardHeader">
             <div>
