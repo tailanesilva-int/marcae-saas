@@ -605,24 +605,6 @@ export default function AgendarPage() {
   ];
 
   const ativoIndex = ordem.indexOf(etapaAtual);
-  const numero = index + 1;
-
-  return (
-    <div
-      key={etapa.id}
-      className={`wizardStep ${
-        etapaAtual === etapa.id
-          ? 'active'
-          : ativoIndex > index
-            ? 'done'
-            : ''
-      }`}
-    >
-      <div className="wizardBall">{numero}</div>
-      <span>{etapa.label}</span>
-    </div>
-  );
-})}
           const numero = index + 1;
 
           return (
