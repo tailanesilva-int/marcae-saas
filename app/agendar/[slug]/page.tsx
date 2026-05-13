@@ -609,11 +609,11 @@ export default function AgendarPage() {
 
           return (
             <div
-              key={etapa}
+              key={etapa.id}
               className={`wizardStep ${
-                etapaAtual === numero
+                etapaAtual === etapa.id
                   ? 'active'
-                  : etapaAtual > numero
+                  : etapaAtual === etapa.id
                     ? 'done'
                     : ''
               }`}
@@ -622,7 +622,7 @@ export default function AgendarPage() {
                 {numero}
               </div>
 
-              <span>{etapa}</span>
+              <span>{etapa.label}</span>
             </div>
           );
         })}
