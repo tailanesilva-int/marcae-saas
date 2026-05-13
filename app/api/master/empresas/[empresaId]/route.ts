@@ -451,7 +451,7 @@ export async function PATCH(req: Request, context: any) {
 
 if (acao === "mercadoPago") {
   const mercadoPagoAtivo =
-    Boolean(body?.mercadoPagoAtivo);
+  body?.mercadoPagoAtivo === true;
 
   const mercadoPagoAccessToken = String(
     body?.mercadoPagoAccessToken || ""
