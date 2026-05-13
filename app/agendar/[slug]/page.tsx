@@ -699,6 +699,12 @@ export default function AgendarPage() {
   </div>
 </section>
 
+{etapaAtual === 'identificacao' && (
+  <section className="hero">
+    ...
+  </section>
+)}
+
         <section className="card wizardCard">
           <div className="cardHeader">
             <div>
