@@ -635,7 +635,11 @@ useEffect(() => {
         })}
       </div>
 
-      <header className="topBar">
+      {etapaAtual === 'identificacao' && (
+  <header className="topBar">
+    ...
+  </header>
+)}
           <div className="marca">
             Marc<span>aê</span>
           </div>
@@ -643,7 +647,8 @@ useEffect(() => {
           <div className="secureBadge">Ambiente seguro de agendamento</div>
         </header>
 
-       <section className="hero">
+       {etapaAtual === 'identificacao' && (
+<section className="hero">
   <div className="heroBackgroundGlow" />
 
   <div className="empresaHeroCard">
@@ -682,8 +687,9 @@ useEffect(() => {
 
   </div>
 </section>
+)}
 
-        <section className="card wizardCard">
+<section className="card wizardCard">
           <div className="cardHeader">
             <div>
               <h2>Reserve seu horário</h2>
