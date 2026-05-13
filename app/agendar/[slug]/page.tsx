@@ -17,7 +17,7 @@ export default function AgendarPage() {
   const [data, setData] = useState('');
   const [horarios, setHorarios] = useState<string[]>([]);
   const [horarioSelecionado, setHorarioSelecionado] = useState('');
-const [servicosCarrinho, setServicosCarrinho] = useState<any[]>([]);
+  const [servicosCarrinho, setServicosCarrinho] = useState<any[]>([]);
 
   const [cpf, setCpf] = useState('');
   const [buscandoCpf, setBuscandoCpf] = useState(false);
@@ -177,8 +177,6 @@ useEffect(() => {
       });
 
       setEtapaAtual('servico');
-
-      setEtapaAtual('servico');
     } catch (error) {
       alert('Erro ao carregar cliente selecionado.');
     }
@@ -238,7 +236,6 @@ useEffect(() => {
           dataNascimento: '',
         });
         setMostrarCamposExtras(true);
-        setEtapaAtual('servico');
         setEtapaAtual('identificacao');
       }
     } catch (error) {
@@ -396,6 +393,11 @@ useEffect(() => {
   async function agendar() {
     if (!clienteEncontrado && !cpf) return alert('Informe o CPF');
     if (!clienteEncontrado && !cpfConsultado) return alert('Clique em continuar para validar o CPF');
+
+    if (itensResumo.length === 0) {
+      return alert('Adicione pelo menos um serviço para finalizar o agendamento.');
+    }
+
     if (!servicoId) return alert('Selecione um serviço');
     if (!profissionalId) return alert('Selecione um profissional');
     if (!data) return alert('Selecione uma data');
@@ -436,24 +438,22 @@ useEffect(() => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-  empresaId: empresa.id,
-  clienteId: clienteEncontrado?.id || null,
-  cliente: {
-    ...cliente,
-    cpf: somenteNumeros(cpf),
-    whatsapp: somenteNumeros(cliente.whatsapp),
-  },
-
-  servicosCarrinho: itensResumo.map((item) => ({
-    servicoId: item.servicoId,
-    profissionalId: item.profissionalId,
-    dataHoraInicio: new Date(`${item.data}T${item.horario}`),
-  })),
-
-  servicoId,
-  profissionalId,
-  dataHoraInicio: dataHora,
-}),
+        empresaId: empresa.id,
+        clienteId: clienteEncontrado?.id || null,
+        cliente: {
+          ...cliente,
+          cpf: somenteNumeros(cpf),
+          whatsapp: somenteNumeros(cliente.whatsapp),
+        },
+        servicosCarrinho: itensResumo.map((item) => ({
+          servicoId: item.servicoId,
+          profissionalId: item.profissionalId,
+          dataHoraInicio: new Date(`${item.data}T${item.horario}`),
+        })),
+        servicoId,
+        profissionalId,
+        dataHoraInicio: dataHora,
+      }),
     });
 
     const dataRes = await res.json();
@@ -463,16 +463,32 @@ useEffect(() => {
       return;
     }
 
-    const agendamento = dataRes.agendamento;
-    const exigePrePagamento = agendamento?.servico?.exigePrePagamento;
+    const agendamentosCriados = Array.isArray(dataRes.agendamentos)
+      ? dataRes.agendamentos
+      : dataRes.agendamento
+        ? [dataRes.agendamento]
+        : [];
 
-    if (exigePrePagamento) {
+    const agendamentoPrincipal = dataRes.agendamento || agendamentosCriados[0];
+
+    if (!agendamentoPrincipal?.id) {
+      alert('Agendamento criado, mas não foi possível localizar o comprovante.');
+      return;
+    }
+
+    const idsAgendamentos = agendamentosCriados.length > 0
+      ? agendamentosCriados.map((a: any) => a.id).join(',')
+      : agendamentoPrincipal.id;
+
+    if (existePrePagamentoResumo) {
       const pagamentoRes = await fetch('/api/pagamentos/criar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          agendamentoId: agendamento.id,
+          agendamentoId: agendamentoPrincipal.id,
           tipo: 'agendamento',
+          agendamentosIds: idsAgendamentos.split(','),
+          valorTotal: totalResumo,
         }),
       });
 
@@ -487,11 +503,7 @@ useEffect(() => {
       return;
     }
 
-    const idsAgendamentos =
-  dataRes.agendamentos?.map((a: any) => a.id).join(',') ||
-  agendamento.id;
-
-window.location.href = `/sucesso/${agendamento.id}?ids=${idsAgendamentos}`;
+    window.location.href = `/sucesso/${agendamentoPrincipal.id}?ids=${idsAgendamentos}`;
   }
 
   function clienteNovoValido() {
@@ -591,35 +603,52 @@ function adicionarServicoAoCarrinho() {
   };
 
   setServicosCarrinho((atual) => [...atual, item]);
-
-  setServicoId('');
-  setProfissionalId('');
-  setData('');
-  setHorarios([]);
-  setHorarioSelecionado('');
+  limparFluxoAgendamento();
   setEtapaAtual('servico');
-}  
+}
+
+function removerServicoDoCarrinho(itemId: string) {
+  setServicosCarrinho((atual) => atual.filter((item) => item.id !== itemId));
+}
+
+function obterValorServico(servico: any) {
+  return Number(servico?.valor ?? servico?.preco ?? servico?.valorTotal ?? 0);
+}
+
+function formatarMoeda(valor: number) {
+  return valor.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
+}
+
+function itemExigePrePagamento(item: any) {
+  return Boolean(item?.servico?.exigePrePagamento || item?.servico?.prePagamentoObrigatorio);
+}
 
   const servicoSelecionado = servicos.find((s) => s.id === servicoId);
   const profissionalSelecionado = profissionais.find((p) => p.id === profissionalId);
-const itensResumo = [
-  ...servicosCarrinho,
-  ...(servicoSelecionado && profissionalSelecionado && data && horarioSelecionado
-    ? [{
-        id: 'atual',
-        servicoId,
-        profissionalId,
-        data,
-        horario: horarioSelecionado,
-        servico: servicoSelecionado,
-        profissional: profissionalSelecionado,
-      }]
-    : []),
-];
+  const itensResumo = [
+    ...servicosCarrinho,
+    ...(servicoSelecionado && profissionalSelecionado && data && horarioSelecionado
+      ? [{
+          id: 'atual',
+          servicoId,
+          profissionalId,
+          data,
+          horario: horarioSelecionado,
+          servico: servicoSelecionado,
+          profissional: profissionalSelecionado,
+        }]
+      : []),
+  ];
 
-const totalResumo = itensResumo.reduce((total, item) => {
-  return total + Number(item.servico?.valor || item.servico?.preco || item.servico?.valorTotal || 0);
-}, 0);
+  const totalResumo = itensResumo.reduce((total, item) => {
+    return total + obterValorServico(item.servico);
+  }, 0);
+
+  const existePrePagamentoResumo = itensResumo.some((item) => itemExigePrePagamento(item));
+
   const profissionaisFiltrados = profissionais.filter((p: any) =>
   Array.isArray(p.servicos) &&
   p.servicos.some(
@@ -1098,7 +1127,7 @@ const totalResumo = itensResumo.reduce((total, item) => {
                 </div>
               )}
 
-              {servicoSelecionado?.exigePrePagamento && (
+              {existePrePagamentoResumo && (
                 <div className="policyBox">
                   <strong>Importante sobre o pré-pagamento</strong>
                   <span>
@@ -1299,34 +1328,76 @@ const totalResumo = itensResumo.reduce((total, item) => {
 </div>
 
 <div className="resumoReserva">
-  {itensResumo.map((item, index) => (
+  {itensResumo.map((item, index) => {
+    const valorItem = obterValorServico(item.servico);
+    const podeRemover = item.id !== 'atual';
 
-    <div key={item.id}>
-      <span>Serviço {index + 1}</span>
-      <strong>
-        {item.servico?.nome || 'Serviço'} • {item.profissional?.nome || 'Profissional'}
-      </strong>
-      <small>
-        {item.data ? new Date(`${item.data}T00:00:00`).toLocaleDateString('pt-BR') : 'Data'} • {item.horario}
-      </small>
-    </div>
-  ))}
+    return (
+      <div key={item.id} className="resumoServicoCard">
+        <div className="resumoServicoTopo">
+          <div className="resumoServicoNumero">{index + 1}</div>
 
-  <div>
+          <div className="resumoServicoInfo">
+            <span>Serviço {index + 1}</span>
+            <strong>{item.servico?.nome || 'Serviço'}</strong>
+            <small>{item.profissional?.nome || 'Profissional'}</small>
+          </div>
+
+          {podeRemover && (
+            <button
+              type="button"
+              className="removerServicoButton"
+              onClick={() => removerServicoDoCarrinho(item.id)}
+              aria-label="Remover serviço do resumo"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        <div className="resumoServicoDetalhes">
+          <div>
+            <span>Data</span>
+            <strong>{item.data ? new Date(`${item.data}T00:00:00`).toLocaleDateString('pt-BR') : 'Data'}</strong>
+          </div>
+
+          <div>
+            <span>Horário</span>
+            <strong>{item.horario || '--:--'}</strong>
+          </div>
+
+          <div>
+            <span>Duração</span>
+            <strong>{item.servico?.duracaoMin ? `${item.servico.duracaoMin}min` : 'Não informada'}</strong>
+          </div>
+
+          <div>
+            <span>Valor</span>
+            <strong>{formatarMoeda(valorItem)}</strong>
+          </div>
+        </div>
+
+        {itemExigePrePagamento(item) && (
+          <div className="resumoPrePagamentoBadge">
+            Pré-pagamento obrigatório
+          </div>
+        )}
+      </div>
+    );
+  })}
+
+  <div className="resumoTotalCard">
     <span>Total estimado</span>
-    <strong>
-      {totalResumo.toLocaleString('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-      })}
-    </strong>
+    <strong>{formatarMoeda(totalResumo)}</strong>
+    <small>{itensResumo.length} {itensResumo.length === 1 ? 'serviço selecionado' : 'serviços selecionados'}</small>
   </div>
 </div>
 
-              {servicoSelecionado?.exigePrePagamento && (
+              {existePrePagamentoResumo && (
                 <div className="policyBox">
-                  <strong>Este serviço exige pré-pagamento</strong>
+                  <strong>Existe serviço com pré-pagamento neste agendamento</strong>
                   <span>Ao finalizar, você será direcionado para o pagamento seguro.</span>
+                  <span>O valor pago não é reembolsável em caso de falta ou se o reagendamento/cancelamento não for solicitado com pelo menos 24h de antecedência.</span>
                 </div>
               )}
 
@@ -1349,7 +1420,7 @@ const totalResumo = itensResumo.reduce((total, item) => {
     className="primaryButton"
     onClick={agendar}
   >
-    {servicoSelecionado?.exigePrePagamento
+    {existePrePagamentoResumo
       ? 'Reservar e seguir para pagamento'
       : 'Finalizar agendamento'}
   </button>
@@ -3334,28 +3405,128 @@ textarea {
 
   .resumoReserva {
     display: grid;
-    gap: 10px;
+    gap: 12px;
   }
 
-  .resumoReserva > div {
+  .resumoServicoCard,
+  .resumoTotalCard {
     border: 1px solid #e2e8f0;
-    border-radius: 18px;
-    background: #f8fafc;
-    padding: 13px 14px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #ffffff, #f8fafc);
+    padding: 14px;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+  }
+
+  .resumoServicoTopo {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .resumoServicoNumero {
+    width: 42px;
+    height: 42px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #7c3aed, #db2777);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 950;
+    box-shadow: 0 12px 24px rgba(219, 39, 119, 0.2);
+  }
+
+  .resumoServicoInfo {
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
   }
 
-  .resumoReserva span {
+  .resumoServicoInfo span,
+  .resumoServicoDetalhes span,
+  .resumoTotalCard span {
     color: #64748b;
     font-size: 12px;
     font-weight: 900;
   }
 
-  .resumoReserva strong {
+  .resumoServicoInfo strong,
+  .resumoServicoDetalhes strong,
+  .resumoTotalCard strong {
     color: #111827;
     font-size: 14px;
+  }
+
+  .resumoServicoInfo small,
+  .resumoTotalCard small {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .removerServicoButton {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 999px;
+    background: #fef2f2;
+    color: #991b1b;
+    font-size: 20px;
+    font-weight: 950;
+    cursor: pointer;
+  }
+
+  .resumoServicoDetalhes {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .resumoServicoDetalhes > div {
+    min-width: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    background: #f8fafc;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .resumoPrePagamentoBadge {
+    margin-top: 12px;
+    border-radius: 999px;
+    background: #fdf2f8;
+    border: 1px solid #fbcfe8;
+    color: #be185d;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 950;
+    text-align: center;
+  }
+
+  .resumoTotalCard {
+    background: linear-gradient(135deg, #7c3aed, #db2777);
+    border-color: transparent;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .resumoTotalCard span,
+  .resumoTotalCard strong,
+  .resumoTotalCard small {
+    color: #ffffff;
+  }
+
+  .resumoTotalCard strong {
+    font-size: 24px;
+    letter-spacing: -0.04em;
   }
 
   @keyframes etapaEntrada {

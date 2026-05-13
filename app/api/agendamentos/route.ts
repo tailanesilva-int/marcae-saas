@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import crypto from 'crypto';
 
 function limparCpf(cpf?: string | null) {
   return String(cpf || '').replace(/\D/g, '');
@@ -143,116 +144,113 @@ export async function POST(req: Request) {
       });
     }
 
-    const inicio = new Date(dataHoraInicio);
+    const servicosRecebidos =
+      Array.isArray(body.servicosCarrinho) && body.servicosCarrinho.length > 0
+        ? body.servicosCarrinho
+        : [
+            {
+              servicoId,
+              profissionalId,
+              dataHoraInicio,
+            },
+          ];
 
-    if (Number.isNaN(inicio.getTime())) {
-      return NextResponse.json(
-        { success: false, error: 'Data/hora inválida.' },
-        { status: 400 }
+    const grupoAgendamentoId = crypto.randomUUID();
+
+    const agendamentosCriados = [];
+
+    for (const item of servicosRecebidos) {
+      const servicoAtual = await prisma.servico.findUnique({
+        where: {
+          id: item.servicoId,
+        },
+      });
+
+      if (!servicoAtual) {
+        continue;
+      }
+
+      if (servicoAtual.empresaId !== empresaId) {
+        continue;
+      }
+
+      const inicio = new Date(item.dataHoraInicio);
+
+      if (Number.isNaN(inicio.getTime())) {
+        continue;
+      }
+
+      const fim = new Date(inicio);
+
+      fim.setMinutes(
+        fim.getMinutes() + Number(servicoAtual.duracaoMin || 30)
       );
+
+      const novoAgendamento = await prisma.agendamento.create({
+        data: {
+          empresaId,
+
+          grupoAgendamentoId,
+
+          servicoId: item.servicoId,
+
+          profissionalId: item.profissionalId || null,
+
+          clienteId: clienteFinal.id,
+
+          data: formatarDataParaCampo(inicio),
+
+          horaInicio: formatarHoraParaCampo(inicio),
+
+          duracaoMin: Number(servicoAtual.duracaoMin || 30),
+
+          clienteNome: clienteFinal.nome,
+
+          clienteCpf: clienteFinal.cpf,
+
+          clienteNascimento: clienteFinal.dataNascimento
+            ? formatarDataParaCampo(clienteFinal.dataNascimento)
+            : cliente?.dataNascimento || null,
+
+          clienteWhatsapp: clienteFinal.whatsapp,
+
+          nomeCliente: clienteFinal.nome,
+
+          telefoneCliente: clienteFinal.whatsapp,
+
+          dataHoraInicio: inicio,
+
+          dataHoraFim: fim,
+
+          valorTotal: servicoAtual.valor || 0,
+
+          valorPrePago: servicoAtual.valorPrePagamento || null,
+
+          status: 'pendente',
+
+          statusPagamento: servicoAtual.exigePrePagamento
+            ? 'pendente'
+            : 'sem_pagamento',
+
+          origem: 'online',
+        },
+
+        include: {
+          cliente: true,
+          servico: true,
+          profissional: true,
+        },
+      });
+
+      agendamentosCriados.push(novoAgendamento);
     }
 
-    const fim = new Date(inicio);
-    fim.setMinutes(fim.getMinutes() + Number(servico.duracaoMin || 30));
-
-    const servicosRecebidos =
-  Array.isArray(body.servicosCarrinho) && body.servicosCarrinho.length > 0
-    ? body.servicosCarrinho
-    : [
-        {
-          servicoId,
-          profissionalId,
-          dataHoraInicio,
-        },
-      ];
-
-const agendamentosCriados = [];
-
-for (const item of servicosRecebidos) {
-  const servicoAtual = await prisma.servico.findUnique({
-    where: {
-      id: item.servicoId,
-    },
-  });
-
-  if (!servicoAtual) {
-    continue;
-  }
-
-  const inicio = new Date(item.dataHoraInicio);
-
-  if (Number.isNaN(inicio.getTime())) {
-    continue;
-  }
-
-  const fim = new Date(inicio);
-
-  fim.setMinutes(
-    fim.getMinutes() + Number(servicoAtual.duracaoMin || 30)
-  );
-
-  const novoAgendamento = await prisma.agendamento.create({
-    data: {
-      empresaId,
-
-      servicoId: item.servicoId,
-
-      profissionalId: item.profissionalId || null,
-
-      clienteId: clienteFinal.id,
-
-      data: formatarDataParaCampo(inicio),
-
-      horaInicio: formatarHoraParaCampo(inicio),
-
-      duracaoMin: Number(servicoAtual.duracaoMin || 30),
-
-      clienteNome: clienteFinal.nome,
-
-      clienteCpf: clienteFinal.cpf,
-
-      clienteNascimento: clienteFinal.dataNascimento
-        ? formatarDataParaCampo(clienteFinal.dataNascimento)
-        : cliente?.dataNascimento || null,
-
-      clienteWhatsapp: clienteFinal.whatsapp,
-
-      nomeCliente: clienteFinal.nome,
-
-      telefoneCliente: clienteFinal.whatsapp,
-
-      dataHoraInicio: inicio,
-
-      dataHoraFim: fim,
-
-      valorTotal: servicoAtual.valor || 0,
-
-      valorPrePago: servicoAtual.valorPrePagamento || null,
-
-      status: 'pendente',
-
-      statusPagamento: servicoAtual.exigePrePagamento
-        ? 'pendente'
-        : 'sem_pagamento',
-
-      origem: 'online',
-    },
-
-    include: {
-      cliente: true,
-      servico: true,
-      profissional: true,
-    },
-  });
-
-  agendamentosCriados.push(novoAgendamento);
-}
-
-return NextResponse.json({
-  success: true,
-  agendamentos: agendamentosCriados,
-  agendamento: agendamentosCriados[0] || null,
-});
+    return NextResponse.json({
+      success: true,
+      grupoAgendamentoId,
+      agendamentos: agendamentosCriados,
+      agendamento: agendamentosCriados[0] || null,
+    });
   } catch (error: any) {
     console.error('Erro ao criar agendamento:', error);
 
