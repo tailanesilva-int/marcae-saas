@@ -221,6 +221,7 @@ export default function AgendarPage() {
         });
 
         setMostrarCamposExtras(false);
+        setEtapaAtual(2);
       } else {
         setClienteEncontrado(null);
         setCliente({
@@ -229,6 +230,7 @@ export default function AgendarPage() {
           dataNascimento: '',
         });
         setMostrarCamposExtras(true);
+        setEtapaAtual(2);
         setEtapaAtual('identificacao');
       }
     } catch (error) {
@@ -582,9 +584,69 @@ export default function AgendarPage() {
   }
 
   return (
-    <main className="page">
-      <section className="shell">
-        <header className="topBar">
+  <main className="page">
+    <section className="shell">
+      <div className="wizardSteps">
+        {[
+  { id: 'identificacao', label: 'CPF' },
+  { id: 'servico', label: 'Serviço' },
+  { id: 'profissional', label: 'Profissional' },
+  { id: 'data', label: 'Data' },
+  { id: 'horario', label: 'Horário' },
+  { id: 'confirmacao', label: 'Resumo' },
+].map((etapa, index) => {
+  const ordem = [
+    'identificacao',
+    'servico',
+    'profissional',
+    'data',
+    'horario',
+    'confirmacao',
+  ];
+
+  const ativoIndex = ordem.indexOf(etapaAtual);
+  const numero = index + 1;
+
+  return (
+    <div
+      key={etapa.id}
+      className={`wizardStep ${
+        etapaAtual === etapa.id
+          ? 'active'
+          : ativoIndex > index
+            ? 'done'
+            : ''
+      }`}
+    >
+      <div className="wizardBall">{numero}</div>
+      <span>{etapa.label}</span>
+    </div>
+  );
+})}
+          const numero = index + 1;
+
+          return (
+            <div
+              key={etapa}
+              className={`wizardStep ${
+                etapaAtual === numero
+                  ? 'active'
+                  : etapaAtual > numero
+                    ? 'done'
+                    : ''
+              }`}
+            >
+              <div className="wizardBall">
+                {numero}
+              </div>
+
+              <span>{etapa}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      <header className="topBar">
           <div className="marca">
             Marc<span>aê</span>
           </div>
@@ -1056,11 +1118,11 @@ export default function AgendarPage() {
                         type="button"
                         className={profissionalId === p.id ? 'profissionalPublicoCard active' : 'profissionalPublicoCard'}
                         onClick={() => {
-                          setProfissionalId(p.id);
-                          setData('');
-                          setHorarios([]);
-                          setHorarioSelecionado('');
-                        }}
+  setProfissionalId(p.id);
+  setData('');
+  setHorarios([]);
+  setHorarioSelecionado('');
+}}
                       >
                         <div className="profissionalFotoBox">
                           {fotoProfissional ? (
@@ -3288,5 +3350,55 @@ textarea {
     .etapaIntro {
       padding: 14px;
     }
-  }
+  
+.wizardSteps{
+display:flex;
+align-items:center;
+gap:12px;
+overflow:auto;
+padding:14px 4px 20px;
+margin-bottom:20px;
+}
+
+.wizardStep{
+display:flex;
+align-items:center;
+gap:8px;
+opacity:.45;
+font-weight:700;
+white-space:nowrap;
+transition:.2s;
+}
+
+.wizardStep.active{
+opacity:1;
+color:#4f46e5;
+}
+
+.wizardStep.done{
+opacity:1;
+color:#22c55e;
+}
+
+.wizardBall{
+width:34px;
+height:34px;
+border-radius:999px;
+display:flex;
+align-items:center;
+justify-content:center;
+background:#e2e8f0;
+font-size:14px;
+font-weight:800;
+}
+
+.wizardStep.active .wizardBall{
+background:#4f46e5;
+color:#fff;
+}
+
+.wizardStep.done .wizardBall{
+background:#22c55e;
+color:#fff;
+}
 `;
