@@ -464,7 +464,6 @@ export default function ConfiguracoesPage() {
             />
           </div>
 
-          <div style={{ ...field, gridColumn: '1 / -1' }}>
             <div style={{ ...field, gridColumn: '1 / -1' }}>
   <label style={label}>Rua</label>
 
@@ -559,13 +558,7 @@ export default function ConfiguracoesPage() {
     style={input}
   />
 </div>
-              onChange={(e) => setDadosEmpresa({ ...dadosEmpresa, endereco: e.target.value })}
-              placeholder="Endereço da empresa"
-              style={input}
-            />
-          </div>
-        </div>
-
+              
         <div style={logoPreviewBox}>
           {dadosEmpresa.logoUrl ? (
             <img src={dadosEmpresa.logoUrl} alt="Logo da empresa" style={logoPreview} />
