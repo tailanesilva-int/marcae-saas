@@ -667,44 +667,16 @@ export default function AgendarPage() {
         e receba sua confirmação automática.
       </p>
 
-      <div className="heroMiniBadges">
-        <div className="heroMiniBadge">
-          🛡️ Dados protegidos
-        </div>
-
-        <div className="heroMiniBadge">
-          ⚡ Confirmação imediata
-        </div>
-
-        <div className="heroMiniBadge">
-          🔔 Lembretes automáticos
-        </div>
-      </div>
+      <div className="heroMiniBadges heroMiniBadgesCompact">
+  <div className="heroMiniBadge">
+    🛡️ Dados protegidos
+  </div>
+</div>
     </div>
 
-    <div className="heroBanner">
-      <div className="heroBannerIcon">
-        📅
-      </div>
-
-      <div className="heroBannerText">
-        <strong>Agilidade que você sente, cuidado que você merece.</strong>
-        <span>Processo simples, rápido e pensado para sua comodidade.</span>
-      </div>
-
-      <div className="heroBannerIllustration">
-        ✨
-      </div>
-    </div>
   </div>
 </section>
-
-{etapaAtual === 'identificacao' && (
-  <section className="hero">
-    ...
-  </section>
 )}
-
         <section className="card wizardCard">
           <div className="cardHeader">
             <div>
