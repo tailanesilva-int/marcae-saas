@@ -4,10 +4,22 @@ type PageProps = {
   params: Promise<{
     id: string;
   }>;
+
+  searchParams: Promise<{
+    ids?: string;
+  }>;
 };
 
 async function buscarAgendamento(id: string) {
   const baseUrl = getPublicBaseUrl();
+
+async function buscarAgendamentos(ids: string[]) {
+  const resultados = await Promise.all(
+    ids.map((id) => buscarAgendamento(id))
+  );
+
+  return resultados.filter(Boolean);
+}
 
   const response = await fetch(`${baseUrl}/api/agendamentos/${id}`, {
     cache: 'no-store',
@@ -19,6 +31,14 @@ async function buscarAgendamento(id: string) {
 
   const data = await response.json();
   return data.agendamento;
+}
+
+async function buscarAgendamentos(ids: string[]) {
+  const resultados = await Promise.all(
+    ids.map((id) => buscarAgendamento(id))
+  );
+
+  return resultados.filter(Boolean);
 }
 
 function formatarData(data: string) {
@@ -102,9 +122,23 @@ function textoPagamento(status?: string | null, exigePrePagamento?: boolean) {
   return mapa[status] || status;
 }
 
-export default async function SucessoDetalhesPage({ params }: PageProps) {
+export default async function SucessoDetalhesPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { id } = await params;
-  const agendamento = await buscarAgendamento(id);
+
+const query = await searchParams;
+
+const ids =
+  query?.ids
+    ?.split(',')
+    .map((item) => item.trim())
+    .filter(Boolean) || [id];
+
+const agendamentos = await buscarAgendamentos(ids);
+
+const agendamento = agendamentos[0];
 
   const nomeCliente = agendamento?.cliente?.nome || agendamento?.clienteNome || 'Cliente';
   const telefoneCliente =
@@ -473,15 +507,35 @@ const linkWhatsappEmpresa = telefoneEmpresaLimpo
         Resumo do atendimento
       </span>
 
+      <div>
+  {agendamentos.map((item: any, index: number) => (
+    <div
+      key={item.id}
+      style={{
+        marginBottom: 8,
+      }}
+    >
       <strong
         style={{
           color: '#0f172a',
-          fontSize: 24,
-          letterSpacing: '-0.04em',
+          fontSize: 18,
+          display: 'block',
         }}
       >
-        {servico}
+        {index + 1}. {item?.servico?.nome || 'Serviço'}
       </strong>
+
+      <span
+        style={{
+          color: '#64748b',
+          fontSize: 14,
+        }}
+      >
+        {item?.profissional?.nome || 'Profissional'}
+      </span>
+    </div>
+  ))}
+</div>
     </div>
 
     <div

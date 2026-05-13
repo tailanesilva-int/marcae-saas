@@ -487,7 +487,11 @@ useEffect(() => {
       return;
     }
 
-    window.location.href = `/sucesso/${agendamento.id}`;
+    const idsAgendamentos =
+  dataRes.agendamentos?.map((a: any) => a.id).join(',') ||
+  agendamento.id;
+
+window.location.href = `/sucesso/${agendamento.id}?ids=${idsAgendamentos}`;
   }
 
   function clienteNovoValido() {
