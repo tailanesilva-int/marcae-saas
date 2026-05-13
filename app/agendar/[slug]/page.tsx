@@ -221,7 +221,7 @@ export default function AgendarPage() {
         });
 
         setMostrarCamposExtras(false);
-        setEtapaAtual(2);
+        setEtapaAtual('servico');
       } else {
         setClienteEncontrado(null);
         setCliente({
@@ -230,7 +230,7 @@ export default function AgendarPage() {
           dataNascimento: '',
         });
         setMostrarCamposExtras(true);
-        setEtapaAtual(2);
+        setEtapaAtual('servico');
         setEtapaAtual('identificacao');
       }
     } catch (error) {
