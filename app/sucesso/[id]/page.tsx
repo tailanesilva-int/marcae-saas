@@ -54,6 +54,13 @@ function formatarHora(data: string) {
   }).format(new Date(data));
 }
 
+function formatarMoeda(valor?: number | string | null) {
+  return Number(valor || 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
+}
+
 function limparTelefone(telefone?: string | null) {
   return String(telefone || '').replace(/\D/g, '');
 }
@@ -508,11 +515,31 @@ const linkWhatsappEmpresa = telefoneEmpresaLimpo
       </span>
 
       <div>
-  {agendamentos.map((item: any, index: number) => (
+  {agendamentos.map((item: any, index: number) => {
+  const exigePrePagamentoItem = Boolean(item?.servico?.exigePrePagamento);
+
+  const statusPagamentoItem = textoPagamento(
+    item?.statusPagamento,
+    exigePrePagamentoItem
+  );
+
+  const valorServicoItem =
+    item?.valorTotal ||
+    item?.servico?.valor ||
+    item?.servico?.preco ||
+    item?.servico?.valorTotal ||
+    0;
+
+  return (
     <div
       key={item.id}
       style={{
-        marginBottom: 8,
+        marginBottom: 14,
+        paddingBottom: 14,
+        borderBottom:
+          index < agendamentos.length - 1
+            ? '1px solid #e2e8f0'
+            : 'none',
       }}
     >
       <strong
@@ -520,6 +547,7 @@ const linkWhatsappEmpresa = telefoneEmpresaLimpo
           color: '#0f172a',
           fontSize: 18,
           display: 'block',
+          marginBottom: 4,
         }}
       >
         {index + 1}. {item?.servico?.nome || 'Serviço'}
@@ -527,14 +555,71 @@ const linkWhatsappEmpresa = telefoneEmpresaLimpo
 
       <span
         style={{
+          display: 'block',
           color: '#64748b',
           fontSize: 14,
+          marginBottom: 4,
         }}
       >
-        {item?.profissional?.nome || 'Profissional'}
+        Profissional: {item?.profissional?.nome || 'Profissional'}
       </span>
+
+      <span
+        style={{
+          display: 'block',
+          color: '#64748b',
+          fontSize: 14,
+          marginBottom: 4,
+        }}
+      >
+        Valor: {formatarMoeda(valorServicoItem)}
+      </span>
+
+      <span
+        style={{
+          display: 'inline-flex',
+          marginTop: 4,
+          borderRadius: 999,
+          padding: '6px 10px',
+          background:
+            statusPagamentoItem === 'Pago'
+              ? 'rgba(22,163,74,0.12)'
+              : 'rgba(245,158,11,0.12)',
+          color:
+            statusPagamentoItem === 'Pago'
+              ? '#166534'
+              : '#92400e',
+          fontSize: 12,
+          fontWeight: 900,
+        }}
+      >
+        Pagamento: {statusPagamentoItem}
+      </span>
+
+      {exigePrePagamentoItem && (
+        <div
+          style={{
+            marginTop: 10,
+            padding: 12,
+            borderRadius: 16,
+            background: '#fff7ed',
+            border: '1px solid #fed7aa',
+            color: '#9a3412',
+            fontSize: 13,
+            lineHeight: 1.45,
+          }}
+        >
+          <strong style={{ display: 'block', marginBottom: 4 }}>
+            Política de pré-pagamento
+          </strong>
+          O valor pago não é reembolsável em caso de falta no dia do atendimento
+          ou se o cancelamento/reagendamento não for solicitado com pelo menos
+          24 horas de antecedência.
+        </div>
+      )}
     </div>
-  ))}
+  );
+})}
 </div>
     </div>
 
