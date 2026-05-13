@@ -585,9 +585,10 @@ export default function ConfiguracoesPage() {
         >
           {salvandoEmpresa ? 'Salvando dados...' : 'Salvar dados da empresa'}
         </button>
-      </section>
+</div>
+</section>
 
-      <div style={grid}>
+<div style={grid}>
         <section style={card}>
   <div style={cardHeader}>
     <div>
