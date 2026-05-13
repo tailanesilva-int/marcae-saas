@@ -53,7 +53,14 @@ export default function ConfiguracoesPage() {
 
   const [dadosEmpresa, setDadosEmpresa] = useState({
   nome: '',
-  endereco: '',
+
+  endereco: {
+    rua: '',
+    numero: '',
+    cidade: '',
+    estado: '',
+    complemento: '',
+  },
   telefone: '',
   responsavel: '',
   logoUrl: '',
@@ -95,7 +102,28 @@ export default function ConfiguracoesPage() {
   if (empresaLogada) {
     setDadosEmpresa({
       nome: empresaLogada.nome || '',
-      endereco: empresaLogada.endereco || '',
+      endereco:
+  typeof empresaLogada.endereco === 'string'
+    ? (() => {
+        try {
+          return JSON.parse(empresaLogada.endereco);
+        } catch {
+          return {
+            rua: '',
+            numero: '',
+            cidade: '',
+            estado: '',
+            complemento: '',
+          };
+        }
+      })()
+    : empresaLogada.endereco || {
+        rua: '',
+        numero: '',
+        cidade: '',
+        estado: '',
+        complemento: '',
+      },
       telefone: empresaLogada.telefone || empresaLogada.whatsapp || '',
       responsavel: empresaLogada.responsavel || '',
       logoUrl: empresaLogada.logoUrl || '',
@@ -437,9 +465,100 @@ export default function ConfiguracoesPage() {
           </div>
 
           <div style={{ ...field, gridColumn: '1 / -1' }}>
-            <label style={label}>Endereço</label>
-            <input
-              value={dadosEmpresa.endereco}
+            <div style={{ ...field, gridColumn: '1 / -1' }}>
+  <label style={label}>Rua</label>
+
+  <input
+    value={dadosEmpresa.endereco?.rua || ''}
+    onChange={(e) =>
+      setDadosEmpresa({
+        ...dadosEmpresa,
+        endereco: {
+          ...dadosEmpresa.endereco,
+          rua: e.target.value,
+        },
+      })
+    }
+    placeholder="Rua da empresa"
+    style={input}
+  />
+</div>
+
+<div style={field}>
+  <label style={label}>Número</label>
+
+  <input
+    value={dadosEmpresa.endereco?.numero || ''}
+    onChange={(e) =>
+      setDadosEmpresa({
+        ...dadosEmpresa,
+        endereco: {
+          ...dadosEmpresa.endereco,
+          numero: e.target.value,
+        },
+      })
+    }
+    placeholder="Número"
+    style={input}
+  />
+</div>
+
+<div style={field}>
+  <label style={label}>Cidade</label>
+
+  <input
+    value={dadosEmpresa.endereco?.cidade || ''}
+    onChange={(e) =>
+      setDadosEmpresa({
+        ...dadosEmpresa,
+        endereco: {
+          ...dadosEmpresa.endereco,
+          cidade: e.target.value,
+        },
+      })
+    }
+    placeholder="Cidade"
+    style={input}
+  />
+</div>
+
+<div style={field}>
+  <label style={label}>Estado</label>
+
+  <input
+    value={dadosEmpresa.endereco?.estado || ''}
+    onChange={(e) =>
+      setDadosEmpresa({
+        ...dadosEmpresa,
+        endereco: {
+          ...dadosEmpresa.endereco,
+          estado: e.target.value,
+        },
+      })
+    }
+    placeholder="Estado"
+    style={input}
+  />
+</div>
+
+<div style={field}>
+  <label style={label}>Complemento</label>
+
+  <input
+    value={dadosEmpresa.endereco?.complemento || ''}
+    onChange={(e) =>
+      setDadosEmpresa({
+        ...dadosEmpresa,
+        endereco: {
+          ...dadosEmpresa.endereco,
+          complemento: e.target.value,
+        },
+      })
+    }
+    placeholder="Complemento"
+    style={input}
+  />
+</div>
               onChange={(e) => setDadosEmpresa({ ...dadosEmpresa, endereco: e.target.value })}
               placeholder="Endereço da empresa"
               style={input}

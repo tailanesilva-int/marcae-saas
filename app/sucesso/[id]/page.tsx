@@ -38,6 +38,39 @@ function limparTelefone(telefone?: string | null) {
   return String(telefone || '').replace(/\D/g, '');
 }
 
+function formatarEndereco(endereco: any) {
+  if (!endereco) return '';
+
+  try {
+    const dados =
+      typeof endereco === 'string'
+        ? JSON.parse(endereco)
+        : endereco;
+
+    const partes = [
+      dados?.rua,
+      dados?.numero,
+      dados?.complemento,
+    ].filter(Boolean);
+
+    const cidadeEstado = [
+      dados?.cidade,
+      dados?.estado,
+    ]
+      .filter(Boolean)
+      .join('/');
+
+    return [
+      partes.join(', '),
+      cidadeEstado,
+    ]
+      .filter(Boolean)
+      .join(' - ');
+  } catch {
+    return String(endereco);
+  }
+}
+
 function textoStatus(status?: string | null) {
   if (!status) return 'Pendente';
 
@@ -82,7 +115,9 @@ export default async function SucessoDetalhesPage({ params }: PageProps) {
 
   const nomeEmpresa = agendamento?.empresa?.nome || 'Empresa';
   const telefoneEmpresa = agendamento?.empresa?.telefone || agendamento?.empresa?.whatsapp || '';
-  const enderecoEmpresa = agendamento?.empresa?.endereco || '';
+  const enderecoEmpresa = formatarEndereco(
+  agendamento?.empresa?.endereco
+);
 
   const data = agendamento?.dataHoraInicio
     ? formatarData(agendamento.dataHoraInicio)
