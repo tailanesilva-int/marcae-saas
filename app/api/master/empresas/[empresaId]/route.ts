@@ -449,6 +449,74 @@ export async function PATCH(req: Request, context: any) {
       return NextResponse.json({ empresa });
     }
 
+if (acao === "mercadoPago") {
+  const mercadoPagoAtivo =
+    Boolean(body?.mercadoPagoAtivo);
+
+  const mercadoPagoAccessToken = String(
+    body?.mercadoPagoAccessToken || ""
+  ).trim();
+
+  const mercadoPagoPublicKey = String(
+    body?.mercadoPagoPublicKey || ""
+  ).trim();
+
+  const mercadoPagoModo = String(
+    body?.mercadoPagoModo || "sandbox"
+  ).trim();
+
+  if (
+    mercadoPagoAtivo &&
+    !mercadoPagoAccessToken
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Access Token Mercado Pago é obrigatório.",
+      },
+      { status: 400 }
+    );
+  }
+
+  const empresa = await prisma.$transaction(
+    async (tx) => {
+      const atualizada = await tx.empresa.update({
+        where: {
+          id: empresaId,
+        },
+
+        data: {
+          mercadoPagoAtivo,
+
+          mercadoPagoAccessToken:
+            mercadoPagoAccessToken || null,
+
+          mercadoPagoPublicKey:
+            mercadoPagoPublicKey || null,
+
+          mercadoPagoModo:
+            mercadoPagoModo || "sandbox",
+        } as any,
+      });
+
+      await registrarLogEmpresa(
+        tx,
+        empresaId,
+        "mercadoPago",
+        mercadoPagoAtivo
+          ? `Integração Mercado Pago ativada (${mercadoPagoModo}).`
+          : "Integração Mercado Pago desativada."
+      );
+
+      return atualizada;
+    }
+  );
+
+  return NextResponse.json({
+    empresa,
+  });
+}
+
     if (acao === "alterarValor") {
       const valor = Number(body?.valorMensalPersonalizado || 0);
 
