@@ -637,15 +637,15 @@ useEffect(() => {
 
       {etapaAtual === 'identificacao' && (
   <header className="topBar">
-    ...
+    <div className="marca">
+      Marc<span>aê</span>
+    </div>
+
+    <div className="secureBadge">
+      Ambiente seguro de agendamento
+    </div>
   </header>
 )}
-          <div className="marca">
-            Marc<span>aê</span>
-          </div>
-
-          <div className="secureBadge">Ambiente seguro de agendamento</div>
-        </header>
 
        {etapaAtual === 'identificacao' && (
 <section className="hero">
