@@ -436,17 +436,24 @@ useEffect(() => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        servicoId,
-        profissionalId,
-        dataHoraInicio: dataHora,
-        empresaId: empresa.id,
-        clienteId: clienteEncontrado?.id || null,
-        cliente: {
-          ...cliente,
-          cpf: somenteNumeros(cpf),
-          whatsapp: somenteNumeros(cliente.whatsapp),
-        },
-      }),
+  empresaId: empresa.id,
+  clienteId: clienteEncontrado?.id || null,
+  cliente: {
+    ...cliente,
+    cpf: somenteNumeros(cpf),
+    whatsapp: somenteNumeros(cliente.whatsapp),
+  },
+
+  servicosCarrinho: itensResumo.map((item) => ({
+    servicoId: item.servicoId,
+    profissionalId: item.profissionalId,
+    dataHoraInicio: new Date(`${item.data}T${item.horario}`),
+  })),
+
+  servicoId,
+  profissionalId,
+  dataHoraInicio: dataHora,
+}),
     });
 
     const dataRes = await res.json();
@@ -1374,24 +1381,7 @@ const totalResumo = itensResumo.reduce((total, item) => {
   <strong>Marc<span>aê</span></strong>
   <span>✦</span>
 </footer>
-{podeMostrarAgenda && horarioSelecionado && (
-  <div className="mobileStickyBar">
-    <div>
-      <span>Horário escolhido</span>
 
-      <strong>
-        {horarioSelecionado}
-        {servicoSelecionado ? ` • ${servicoSelecionado.nome}` : ''}
-      </strong>
-    </div>
-
-    <button onClick={agendar}>
-      {servicoSelecionado?.exigePrePagamento
-        ? 'Pagar'
-        : 'Finalizar'}
-    </button>
-  </div>
-)}
       </section>
 
       <style jsx>{styles}</style>

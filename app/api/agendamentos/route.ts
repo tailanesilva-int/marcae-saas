@@ -155,48 +155,104 @@ export async function POST(req: Request) {
     const fim = new Date(inicio);
     fim.setMinutes(fim.getMinutes() + Number(servico.duracaoMin || 30));
 
-    const agendamento = await prisma.agendamento.create({
-      data: {
-        empresaId,
-        servicoId,
-        profissionalId: profissionalId || null,
-        clienteId: clienteFinal.id,
+    const servicosRecebidos =
+  Array.isArray(body.servicosCarrinho) && body.servicosCarrinho.length > 0
+    ? body.servicosCarrinho
+    : [
+        {
+          servicoId,
+          profissionalId,
+          dataHoraInicio,
+        },
+      ];
 
-        data: formatarDataParaCampo(inicio),
-        horaInicio: formatarHoraParaCampo(inicio),
-        duracaoMin: Number(servico.duracaoMin || 30),
+const agendamentosCriados = [];
 
-        clienteNome: clienteFinal.nome,
-        clienteCpf: clienteFinal.cpf,
-        clienteNascimento: clienteFinal.dataNascimento
-          ? formatarDataParaCampo(clienteFinal.dataNascimento)
-          : cliente?.dataNascimento || null,
-        clienteWhatsapp: clienteFinal.whatsapp,
+for (const item of servicosRecebidos) {
+  const servicoAtual = await prisma.servico.findUnique({
+    where: {
+      id: item.servicoId,
+    },
+  });
 
-        nomeCliente: clienteFinal.nome,
-        telefoneCliente: clienteFinal.whatsapp,
+  if (!servicoAtual) {
+    continue;
+  }
 
-        dataHoraInicio: inicio,
-        dataHoraFim: fim,
+  const inicio = new Date(item.dataHoraInicio);
 
-        valorTotal: servico.valor || 0,
-        valorPrePago: servico.valorPrePagamento || null,
+  if (Number.isNaN(inicio.getTime())) {
+    continue;
+  }
 
-        status: 'pendente',
-        statusPagamento: servico.exigePrePagamento ? 'pendente' : 'sem_pagamento',
-        origem: 'online',
-      },
-      include: {
-        cliente: true,
-        servico: true,
-        profissional: true,
-      },
-    });
+  const fim = new Date(inicio);
 
-    return NextResponse.json({
-      success: true,
-      agendamento,
-    });
+  fim.setMinutes(
+    fim.getMinutes() + Number(servicoAtual.duracaoMin || 30)
+  );
+
+  const novoAgendamento = await prisma.agendamento.create({
+    data: {
+      empresaId,
+
+      servicoId: item.servicoId,
+
+      profissionalId: item.profissionalId || null,
+
+      clienteId: clienteFinal.id,
+
+      data: formatarDataParaCampo(inicio),
+
+      horaInicio: formatarHoraParaCampo(inicio),
+
+      duracaoMin: Number(servicoAtual.duracaoMin || 30),
+
+      clienteNome: clienteFinal.nome,
+
+      clienteCpf: clienteFinal.cpf,
+
+      clienteNascimento: clienteFinal.dataNascimento
+        ? formatarDataParaCampo(clienteFinal.dataNascimento)
+        : cliente?.dataNascimento || null,
+
+      clienteWhatsapp: clienteFinal.whatsapp,
+
+      nomeCliente: clienteFinal.nome,
+
+      telefoneCliente: clienteFinal.whatsapp,
+
+      dataHoraInicio: inicio,
+
+      dataHoraFim: fim,
+
+      valorTotal: servicoAtual.valor || 0,
+
+      valorPrePago: servicoAtual.valorPrePagamento || null,
+
+      status: 'pendente',
+
+      statusPagamento: servicoAtual.exigePrePagamento
+        ? 'pendente'
+        : 'sem_pagamento',
+
+      origem: 'online',
+    },
+
+    include: {
+      cliente: true,
+      servico: true,
+      profissional: true,
+    },
+  });
+
+  agendamentosCriados.push(novoAgendamento);
+}
+
+return NextResponse.json({
+  success: true,
+  agendamentos: agendamentosCriados,
+  agendamento: agendamentosCriados[0] || null,
+});
   } catch (error: any) {
     console.error('Erro ao criar agendamento:', error);
 
