@@ -17,6 +17,7 @@ export default function AgendarPage() {
   const [data, setData] = useState('');
   const [horarios, setHorarios] = useState<string[]>([]);
   const [horarioSelecionado, setHorarioSelecionado] = useState('');
+const [servicosCarrinho, setServicosCarrinho] = useState<any[]>([]);
 
   const [cpf, setCpf] = useState('');
   const [buscandoCpf, setBuscandoCpf] = useState(false);
@@ -553,17 +554,61 @@ useEffect(() => {
     }
   }
 
-  function avancarParaConfirmacao() {
-    if (!horarioSelecionado) {
-      alert('Escolha um horário para continuar.');
-      return;
-    }
-
-    setEtapaAtual('confirmacao');
+function avancarParaConfirmacao() {
+  if (!horarioSelecionado) {
+    alert('Escolha um horário para continuar.');
+    return;
   }
+
+  setEtapaAtual('confirmacao');
+}
+
+function adicionarServicoAoCarrinho() {
+  if (!servicoSelecionado || !profissionalSelecionado || !data || !horarioSelecionado) {
+    alert('Selecione serviço, profissional, data e horário antes de adicionar.');
+    return;
+  }
+
+  const item = {
+    id: `${servicoId}-${profissionalId}-${data}-${horarioSelecionado}-${Date.now()}`,
+    servicoId,
+    profissionalId,
+    data,
+    horario: horarioSelecionado,
+    servico: servicoSelecionado,
+    profissional: profissionalSelecionado,
+  };
+
+  setServicosCarrinho((atual) => [...atual, item]);
+
+  setServicoId('');
+  setProfissionalId('');
+  setData('');
+  setHorarios([]);
+  setHorarioSelecionado('');
+  setEtapaAtual('servico');
+}  
 
   const servicoSelecionado = servicos.find((s) => s.id === servicoId);
   const profissionalSelecionado = profissionais.find((p) => p.id === profissionalId);
+const itensResumo = [
+  ...servicosCarrinho,
+  ...(servicoSelecionado && profissionalSelecionado && data && horarioSelecionado
+    ? [{
+        id: 'atual',
+        servicoId,
+        profissionalId,
+        data,
+        horario: horarioSelecionado,
+        servico: servicoSelecionado,
+        profissional: profissionalSelecionado,
+      }]
+    : []),
+];
+
+const totalResumo = itensResumo.reduce((total, item) => {
+  return total + Number(item.servico?.valor || item.servico?.preco || item.servico?.valorTotal || 0);
+}, 0);
   const profissionaisFiltrados = profissionais.filter((p: any) =>
   Array.isArray(p.servicos) &&
   p.servicos.some(
@@ -1233,37 +1278,39 @@ useEffect(() => {
 
           {podeMostrarAgenda && etapaAtual === 'confirmacao' && (
             <div className="section etapaBox">
-              <div className="etapaIntro">
-                <span>✅</span>
-                <div>
-                  <strong>Confira sua reserva</strong>
-                  <p>Veja se está tudo certo antes de finalizar.</p>
-                </div>
-              </div>
 
-              <div className="resumoReserva">
-                <div>
-                  <span>Cliente</span>
-                  <strong>{clienteEncontrado?.nome || cliente.nome}</strong>
-                </div>
+<div className="etapaIntro">
+  <span>✅</span>
+  <div>
+    <strong>Confira sua reserva</strong>
+    <p>Veja se está tudo certo antes de finalizar.</p>
+  </div>
+</div>
 
-                <div>
-                  <span>Serviço</span>
-                  <strong>{servicoSelecionado?.nome || 'Não selecionado'}</strong>
-                </div>
+<div className="resumoReserva">
+  {itensResumo.map((item, index) => (
 
-                <div>
-                  <span>Profissional</span>
-                  <strong>{profissionalSelecionado?.nome || 'Não selecionado'}</strong>
-                </div>
+    <div key={item.id}>
+      <span>Serviço {index + 1}</span>
+      <strong>
+        {item.servico?.nome || 'Serviço'} • {item.profissional?.nome || 'Profissional'}
+      </strong>
+      <small>
+        {item.data ? new Date(`${item.data}T00:00:00`).toLocaleDateString('pt-BR') : 'Data'} • {item.horario}
+      </small>
+    </div>
+  ))}
 
-                <div>
-                  <span>Data e horário</span>
-                  <strong>
-                    {data ? new Date(`${data}T00:00:00`).toLocaleDateString('pt-BR') : 'Data não selecionada'} • {horarioSelecionado || 'Horário'}
-                  </strong>
-                </div>
-              </div>
+  <div>
+    <span>Total estimado</span>
+    <strong>
+      {totalResumo.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      })}
+    </strong>
+  </div>
+</div>
 
               {servicoSelecionado?.exigePrePagamento && (
                 <div className="policyBox">
@@ -1273,11 +1320,29 @@ useEffect(() => {
               )}
 
               <div className="wizardActions">
-                <button className="outlineButton" onClick={() => setEtapaAtual('horario')}>Voltar</button>
-                <button className="primaryButton" onClick={agendar}>
-                  {servicoSelecionado?.exigePrePagamento ? 'Reservar e seguir para pagamento' : 'Finalizar meu horário agora'}
-                </button>
-              </div>
+  <button
+    className="outlineButton"
+    onClick={() => setEtapaAtual('horario')}
+  >
+    Voltar
+  </button>
+
+  <button
+    className="outlineButton"
+    onClick={adicionarServicoAoCarrinho}
+  >
+    + Adicionar outro serviço
+  </button>
+
+  <button
+    className="primaryButton"
+    onClick={agendar}
+  >
+    {servicoSelecionado?.exigePrePagamento
+      ? 'Reservar e seguir para pagamento'
+      : 'Finalizar agendamento'}
+  </button>
+</div>
 
               <p className="security">
                 Seus dados serão usados apenas para identificação do agendamento e comunicação sobre o atendimento.
