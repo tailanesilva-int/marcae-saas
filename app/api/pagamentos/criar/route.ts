@@ -167,13 +167,10 @@ export async function POST(req: NextRequest) {
           notification_url: notificationUrl,
 
           back_urls: {
-            success: `${baseUrl}/sucesso/${agendamento.id}`,
-            failure: `${baseUrl}/erro/${agendamento.id}`,
-            pending: `${baseUrl}/pendente/${agendamento.id}`,
-          },
-
-          auto_return: 'approved',
-        },
+  success: `${baseUrl}/sucesso/${agendamento.id}`,
+  failure: `${baseUrl}/erro/${agendamento.id}`,
+  pending: `${baseUrl}/pendente/${agendamento.id}`,
+},
       });
 
       const linkPagamento = obterLinkPagamento(
