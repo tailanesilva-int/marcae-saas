@@ -190,6 +190,26 @@ function obterValorServico(item: any) {
   );
 }
 
+function obterValorPrePagamento(item: any) {
+  const percentual =
+    Number(item?.servico?.percentualPrePagamento || 0);
+
+  const valorFixo =
+    Number(item?.servico?.valorPrePagamento || 0);
+
+  const valorServico = Number(obterValorServico(item));
+
+  if (valorFixo > 0) {
+    return valorFixo;
+  }
+
+  if (percentual > 0) {
+    return (valorServico * percentual) / 100;
+  }
+
+  return 0;
+}
+
 export default async function SucessoDetalhesPage({
   params,
   searchParams,
@@ -252,6 +272,13 @@ export default async function SucessoDetalhesPage({
   const totalGeral = agendamentos.reduce((total: number, item: any) => {
     return total + Number(obterValorServico(item));
   }, 0);
+
+const totalPrePagamento = agendamentos.reduce(
+  (total: number, item: any) => {
+    return total + Number(obterValorPrePagamento(item));
+  },
+  0
+);
 
   const linhasServicosWhatsapp = agendamentos
     .map((item: any, index: number) => {
@@ -804,24 +831,58 @@ export default async function SucessoDetalhesPage({
                 }}
               >
                 <div>
-                  <span
-                    style={{
-                      display: 'block',
-                      fontSize: 12,
-                      fontWeight: 900,
-                      opacity: 0.85,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                      marginBottom: 4,
-                    }}
-                  >
-                    Total geral
-                  </span>
+  <span
+    style={{
+      display: 'block',
+      fontSize: 12,
+      fontWeight: 900,
+      opacity: 0.85,
+      textTransform: 'uppercase',
+      letterSpacing: '0.08em',
+      marginBottom: 4,
+    }}
+  >
+    Total geral
+  </span>
 
-                  <strong style={{ fontSize: 26, letterSpacing: '-0.04em' }}>
-                    {formatarMoeda(totalGeral)}
-                  </strong>
-                </div>
+  <strong
+    style={{
+      display: 'block',
+      fontSize: 26,
+      letterSpacing: '-0.04em',
+      marginBottom: existePrePagamento ? 10 : 0,
+    }}
+  >
+    {formatarMoeda(totalGeral)}
+  </strong>
+
+  {existePrePagamento && (
+    <div>
+      <span
+        style={{
+          display: 'block',
+          fontSize: 11,
+          opacity: 0.82,
+          textTransform: 'uppercase',
+          fontWeight: 800,
+          letterSpacing: '0.06em',
+          marginBottom: 4,
+        }}
+      >
+        Valor pago agora
+      </span>
+
+      <strong
+        style={{
+          fontSize: 20,
+          color: '#fff',
+        }}
+      >
+        {formatarMoeda(totalPrePagamento)}
+      </strong>
+    </div>
+  )}
+</div>
 
                 <div
                   style={{
