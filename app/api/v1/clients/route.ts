@@ -167,25 +167,49 @@ export async function POST(request: Request) {
   }
 
   const data = parsed.data;
+  const cpfLimpo = String(data.cpf || '').replace(/\D/g, '');
 
-  const cliente = await prisma.cliente.upsert({
+  if (!cpfLimpo) {
+    return NextResponse.json(
+      { error: 'CPF é obrigatório para cadastrar cliente.' },
+      { status: 400 }
+    );
+  }
+
+  const clientesDaEmpresa = await prisma.cliente.findMany({
     where: {
-      empresaId_whatsapp: {
-        empresaId: data.empresaId,
-        whatsapp: data.whatsapp,
+      empresaId: data.empresaId,
+    },
+  });
+
+  const clienteExistente = clientesDaEmpresa.find(
+    (cliente) =>
+      String(cliente.cpf || '').replace(/\D/g, '') === cpfLimpo
+  );
+
+  if (clienteExistente) {
+    const cliente = await prisma.cliente.update({
+      where: {
+        id: clienteExistente.id,
       },
-    },
-    update: {
-      nome: data.nome,
-      cpf: data.cpf,
-      dataNascimento: data.dataNascimento
-        ? new Date(data.dataNascimento)
-        : undefined,
-    },
-    create: {
+      data: {
+        nome: data.nome,
+        cpf: cpfLimpo,
+        whatsapp: data.whatsapp,
+        dataNascimento: data.dataNascimento
+          ? new Date(data.dataNascimento)
+          : undefined,
+      },
+    });
+
+    return NextResponse.json(cliente, { status: 200 });
+  }
+
+  const cliente = await prisma.cliente.create({
+    data: {
       empresaId: data.empresaId,
       nome: data.nome,
-      cpf: data.cpf,
+      cpf: cpfLimpo,
       whatsapp: data.whatsapp,
       dataNascimento: data.dataNascimento
         ? new Date(data.dataNascimento)
@@ -195,7 +219,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json(cliente, { status: 201 });
 }
-
 export async function PATCH(request: Request) {
   const body = await request.json();
   const parsed = updateClientSchema.safeParse(body);
@@ -224,23 +247,23 @@ export async function PATCH(request: Request) {
   }
 
   if (data.whatsapp !== clienteAtual.whatsapp) {
-    const clienteComWhatsapp = await prisma.cliente.findFirst({
-      where: {
-        empresaId: data.empresaId,
-        whatsapp: data.whatsapp,
-        id: {
-          not: data.clienteId,
-        },
+  const clienteComWhatsapp = await prisma.cliente.findFirst({
+    where: {
+      empresaId: data.empresaId,
+      whatsapp: data.whatsapp,
+      id: {
+        not: data.clienteId,
       },
-    });
+    },
+  });
 
-    if (clienteComWhatsapp) {
-      return NextResponse.json(
-        { error: 'Já existe outro cliente com este WhatsApp.' },
-        { status: 400 }
-      );
-    }
+  if (clienteComWhatsapp) {
+    return NextResponse.json(
+      { error: 'Já existe outro cliente com este WhatsApp.' },
+      { status: 400 }
+    );
   }
+}
 
   const cliente = await prisma.cliente.update({
     where: {
