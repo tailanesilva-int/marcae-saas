@@ -621,11 +621,11 @@ export async function GET(
       );
     }
 
-    const buffer = await renderToBuffer(
-      h(ComprovantePdf, {
-        agendamentos,
-      })
-    );
+    const pdfDocument = ComprovantePdf({
+      agendamentos,
+    }) as any;
+
+    const buffer = await renderToBuffer(pdfDocument);
 
     return new NextResponse(buffer, {
       headers: {
