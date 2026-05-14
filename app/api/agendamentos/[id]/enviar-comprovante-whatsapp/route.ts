@@ -161,9 +161,10 @@ async function enviarDocumentoEvolution({
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      apikey: apiKey,
-    },
+  'Content-Type': 'application/json',
+  apikey: apiKey,
+  'ngrok-skip-browser-warning': 'true',
+},
     body: JSON.stringify(payload),
   });
 
