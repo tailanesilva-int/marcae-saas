@@ -166,17 +166,19 @@ export async function POST(req: NextRequest) {
 
           notification_url: notificationUrl,
 
-          back_urls: {
-  success: `${baseUrl}/sucesso/${agendamento.id}?ids=${agendamentosGrupo
-    .map((a) => a.id)
-    .join(',')}`,
+                    back_urls: {
+            success: `${baseUrl}/sucesso/${agendamento.id}?ids=${agendamentosGrupo
+              .map((a) => a.id)
+              .join(',')}`,
 
-  failure: `${baseUrl}/erro/${agendamento.id}`,
+            failure: `${baseUrl}/erro/${agendamento.id}`,
 
-  pending: `${baseUrl}/pendente/${agendamento.id}`,
-},
+            pending: `${baseUrl}/pendente/${agendamento.id}`,
+          },
 
-auto_return: 'approved',
+          auto_return: 'approved',
+        },
+      });
 
       const linkPagamento = obterLinkPagamento(
         response,
