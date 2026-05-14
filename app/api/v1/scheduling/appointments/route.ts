@@ -26,26 +26,50 @@ export async function POST(request: Request) {
     const dataHoraInicio = new Date(`${date}T${horaInicio}:00`);
     const dataHoraFim = addMinutes(dataHoraInicio, servico.duracaoMin);
 
-    const clienteRegistro = await prisma.cliente.upsert({
-      where: {
-        empresaId_whatsapp: {
-          empresaId,
-          whatsapp: cliente.whatsapp,
-        },
-      },
-      update: {
-        nome: cliente.nome,
-        cpf: cliente.cpf || null,
-        dataNascimento: cliente.dataNascimento ? new Date(`${cliente.dataNascimento}T00:00:00`) : null,
-      },
-      create: {
-        empresaId,
-        nome: cliente.nome,
-        whatsapp: cliente.whatsapp,
-        cpf: cliente.cpf || null,
-        dataNascimento: cliente.dataNascimento ? new Date(`${cliente.dataNascimento}T00:00:00`) : null,
-      },
-    });
+    const cpfLimpo = String(cliente.cpf || '').replace(/\D/g, '');
+
+let clienteRegistro = null;
+
+if (cpfLimpo) {
+  const clientesDaEmpresa = await prisma.cliente.findMany({
+    where: {
+      empresaId,
+    },
+  });
+
+  clienteRegistro =
+    clientesDaEmpresa.find(
+      (item) => String(item.cpf || '').replace(/\D/g, '') === cpfLimpo
+    ) || null;
+}
+
+if (clienteRegistro) {
+  clienteRegistro = await prisma.cliente.update({
+    where: {
+      id: clienteRegistro.id,
+    },
+    data: {
+      nome: cliente.nome,
+      cpf: cpfLimpo || null,
+      whatsapp: cliente.whatsapp,
+      dataNascimento: cliente.dataNascimento
+        ? new Date(`${cliente.dataNascimento}T00:00:00`)
+        : null,
+    },
+  });
+} else {
+  clienteRegistro = await prisma.cliente.create({
+    data: {
+      empresaId,
+      nome: cliente.nome,
+      whatsapp: cliente.whatsapp,
+      cpf: cpfLimpo || null,
+      dataNascimento: cliente.dataNascimento
+        ? new Date(`${cliente.dataNascimento}T00:00:00`)
+        : null,
+    },
+  });
+}
 
     const existente = await prisma.agendamento.findFirst({
       where: {
