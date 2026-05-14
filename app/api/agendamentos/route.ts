@@ -226,7 +226,9 @@ export async function POST(req: Request) {
 
           valorPrePago: servicoAtual.valorPrePagamento || null,
 
-          status: 'pendente',
+          status: servicoAtual.exigePrePagamento
+  ? 'pendente'
+  : 'confirmado',
 
           statusPagamento: servicoAtual.exigePrePagamento
             ? 'pendente'
