@@ -1030,9 +1030,7 @@ function itemExigePrePagamento(item: any) {
     });
   }}
 />
-                      value={cliente.dataNascimento}
-                      onChange={(e) => setCliente({ ...cliente, dataNascimento: e.target.value })}
-                    />
+   
                     <span className="fieldHint">Usamos essa informação apenas para identificação do cadastro.</span>
                   </div>
                 </div>
