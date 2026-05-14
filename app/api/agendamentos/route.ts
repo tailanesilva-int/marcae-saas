@@ -118,30 +118,21 @@ export async function POST(req: Request) {
         );
       }
 
-      clienteFinal = await prisma.cliente.upsert({
-        where: {
-          empresaId_whatsapp: {
-            empresaId,
-            whatsapp: cliente.whatsapp,
-          },
-        },
-        update: {
-          nome: cliente.nome,
-          cpf: cliente.cpf || null,
-          dataNascimento: cliente.dataNascimento
-            ? new Date(cliente.dataNascimento)
-            : null,
-        },
-        create: {
-          empresaId,
-          nome: cliente.nome,
-          whatsapp: cliente.whatsapp,
-          cpf: cliente.cpf || null,
-          dataNascimento: cliente.dataNascimento
-            ? new Date(cliente.dataNascimento)
-            : null,
-        },
-      });
+      clienteFinal = await prisma.cliente.create({
+  data: {
+    empresaId,
+
+    nome: cliente.nome,
+
+    whatsapp: cliente.whatsapp,
+
+    cpf: cliente.cpf || null,
+
+    dataNascimento: cliente.dataNascimento
+      ? new Date(cliente.dataNascimento)
+      : null,
+  },
+});
     }
 
     const servicosRecebidos =
