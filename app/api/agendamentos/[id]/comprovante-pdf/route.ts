@@ -627,7 +627,7 @@ export async function GET(
 
     const buffer = await renderToBuffer(pdfDocument);
 
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `inline; filename="comprovante-${id}.pdf"`,
