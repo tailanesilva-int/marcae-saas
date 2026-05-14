@@ -615,6 +615,17 @@ function obterValorServico(servico: any) {
   return Number(servico?.valor ?? servico?.preco ?? servico?.valorTotal ?? 0);
 }
 
+function obterValorPrePagamentoServico(servico: any) {
+  return Number(
+    servico?.valorPrePagamento ??
+    servico?.valorPrePago ??
+    servico?.precoPrePagamento ??
+    servico?.prePagamentoValor ??
+    servico?.valorSinal ??
+    0
+  );
+}
+
 function formatarMoeda(valor: number) {
   return valor.toLocaleString('pt-BR', {
     style: 'currency',
@@ -645,6 +656,12 @@ function itemExigePrePagamento(item: any) {
 
   const totalResumo = itensResumo.reduce((total, item) => {
     return total + obterValorServico(item.servico);
+  }, 0);
+
+  const totalPrePagamentoResumo = itensResumo.reduce((total, item) => {
+    if (!itemExigePrePagamento(item)) return total;
+
+    return total + obterValorPrePagamentoServico(item.servico);
   }, 0);
 
   const existePrePagamentoResumo = itensResumo.some((item) => itemExigePrePagamento(item));
@@ -1085,6 +1102,8 @@ function itemExigePrePagamento(item: any) {
                             ? s.valorTotal
                             : null;
 
+                    const valorPrePagamentoServico = obterValorPrePagamentoServico(s);
+
                     return (
                       <button
                         key={s.id}
@@ -1109,7 +1128,14 @@ function itemExigePrePagamento(item: any) {
                                 })}
                               </span>
                             )}
-                            {s.exigePrePagamento && <span className="prePagamentoTag">Pré-pagamento</span>}
+                            {s.exigePrePagamento && (
+                              <span className="prePagamentoTag">
+                                Pré-pagamento
+                                {valorPrePagamentoServico > 0
+                                  ? `: ${formatarMoeda(valorPrePagamentoServico)}`
+                                  : ''}
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -1330,6 +1356,8 @@ function itemExigePrePagamento(item: any) {
 <div className="resumoReserva">
   {itensResumo.map((item, index) => {
     const valorItem = obterValorServico(item.servico);
+    const valorPrePagamentoItem = obterValorPrePagamentoServico(item.servico);
+    const exigePrePagamentoItem = itemExigePrePagamento(item);
     const podeRemover = item.id !== 'atual';
 
     return (
@@ -1372,14 +1400,21 @@ function itemExigePrePagamento(item: any) {
           </div>
 
           <div>
-            <span>Valor</span>
+            <span>Valor do serviço</span>
             <strong>{formatarMoeda(valorItem)}</strong>
           </div>
+
+          {exigePrePagamentoItem && (
+            <div>
+              <span>Pagar agora</span>
+              <strong>{formatarMoeda(valorPrePagamentoItem)}</strong>
+            </div>
+          )}
         </div>
 
-        {itemExigePrePagamento(item) && (
+        {exigePrePagamentoItem && (
           <div className="resumoPrePagamentoBadge">
-            Pré-pagamento obrigatório
+            Pré-pagamento obrigatório: {formatarMoeda(valorPrePagamentoItem)}
           </div>
         )}
       </div>
@@ -1387,9 +1422,26 @@ function itemExigePrePagamento(item: any) {
   })}
 
   <div className="resumoTotalCard">
-    <span>Total estimado</span>
-    <strong>{formatarMoeda(totalResumo)}</strong>
-    <small>{itensResumo.length} {itensResumo.length === 1 ? 'serviço selecionado' : 'serviços selecionados'}</small>
+    <div className="resumoTotalValores">
+      <div>
+        <span>Total dos serviços</span>
+        <strong>{formatarMoeda(totalResumo)}</strong>
+      </div>
+
+      {existePrePagamentoResumo && (
+        <div>
+          <span>Total pré-pagamento</span>
+          <strong>{formatarMoeda(totalPrePagamentoResumo)}</strong>
+        </div>
+      )}
+    </div>
+
+    <small>
+      {itensResumo.length} {itensResumo.length === 1 ? 'serviço selecionado' : 'serviços selecionados'}
+      {existePrePagamentoResumo
+        ? ' • Você pagará agora apenas o valor do pré-pagamento.'
+        : ''}
+    </small>
   </div>
 </div>
 
@@ -1397,6 +1449,7 @@ function itemExigePrePagamento(item: any) {
                 <div className="policyBox">
                   <strong>Existe serviço com pré-pagamento neste agendamento</strong>
                   <span>Ao finalizar, você será direcionado para o pagamento seguro.</span>
+                  <span>Você pagará agora {formatarMoeda(totalPrePagamentoResumo)} referente ao pré-pagamento. O valor total dos serviços é {formatarMoeda(totalResumo)}.</span>
                   <span>O valor pago não é reembolsável em caso de falta ou se o reagendamento/cancelamento não for solicitado com pelo menos 24h de antecedência.</span>
                 </div>
               )}
@@ -3481,7 +3534,7 @@ textarea {
 
   .resumoServicoDetalhes {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
     gap: 8px;
     margin-top: 12px;
   }
@@ -3513,6 +3566,22 @@ textarea {
     background: linear-gradient(135deg, #7c3aed, #db2777);
     border-color: transparent;
     color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .resumoTotalValores {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+  }
+
+  .resumoTotalValores > div {
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 4px;
