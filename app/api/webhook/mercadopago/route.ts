@@ -489,14 +489,36 @@ export async function POST(req: Request) {
     }
 
     const pagamento = await prisma.pagamento.findFirst({
-      where: agendamentoId
-        ? { agendamentoId }
-        : {
+  where: {
+    OR: [
+      {
+        externalId:
+          grupoAgendamentoId || agendamentoId || undefined,
+      },
+
+      {
+        preferenceId:
+          pagamentoMP.preference_id
+            ? String(pagamentoMP.preference_id)
+            : undefined,
+      },
+
+      agendamentoId
+        ? {
+            agendamentoId,
+          }
+        : {},
+
+      grupoAgendamentoId
+        ? {
             agendamento: {
               grupoAgendamentoId,
             },
-          },
-    });
+          }
+        : {},
+    ],
+  },
+});
 
     if (!pagamento) {
       return NextResponse.json(

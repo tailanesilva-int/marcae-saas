@@ -186,17 +186,23 @@ export async function POST(req: NextRequest) {
       );
 
       await prisma.pagamento.create({
-        data: {
-          empresaId: agendamento.empresaId,
-          agendamentoId: agendamento.id,
-          clienteId: agendamento.clienteId,
-          valorTotal: valorTotalGrupo,
-          valorPago: valorTotalGrupo,
-          status: 'pendente',
-          preferenceId: response.id,
-          linkPagamento,
-        },
-      });
+  data: {
+    empresaId: agendamento.empresaId,
+    agendamentoId: agendamento.id,
+    clienteId: agendamento.clienteId,
+    valorTotal: valorTotalGrupo,
+    valorPago: valorTotalGrupo,
+    status: 'pendente',
+
+    preferenceId:
+      String((response as any)?.id || ''),
+
+    externalId:
+      grupoAgendamentoId || agendamento.id,
+
+    linkPagamento,
+  },
+});
 
       return NextResponse.json({
         linkPagamento,
