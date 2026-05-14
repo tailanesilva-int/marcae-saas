@@ -64,6 +64,59 @@ useEffect(() => {
     return `${ano}-${mes}-${dia}`;
   }
 
+function dataMaximaNascimentoPermitida() {
+  const hoje = new Date();
+
+  const dataLimite = new Date(
+    hoje.getFullYear() - 10,
+    hoje.getMonth(),
+    hoje.getDate()
+  );
+
+  const ano = dataLimite.getFullYear();
+
+  const mes = String(
+    dataLimite.getMonth() + 1
+  ).padStart(2, '0');
+
+  const dia = String(
+    dataLimite.getDate()
+  ).padStart(2, '0');
+
+  return `${ano}-${mes}-${dia}`;
+}
+
+function clienteTemIdadeMinima(
+  dataNascimento?: string
+) {
+  if (!dataNascimento) return false;
+
+  const hoje = new Date();
+
+  const nascimento = new Date(
+    `${dataNascimento}T00:00:00`
+  );
+
+  let idade =
+    hoje.getFullYear() -
+    nascimento.getFullYear();
+
+  const mes =
+    hoje.getMonth() -
+    nascimento.getMonth();
+
+  if (
+    mes < 0 ||
+    (mes === 0 &&
+      hoje.getDate() <
+        nascimento.getDate())
+  ) {
+    idade--;
+  }
+
+  return idade >= 10;
+}
+
   function somenteNumeros(valor: string) {
     return valor.replace(/\D/g, '');
   }
@@ -529,6 +582,14 @@ useEffect(() => {
       return false;
     }
 
+if (!clienteTemIdadeMinima(cliente.dataNascimento)) {
+  alert(
+    'É necessário ter pelo menos 10 anos para realizar um agendamento.'
+  );
+
+  return false;
+}
+
     return true;
   }
 
@@ -940,8 +1001,35 @@ function itemExigePrePagamento(item: any) {
                   <div className="fieldGroup">
                     <label className="fieldLabel">Data de nascimento</label>
                     <input
-                      className="field"
-                      type="date"
+  className="field"
+  type="date"
+  max={dataMaximaNascimentoPermitida()}
+  value={cliente.dataNascimento}
+  onChange={(e) => {
+    const valor = e.target.value;
+
+    if (
+      valor &&
+      !clienteTemIdadeMinima(valor)
+    ) {
+      alert(
+        'É necessário ter pelo menos 10 anos para realizar um agendamento.'
+      );
+
+      setCliente({
+        ...cliente,
+        dataNascimento: '',
+      });
+
+      return;
+    }
+
+    setCliente({
+      ...cliente,
+      dataNascimento: valor,
+    });
+  }}
+/>
                       value={cliente.dataNascimento}
                       onChange={(e) => setCliente({ ...cliente, dataNascimento: e.target.value })}
                     />
