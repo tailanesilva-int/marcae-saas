@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Document,
   Page,
@@ -368,6 +369,8 @@ const styles = StyleSheet.create({
   },
 });
 
+const h = React.createElement;
+
 function ComprovantePdf({
   agendamentos,
 }: {
@@ -407,151 +410,186 @@ function ComprovantePdf({
     0
   );
 
-  return (
-    <Document
-      title={`Comprovante de agendamento - ${nomeEmpresa}`}
-      author="Marcaê"
-      subject="Comprovante de agendamento"
-    >
-      <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
-          <Text style={styles.brand}>Marcaê • Comprovante digital</Text>
-          <Text style={styles.title}>
-            {agendamentoConfirmado ? 'Reserva confirmada' : 'Reserva recebida'}
-          </Text>
-          <Text style={styles.subtitle}>
-            Olá, {nomeCliente}. Confira abaixo os detalhes do seu atendimento em {nomeEmpresa}.
-          </Text>
+  const servicos = agendamentos.map((item: any, index: number) => {
+    const exigePrePagamentoItem = Boolean(item?.servico?.exigePrePagamento);
+    const statusPagamentoItem = textoPagamento(
+      item?.statusPagamento,
+      exigePrePagamentoItem
+    );
+    const valorServicoItem = obterValorServico(item);
+    const valorPrePagamentoItem = obterValorPrePagamento(item);
 
-          <View style={styles.statusRow}>
-            <Text style={styles.statusPill}>
-              {agendamentoConfirmado ? 'CONFIRMADO' : 'PENDENTE'}
-            </Text>
-            <Text style={styles.statusPill}>{statusPagamento}</Text>
-          </View>
-        </View>
+    return h(
+      View,
+      {
+        key: item.id,
+        style: styles.serviceCard,
+      },
+      h(
+        View,
+        {
+          style: styles.serviceTop,
+        },
+        h(
+          View,
+          null,
+          h(Text, { style: styles.muted }, `Serviço ${index + 1}`),
+          h(Text, { style: styles.serviceName }, item?.servico?.nome || 'Serviço'),
+          h(
+            Text,
+            { style: styles.muted },
+            `${formatarData(item?.dataHoraInicio)} às ${formatarHora(item?.dataHoraInicio)}`
+          )
+        ),
+        h(Text, { style: styles.price }, formatarMoeda(valorServicoItem))
+      ),
+      h(
+        View,
+        {
+          style: styles.detailGrid,
+        },
+        h(
+          View,
+          { style: styles.detail },
+          h(Text, { style: styles.detailLabel }, 'Profissional'),
+          h(Text, { style: styles.detailValue }, item?.profissional?.nome || 'Profissional')
+        ),
+        h(
+          View,
+          { style: styles.detail },
+          h(Text, { style: styles.detailLabel }, 'Duração'),
+          h(Text, { style: styles.detailValue }, `${item?.duracaoMin || item?.servico?.duracaoMin || 30} minutos`)
+        ),
+        h(
+          View,
+          { style: styles.detail },
+          h(Text, { style: styles.detailLabel }, 'Pagamento'),
+          h(Text, { style: styles.detailValue }, statusPagamentoItem)
+        )
+      ),
+      exigePrePagamentoItem
+        ? h(
+            View,
+            { style: styles.policy },
+            h(Text, { style: styles.policyTitle }, `Pré-pagamento: ${formatarMoeda(valorPrePagamentoItem)}`),
+            h(
+              Text,
+              { style: styles.policyText },
+              'O valor pago não é reembolsável em caso de falta no dia do atendimento ou se o cancelamento/reagendamento não for solicitado com pelo menos 24 horas de antecedência.'
+            )
+          )
+        : null
+    );
+  });
 
-        <View style={styles.card}>
-          <Text style={styles.sectionLabel}>Resumo do atendimento</Text>
-          <Text style={styles.sectionTitle}>
-            {agendamentos.length} {agendamentos.length === 1 ? 'serviço agendado' : 'serviços agendados'}
-          </Text>
-
-          {agendamentos.map((item: any, index: number) => {
-            const exigePrePagamentoItem = Boolean(item?.servico?.exigePrePagamento);
-            const statusPagamentoItem = textoPagamento(
-              item?.statusPagamento,
-              exigePrePagamentoItem
-            );
-            const valorServicoItem = obterValorServico(item);
-            const valorPrePagamentoItem = obterValorPrePagamento(item);
-
-            return (
-              <View key={item.id} style={styles.serviceCard}>
-                <View style={styles.serviceTop}>
-                  <View>
-                    <Text style={styles.muted}>Serviço {index + 1}</Text>
-                    <Text style={styles.serviceName}>
-                      {item?.servico?.nome || 'Serviço'}
-                    </Text>
-                    <Text style={styles.muted}>
-                      {formatarData(item?.dataHoraInicio)} às {formatarHora(item?.dataHoraInicio)}
-                    </Text>
-                  </View>
-
-                  <Text style={styles.price}>
-                    {formatarMoeda(valorServicoItem)}
-                  </Text>
-                </View>
-
-                <View style={styles.detailGrid}>
-                  <View style={styles.detail}>
-                    <Text style={styles.detailLabel}>Profissional</Text>
-                    <Text style={styles.detailValue}>
-                      {item?.profissional?.nome || 'Profissional'}
-                    </Text>
-                  </View>
-
-                  <View style={styles.detail}>
-                    <Text style={styles.detailLabel}>Duração</Text>
-                    <Text style={styles.detailValue}>
-                      {item?.duracaoMin || item?.servico?.duracaoMin || 30} minutos
-                    </Text>
-                  </View>
-
-                  <View style={styles.detail}>
-                    <Text style={styles.detailLabel}>Pagamento</Text>
-                    <Text style={styles.detailValue}>{statusPagamentoItem}</Text>
-                  </View>
-                </View>
-
-                {exigePrePagamentoItem && (
-                  <View style={styles.policy}>
-                    <Text style={styles.policyTitle}>
-                      Pré-pagamento: {formatarMoeda(valorPrePagamentoItem)}
-                    </Text>
-                    <Text style={styles.policyText}>
-                      O valor pago não é reembolsável em caso de falta no dia do atendimento
-                      ou se o cancelamento/reagendamento não for solicitado com pelo menos
-                      24 horas de antecedência.
-                    </Text>
-                  </View>
-                )}
-              </View>
-            );
-          })}
-        </View>
-
-        <View style={styles.totals}>
-          <Text style={styles.totalLabel}>Total dos serviços</Text>
-          <Text style={styles.totalValue}>{formatarMoeda(totalGeral)}</Text>
-
-          {existePrePagamento && (
-            <>
-              <Text style={styles.totalLabel}>Valor pago agora</Text>
-              <Text style={styles.totalValue}>{formatarMoeda(totalPrePagamento)}</Text>
-            </>
-          )}
-
-          <Text style={styles.totalLabel}>Status geral</Text>
-          <Text style={styles.totalValue}>{statusPagamento}</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionLabel}>Dados do atendimento</Text>
-
-          <View style={styles.infoGrid}>
-            <View style={styles.infoBox}>
-              <Text style={styles.detailLabel}>Cliente</Text>
-              <Text style={styles.detailValue}>{nomeCliente}</Text>
-            </View>
-
-            <View style={styles.infoBox}>
-              <Text style={styles.detailLabel}>Empresa</Text>
-              <Text style={styles.detailValue}>{nomeEmpresa}</Text>
-            </View>
-
-            {telefoneEmpresa && (
-              <View style={styles.infoBox}>
-                <Text style={styles.detailLabel}>Contato</Text>
-                <Text style={styles.detailValue}>{telefoneEmpresa}</Text>
-              </View>
-            )}
-
-            {enderecoEmpresa && (
-              <View style={styles.infoBoxWide}>
-                <Text style={styles.detailLabel}>Endereço</Text>
-                <Text style={styles.detailValue}>{enderecoEmpresa}</Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        <Text style={styles.footer}>
-          Gerado automaticamente pelo Marcaê. Guarde este comprovante para consulta.
-        </Text>
-      </Page>
-    </Document>
+  return h(
+    Document,
+    {
+      title: `Comprovante de agendamento - ${nomeEmpresa}`,
+      author: 'Marcaê',
+      subject: 'Comprovante de agendamento',
+    },
+    h(
+      Page,
+      {
+        size: 'A4',
+        style: styles.page,
+      },
+      h(
+        View,
+        { style: styles.header },
+        h(Text, { style: styles.brand }, 'Marcaê • Comprovante digital'),
+        h(
+          Text,
+          { style: styles.title },
+          agendamentoConfirmado ? 'Reserva confirmada' : 'Reserva recebida'
+        ),
+        h(
+          Text,
+          { style: styles.subtitle },
+          `Olá, ${nomeCliente}. Confira abaixo os detalhes do seu atendimento em ${nomeEmpresa}.`
+        ),
+        h(
+          View,
+          { style: styles.statusRow },
+          h(
+            Text,
+            { style: styles.statusPill },
+            agendamentoConfirmado ? 'CONFIRMADO' : 'PENDENTE'
+          ),
+          h(Text, { style: styles.statusPill }, statusPagamento)
+        )
+      ),
+      h(
+        View,
+        { style: styles.card },
+        h(Text, { style: styles.sectionLabel }, 'Resumo do atendimento'),
+        h(
+          Text,
+          { style: styles.sectionTitle },
+          `${agendamentos.length} ${agendamentos.length === 1 ? 'serviço agendado' : 'serviços agendados'}`
+        ),
+        ...servicos
+      ),
+      h(
+        View,
+        { style: styles.totals },
+        h(Text, { style: styles.totalLabel }, 'Total dos serviços'),
+        h(Text, { style: styles.totalValue }, formatarMoeda(totalGeral)),
+        existePrePagamento
+          ? h(
+              React.Fragment,
+              null,
+              h(Text, { style: styles.totalLabel }, 'Valor pago agora'),
+              h(Text, { style: styles.totalValue }, formatarMoeda(totalPrePagamento))
+            )
+          : null,
+        h(Text, { style: styles.totalLabel }, 'Status geral'),
+        h(Text, { style: styles.totalValue }, statusPagamento)
+      ),
+      h(
+        View,
+        { style: styles.card },
+        h(Text, { style: styles.sectionLabel }, 'Dados do atendimento'),
+        h(
+          View,
+          { style: styles.infoGrid },
+          h(
+            View,
+            { style: styles.infoBox },
+            h(Text, { style: styles.detailLabel }, 'Cliente'),
+            h(Text, { style: styles.detailValue }, nomeCliente)
+          ),
+          h(
+            View,
+            { style: styles.infoBox },
+            h(Text, { style: styles.detailLabel }, 'Empresa'),
+            h(Text, { style: styles.detailValue }, nomeEmpresa)
+          ),
+          telefoneEmpresa
+            ? h(
+                View,
+                { style: styles.infoBox },
+                h(Text, { style: styles.detailLabel }, 'Contato'),
+                h(Text, { style: styles.detailValue }, telefoneEmpresa)
+              )
+            : null,
+          enderecoEmpresa
+            ? h(
+                View,
+                { style: styles.infoBoxWide },
+                h(Text, { style: styles.detailLabel }, 'Endereço'),
+                h(Text, { style: styles.detailValue }, enderecoEmpresa)
+              )
+            : null
+        )
+      ),
+      h(
+        Text,
+        { style: styles.footer },
+        'Gerado automaticamente pelo Marcaê. Guarde este comprovante para consulta.'
+      )
+    )
   );
 }
 
@@ -584,7 +622,9 @@ export async function GET(
     }
 
     const buffer = await renderToBuffer(
-      <ComprovantePdf agendamentos={agendamentos} />
+      h(ComprovantePdf, {
+        agendamentos,
+      })
     );
 
     return new NextResponse(buffer, {
