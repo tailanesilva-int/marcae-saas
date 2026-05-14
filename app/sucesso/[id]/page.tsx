@@ -231,8 +231,6 @@ export default async function SucessoDetalhesPage({
     agendamento?.cliente?.whatsapp || agendamento?.clienteWhatsapp || agendamento?.telefoneCliente || '';
 
   const servico = agendamento?.servico?.nome || 'serviço';
-  const profissional = agendamento?.profissional?.nome || '';
-
   const nomeEmpresa = agendamento?.empresa?.nome || 'Empresa';
   const telefoneEmpresa = agendamento?.empresa?.telefone || agendamento?.empresa?.whatsapp || '';
   const enderecoEmpresa = formatarEndereco(agendamento?.empresa?.endereco);
@@ -273,12 +271,12 @@ export default async function SucessoDetalhesPage({
     return total + Number(obterValorServico(item));
   }, 0);
 
-const totalPrePagamento = agendamentos.reduce(
-  (total: number, item: any) => {
-    return total + Number(obterValorPrePagamento(item));
-  },
-  0
-);
+  const totalPrePagamento = agendamentos.reduce(
+    (total: number, item: any) => {
+      return total + Number(obterValorPrePagamento(item));
+    },
+    0
+  );
 
   const linhasServicosWhatsapp = agendamentos
     .map((item: any, index: number) => {
@@ -356,45 +354,6 @@ const totalPrePagamento = agendamentos.reduce(
       ? `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${googleAgendaTexto}&details=${googleAgendaDetalhes}&dates=${inicioGoogle}/${fimGoogle}`
       : '';
 
-  const infoCardStyle: CSSProperties = {
-    display: 'flex',
-    gap: 12,
-    alignItems: 'flex-start',
-    padding: 16,
-    borderRadius: 20,
-    background: '#f8fafc',
-    border: '1px solid #e2e8f0',
-  };
-
-  const iconStyle: CSSProperties = {
-    width: 42,
-    height: 42,
-    minWidth: 42,
-    borderRadius: 16,
-    background:
-      'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(219,39,119,0.12))',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: 20,
-  };
-
-  const labelStyle: CSSProperties = {
-    display: 'block',
-    color: '#64748b',
-    fontSize: 11,
-    fontWeight: 900,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-    letterSpacing: '0.05em',
-  };
-
-  const valueStyle: CSSProperties = {
-    color: '#0f172a',
-    fontSize: 14,
-    lineHeight: 1.45,
-  };
-
   const instagramEmpresa =
     agendamento?.empresa?.instagramUrl ||
     agendamento?.empresa?.instagram ||
@@ -412,575 +371,256 @@ const totalPrePagamento = agendamentos.reduce(
     ? `https://wa.me/55${telefoneEmpresaLimpo}`
     : '';
 
-  return (
-    <main
-      style={{
-        minHeight: '100vh',
-        background:
-          'radial-gradient(circle at top left, rgba(124,58,237,0.18), transparent 28%), radial-gradient(circle at top right, rgba(219,39,119,0.18), transparent 28%), linear-gradient(180deg, #fff7fb 0%, #f8fafc 52%, #eef2ff 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 20,
-        fontFamily: 'Arial, sans-serif',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 760,
-          width: '100%',
-          background: 'rgba(255,255,255,0.94)',
-          backdropFilter: 'blur(18px)',
-          borderRadius: 34,
-          padding: 34,
-          textAlign: 'center',
-          boxShadow: '0 30px 80px rgba(15,23,42,0.14)',
-          border: '1px solid rgba(255,255,255,0.92)',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              background: 'rgba(124,58,237,0.1)',
-              color: '#6d28d9',
-              borderRadius: 999,
-              padding: '10px 16px',
-              fontSize: 13,
-              fontWeight: 900,
-              marginBottom: 22,
-            }}
-          >
-            <span
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg,#7c3aed,#db2777)',
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-              }}
-            >
-              ✓
-            </span>
+  if (!agendamento) {
+    return (
+      <main className="page">
+        <div className="backgroundGrid" />
+        <section className="emptyState">
+          <div className="emptyIcon">!</div>
+          <h1>Comprovante não encontrado</h1>
+          <p>Não conseguimos carregar os detalhes deste agendamento.</p>
+          <strong>Marc<span>aê</span></strong>
+        </section>
+      </main>
+    );
+  }
 
-            {agendamentos.length > 1
-              ? 'Agendamento online multi-serviço'
-              : 'Agendamento online confirmado'}
+  return (
+    <main className="page">
+      <div className="backgroundGrid" />
+      <div className="orb orbOne" />
+      <div className="orb orbTwo" />
+      <div className="orb orbThree" />
+
+      <section className="receiptShell">
+        <aside className="heroPanel">
+          <div className="brandPill">
+            <span>✦</span>
+            Marc<span>aê</span>
           </div>
 
-          <div
-            style={{
-              width: 92,
-              height: 92,
-              borderRadius: 30,
-              overflow: 'hidden',
-              background: '#fff',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 20px 45px rgba(15,23,42,0.10)',
-              marginBottom: 20,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
+          <div className="companyMark">
             {agendamento?.empresa?.logoUrl ? (
-              <img
-                src={agendamento.empresa.logoUrl}
-                alt={nomeEmpresa}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                }}
-              />
+              <img src={agendamento.empresa.logoUrl} alt={nomeEmpresa} />
             ) : (
-              <div
-                style={{
-                  fontSize: 38,
-                  fontWeight: 900,
-                  color: '#7c3aed',
-                }}
-              >
-                {String(nomeEmpresa || 'M').charAt(0)}
-              </div>
+              <strong>{String(nomeEmpresa || 'M').charAt(0).toUpperCase()}</strong>
             )}
           </div>
 
-          <h1
-            style={{
-              fontSize: 42,
-              lineHeight: 0.95,
-              letterSpacing: '-0.06em',
-              marginBottom: 12,
-              color: '#0f172a',
-            }}
-          >
-            {agendamentoConfirmado
-              ? 'Seu horário foi confirmado ✨'
-              : 'Seu agendamento foi recebido ✨'}
-          </h1>
+          <div className="heroCopy">
+            <div className={agendamentoConfirmado ? 'statusBadge confirmed' : 'statusBadge pending'}>
+              <span>{agendamentoConfirmado ? '✓' : '•'}</span>
+              {statusAgendamento}
+            </div>
 
-          <p
-            style={{
-              maxWidth: 560,
-              color: '#475569',
-              fontSize: 17,
-              lineHeight: 1.7,
-              margin: 0,
-            }}
-          >
-            {agendamentoConfirmado
-              ? `Seu atendimento em ${nomeEmpresa} foi reservado com sucesso.`
-              : 'Seu agendamento foi criado e estamos aguardando a confirmação automática do pagamento.'}
-          </p>
+            <h1>
+              {agendamentoConfirmado
+                ? 'Reserva confirmada.'
+                : 'Reserva recebida.'}
+            </h1>
 
-          <div
-            style={{
-              marginTop: 28,
-              width: '100%',
-              borderRadius: 24,
-              padding: 20,
-              background:
-                'radial-gradient(circle at right, rgba(219,39,119,0.10), transparent 30%), linear-gradient(135deg, rgba(250,245,255,0.95), rgba(255,255,255,0.92))',
-              border: '1px solid #e9d5ff',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 18,
-              textAlign: 'left',
-            }}
-          >
-            <div
-              style={{
-                minWidth: 58,
-                width: 58,
-                height: 58,
-                borderRadius: 20,
-                background: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 28,
-                boxShadow: '0 14px 28px rgba(124,58,237,0.12)',
-              }}
-            >
-              📅
+            <p>
+              {agendamentoConfirmado
+                ? `Seu atendimento em ${nomeEmpresa} está garantido.`
+                : 'Seu atendimento foi criado e aguarda confirmação automática do pagamento.'}
+            </p>
+          </div>
+
+          <div className="heroStats">
+            <div>
+              <span>Serviços</span>
+              <strong>{agendamentos.length}</strong>
             </div>
 
             <div>
-              <strong
-                style={{
-                  display: 'block',
-                  color: '#0f172a',
-                  fontSize: 17,
-                  marginBottom: 4,
-                }}
-              >
-                Agilidade que você sente, cuidado que você merece.
-              </strong>
+              <span>Total</span>
+              <strong>{formatarMoeda(totalGeral)}</strong>
+            </div>
 
-              <span
-                style={{
-                  color: '#64748b',
-                  fontSize: 14,
-                  lineHeight: 1.5,
-                }}
-              >
-                Seu horário já está reservado e organizado para você 💜
-              </span>
+            <div>
+              <span>Pagamento</span>
+              <strong>{statusPagamento}</strong>
             </div>
           </div>
-        </div>
 
-        {agendamento ? (
-          <>
-            <div
-              style={{
-                marginTop: 30,
-                borderRadius: 30,
-                padding: 24,
-                background: 'rgba(255,255,255,0.78)',
-                border: '1px solid #eef2ff',
-                boxShadow: '0 24px 60px rgba(15,23,42,0.08)',
-                textAlign: 'left',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                  marginBottom: 22,
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div>
-                  <span
-                    style={{
-                      display: 'block',
-                      color: '#a855f7',
-                      fontSize: 12,
-                      fontWeight: 900,
-                      marginBottom: 6,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                    }}
-                  >
-                    Resumo do atendimento
-                  </span>
+          <div className="heroFooter">
+            <span>Comprovante digital</span>
+            <strong>{nomeEmpresa}</strong>
+          </div>
+        </aside>
 
-                  <h2
-                    style={{
-                      margin: 0,
-                      color: '#0f172a',
-                      fontSize: 24,
-                      letterSpacing: '-0.04em',
-                    }}
-                  >
-                    {agendamentos.length > 1
-                      ? `${agendamentos.length} serviços agendados`
-                      : servico}
-                  </h2>
-                </div>
+        <section className="contentPanel">
+          <header className="contentHeader">
+            <div>
+              <span className="eyebrow">
+                {agendamentos.length > 1
+                  ? 'Agendamento multi-serviço'
+                  : 'Agendamento online'}
+              </span>
 
-                <div
-                  style={{
-                    borderRadius: 999,
-                    padding: '10px 14px',
-                    background: agendamentoConfirmado
-                      ? 'rgba(22,163,74,0.12)'
-                      : 'rgba(245,158,11,0.12)',
-                    color: agendamentoConfirmado
-                      ? '#166534'
-                      : '#92400e',
-                    fontSize: 13,
-                    fontWeight: 900,
-                  }}
-                >
-                  {statusAgendamento}
-                </div>
+              <h2>
+                {agendamentos.length > 1
+                  ? `${agendamentos.length} serviços agendados`
+                  : servico}
+              </h2>
+
+              <p>
+                Olá, <strong>{nomeCliente}</strong>. Confira abaixo todos os detalhes da sua reserva.
+              </p>
+            </div>
+
+            <div className={agendamentoConfirmado ? 'headerSeal confirmed' : 'headerSeal pending'}>
+              {agendamentoConfirmado ? 'Confirmado' : 'Pendente'}
+            </div>
+          </header>
+
+          <section className="summaryRibbon">
+            <div>
+              <span>Total dos serviços</span>
+              <strong>{formatarMoeda(totalGeral)}</strong>
+            </div>
+
+            {existePrePagamento && (
+              <div>
+                <span>Valor pago agora</span>
+                <strong>{formatarMoeda(totalPrePagamento)}</strong>
               </div>
+            )}
 
-              <div style={{ display: 'grid', gap: 14, marginBottom: 18 }}>
-                {agendamentos.map((item: any, index: number) => {
-                  const exigePrePagamentoItem = Boolean(item?.servico?.exigePrePagamento);
+            <div>
+              <span>Status geral</span>
+              <strong>{statusPagamento}</strong>
+            </div>
+          </section>
 
-                  const statusPagamentoItem = textoPagamento(
-                    item?.statusPagamento,
-                    exigePrePagamentoItem
-                  );
+          <section className="timelineSection">
+            <div className="sectionHeading">
+              <span>Agenda</span>
+              <strong>Serviços reservados</strong>
+            </div>
 
-                  const valorServicoItem = obterValorServico(item);
+            <div className="serviceTimeline">
+              {agendamentos.map((item: any, index: number) => {
+                const exigePrePagamentoItem = Boolean(item?.servico?.exigePrePagamento);
+                const statusPagamentoItem = textoPagamento(
+                  item?.statusPagamento,
+                  exigePrePagamentoItem
+                );
+                const valorServicoItem = obterValorServico(item);
+                const valorPrePagamentoItem = obterValorPrePagamento(item);
 
-                  return (
-                    <div
-                      key={item.id}
-                      style={{
-                        padding: 18,
-                        borderRadius: 24,
-                        background:
-                          'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,250,252,0.95))',
-                        border: '1px solid #e2e8f0',
-                        boxShadow: '0 14px 32px rgba(15,23,42,0.05)',
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          justifyContent: 'space-between',
-                          gap: 12,
-                          marginBottom: 12,
-                        }}
-                      >
+                return (
+                  <article key={item.id} className="serviceCard">
+                    <div className="timelineDot">
+                      <span>{index + 1}</span>
+                    </div>
+
+                    <div className="serviceBody">
+                      <div className="serviceTop">
                         <div>
-                          <span
-                            style={{
-                              display: 'inline-flex',
-                              borderRadius: 999,
-                              padding: '6px 10px',
-                              background: '#ede9fe',
-                              color: '#5b21b6',
-                              fontSize: 11,
-                              fontWeight: 900,
-                              marginBottom: 8,
-                            }}
-                          >
-                            Serviço {index + 1}
-                          </span>
-
-                          <strong
-                            style={{
-                              color: '#0f172a',
-                              fontSize: 18,
-                              display: 'block',
-                              marginBottom: 4,
-                            }}
-                          >
-                            {item?.servico?.nome || 'Serviço'}
-                          </strong>
-
-                          <span
-                            style={{
-                              display: 'block',
-                              color: '#64748b',
-                              fontSize: 14,
-                              lineHeight: 1.5,
-                            }}
-                          >
-                            {formatarData(item?.dataHoraInicio)} às {formatarHora(item?.dataHoraInicio)}
-                          </span>
+                          <span className="serviceTag">Serviço {index + 1}</span>
+                          <h3>{item?.servico?.nome || 'Serviço'}</h3>
+                          <p>{formatarData(item?.dataHoraInicio)} às {formatarHora(item?.dataHoraInicio)}</p>
                         </div>
 
-                        <strong
-                          style={{
-                            color: '#0f172a',
-                            fontSize: 16,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {formatarMoeda(valorServicoItem)}
-                        </strong>
+                        <strong className="servicePrice">{formatarMoeda(valorServicoItem)}</strong>
                       </div>
 
-                      <div
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(180px,1fr))',
-                          gap: 10,
-                        }}
-                      >
-                        <div style={infoCardStyle}>
-                          <span style={iconStyle}>👤</span>
-
+                      <div className="detailGrid">
+                        <div className="detailCard">
+                          <span className="detailIcon">👤</span>
                           <div>
-                            <small style={labelStyle}>Profissional</small>
-                            <strong style={valueStyle}>{item?.profissional?.nome || 'Profissional'}</strong>
+                            <small>Profissional</small>
+                            <strong>{item?.profissional?.nome || 'Profissional'}</strong>
                           </div>
                         </div>
 
-                        <div style={infoCardStyle}>
-                          <span style={iconStyle}>⏱️</span>
-
+                        <div className="detailCard">
+                          <span className="detailIcon">⏱</span>
                           <div>
-                            <small style={labelStyle}>Duração</small>
-                            <strong style={valueStyle}>{item?.duracaoMin || item?.servico?.duracaoMin || 30} minutos</strong>
+                            <small>Duração</small>
+                            <strong>{item?.duracaoMin || item?.servico?.duracaoMin || 30} minutos</strong>
                           </div>
                         </div>
 
-                        <div style={infoCardStyle}>
-                          <span style={iconStyle}>💳</span>
-
+                        <div className="detailCard">
+                          <span className="detailIcon">💳</span>
                           <div>
-                            <small style={labelStyle}>Pagamento</small>
-                            <strong style={valueStyle}>{statusPagamentoItem}</strong>
+                            <small>Pagamento</small>
+                            <strong>{statusPagamentoItem}</strong>
                           </div>
                         </div>
+
+                        {exigePrePagamentoItem && (
+                          <div className="detailCard">
+                            <span className="detailIcon">◆</span>
+                            <div>
+                              <small>Pré-pagamento</small>
+                              <strong>{formatarMoeda(valorPrePagamentoItem)}</strong>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {exigePrePagamentoItem && (
-                        <div
-                          style={{
-                            marginTop: 12,
-                            padding: 12,
-                            borderRadius: 16,
-                            background: '#fff7ed',
-                            border: '1px solid #fed7aa',
-                            color: '#9a3412',
-                            fontSize: 13,
-                            lineHeight: 1.45,
-                          }}
-                        >
-                          <strong style={{ display: 'block', marginBottom: 4 }}>
-                            Política de pré-pagamento
-                          </strong>
-                          O valor pago não é reembolsável em caso de falta no dia do atendimento
-                          ou se o cancelamento/reagendamento não for solicitado com pelo menos
-                          24 horas de antecedência.
+                        <div className="policyNotice">
+                          <strong>Política de pré-pagamento</strong>
+                          <span>
+                            O valor pago não é reembolsável em caso de falta no dia do atendimento
+                            ou se o cancelamento/reagendamento não for solicitado com pelo menos
+                            24 horas de antecedência.
+                          </span>
                         </div>
                       )}
                     </div>
-                  );
-                })}
-              </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
 
-              <div
-                style={{
-                  marginBottom: 18,
-                  padding: 18,
-                  borderRadius: 24,
-                  background: 'linear-gradient(135deg, #7c3aed, #db2777)',
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div>
-  <span
-    style={{
-      display: 'block',
-      fontSize: 12,
-      fontWeight: 900,
-      opacity: 0.85,
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em',
-      marginBottom: 4,
-    }}
-  >
-    Total geral
-  </span>
-
-  <strong
-    style={{
-      display: 'block',
-      fontSize: 26,
-      letterSpacing: '-0.04em',
-      marginBottom: existePrePagamento ? 10 : 0,
-    }}
-  >
-    {formatarMoeda(totalGeral)}
-  </strong>
-
-  {existePrePagamento && (
-    <div>
-      <span
-        style={{
-          display: 'block',
-          fontSize: 11,
-          opacity: 0.82,
-          textTransform: 'uppercase',
-          fontWeight: 800,
-          letterSpacing: '0.06em',
-          marginBottom: 4,
-        }}
-      >
-        Valor pago agora
-      </span>
-
-      <strong
-        style={{
-          fontSize: 20,
-          color: '#fff',
-        }}
-      >
-        {formatarMoeda(totalPrePagamento)}
-      </strong>
-    </div>
-  )}
-</div>
-
-                <div
-                  style={{
-                    borderRadius: 999,
-                    padding: '9px 12px',
-                    background: 'rgba(255,255,255,0.16)',
-                    border: '1px solid rgba(255,255,255,0.24)',
-                    fontSize: 13,
-                    fontWeight: 900,
-                  }}
-                >
-                  {statusPagamento}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px,1fr))',
-                  gap: 14,
-                }}
-              >
-                <div style={infoCardStyle}>
-                  <span style={iconStyle}>👤</span>
-
-                  <div>
-                    <small style={labelStyle}>Cliente</small>
-                    <strong style={valueStyle}>{nomeCliente}</strong>
-                  </div>
-                </div>
-
-                <div style={infoCardStyle}>
-                  <span style={iconStyle}>🏢</span>
-
-                  <div>
-                    <small style={labelStyle}>Empresa</small>
-                    <strong style={valueStyle}>{nomeEmpresa}</strong>
-                  </div>
-                </div>
-
-                <div style={infoCardStyle}>
-                  <span style={iconStyle}>📅</span>
-
-                  <div>
-                    <small style={labelStyle}>Primeiro horário</small>
-                    <strong style={valueStyle}>{data}</strong>
-                  </div>
-                </div>
-
-                <div style={infoCardStyle}>
-                  <span style={iconStyle}>⏰</span>
-
-                  <div>
-                    <small style={labelStyle}>Início</small>
-                    <strong style={valueStyle}>{hora}</strong>
-                  </div>
-                </div>
-
-                {telefoneEmpresa && (
-                  <div style={infoCardStyle}>
-                    <span style={iconStyle}>📞</span>
-
-                    <div>
-                      <small style={labelStyle}>Contato</small>
-                      <strong style={valueStyle}>{telefoneEmpresa}</strong>
-                    </div>
-                  </div>
-                )}
-
-                {enderecoEmpresa && (
-                  <div style={infoCardStyle}>
-                    <span style={iconStyle}>📍</span>
-
-                    <div>
-                      <small style={labelStyle}>Endereço</small>
-                      <strong style={valueStyle}>{enderecoEmpresa}</strong>
-                    </div>
-                  </div>
-                )}
-              </div>
+          <section className="infoGrid">
+            <div className="infoTile">
+              <span>Cliente</span>
+              <strong>{nomeCliente}</strong>
             </div>
 
+            <div className="infoTile">
+              <span>Empresa</span>
+              <strong>{nomeEmpresa}</strong>
+            </div>
+
+            <div className="infoTile">
+              <span>Primeiro horário</span>
+              <strong>{data}</strong>
+            </div>
+
+            <div className="infoTile">
+              <span>Início</span>
+              <strong>{hora}</strong>
+            </div>
+
+            {telefoneEmpresa && (
+              <div className="infoTile">
+                <span>Contato</span>
+                <strong>{telefoneEmpresa}</strong>
+              </div>
+            )}
+
+            {enderecoEmpresa && (
+              <div className="infoTile wide">
+                <span>Endereço</span>
+                <strong>{enderecoEmpresa}</strong>
+              </div>
+            )}
+          </section>
+
+          <section className="actions">
             <a
               href={linkWhatsapp}
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                display: 'block',
-                marginTop: 24,
-                background: '#22c55e',
-                color: '#fff',
-                padding: '15px 20px',
-                borderRadius: 14,
-                textDecoration: 'none',
-                fontSize: 16,
-                fontWeight: 'bold',
-                boxShadow: '0 10px 20px rgba(34, 197, 94, 0.25)',
-              }}
+              className="actionButton whatsapp"
             >
               Enviar confirmação no WhatsApp
             </a>
@@ -990,128 +630,783 @@ const totalPrePagamento = agendamentos.reduce(
                 href={linkGoogleAgenda}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{
-                  display: 'block',
-                  marginTop: 12,
-                  background: '#111827',
-                  color: '#fff',
-                  padding: '15px 20px',
-                  borderRadius: 14,
-                  textDecoration: 'none',
-                  fontSize: 16,
-                  fontWeight: 'bold',
-                }}
+                className="actionButton calendar"
               >
                 Adicionar ao Google Agenda
               </a>
             )}
+          </section>
 
-            <div
-              style={{
-                marginTop: 22,
-                borderRadius: 26,
-                padding: 22,
-                background:
-                  'linear-gradient(135deg, rgba(250,245,255,0.96), rgba(255,255,255,0.92))',
-                border: '1px solid #e9d5ff',
-                textAlign: 'center',
-              }}
-            >
-              <strong
-                style={{
-                  display: 'block',
-                  color: '#0f172a',
-                  fontSize: 18,
-                  marginBottom: 6,
-                }}
-              >
-                Gostou da experiência? 💜
-              </strong>
-
-              <p
-                style={{
-                  margin: '0 0 16px',
-                  color: '#64748b',
-                  fontSize: 14,
-                  lineHeight: 1.5,
-                }}
-              >
-                Acompanhe a empresa e fale direto pelo WhatsApp quando precisar.
-              </p>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr',
-                  gap: 10,
-                }}
-              >
-                {instagramLink && (
-                  <a
-                    href={instagramLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: 'block',
-                      background: 'linear-gradient(135deg, #db2777, #7c3aed)',
-                      color: '#fff',
-                      padding: '14px 18px',
-                      borderRadius: 16,
-                      textDecoration: 'none',
-                      fontSize: 15,
-                      fontWeight: 900,
-                    }}
-                  >
-                    📸 Me siga no Instagram
-                  </a>
-                )}
-
-                {linkWhatsappEmpresa && (
-                  <a
-                    href={linkWhatsappEmpresa}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: 'block',
-                      background: '#16a34a',
-                      color: '#fff',
-                      padding: '14px 18px',
-                      borderRadius: 16,
-                      textDecoration: 'none',
-                      fontSize: 15,
-                      fontWeight: 900,
-                    }}
-                  >
-                    📲 Fale conosco no WhatsApp
-                  </a>
-                )}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 18,
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  gap: 8,
-                  color: '#64748b',
-                  fontSize: 13,
-                }}
-              >
-                <span>✨</span>
-                <span>Agendado por</span>
-                <strong style={{ color: '#0f172a', fontSize: 16 }}>
-                  Marc<span style={{ color: '#db2777' }}>aê</span>
-                </strong>
-              </div>
+          <section className="socialCard">
+            <div>
+              <span>Experiência premium</span>
+              <strong>Gostou da experiência?</strong>
+              <p>Acompanhe a empresa ou fale direto pelo WhatsApp quando precisar.</p>
             </div>
-          </>
-        ) : (
-          <p style={{ color: '#777', fontSize: 14, marginTop: 18 }}>
-            Não conseguimos carregar os detalhes do agendamento.
-          </p>
-        )}
-      </div>
+
+            <div className="socialActions">
+              {instagramLink && (
+                <a href={instagramLink} target="_blank" rel="noopener noreferrer">
+                  Instagram
+                </a>
+              )}
+
+              {linkWhatsappEmpresa && (
+                <a href={linkWhatsappEmpresa} target="_blank" rel="noopener noreferrer">
+                  WhatsApp da empresa
+                </a>
+              )}
+            </div>
+          </section>
+
+          <footer className="poweredBy">
+            <span>Agendado por</span>
+            <strong>Marc<span>aê</span></strong>
+          </footer>
+        </section>
+      </section>
+
+      <style jsx>{`
+        * {
+          box-sizing: border-box;
+        }
+
+        .page {
+          position: relative;
+          min-height: 100vh;
+          overflow: hidden;
+          background:
+            radial-gradient(circle at 15% 8%, rgba(123, 58, 237, 0.35), transparent 30%),
+            radial-gradient(circle at 88% 18%, rgba(183, 107, 255, 0.22), transparent 28%),
+            radial-gradient(circle at 50% 100%, rgba(123, 58, 237, 0.22), transparent 34%),
+            linear-gradient(135deg, #080b0f 0%, #0d1020 44%, #111425 100%);
+          color: #f8fafc;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 28px;
+          font-family: Arial, sans-serif;
+        }
+
+        .backgroundGrid {
+          position: absolute;
+          inset: 0;
+          background-image:
+            linear-gradient(rgba(237, 233, 255, 0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(237, 233, 255, 0.04) 1px, transparent 1px);
+          background-size: 42px 42px;
+          mask-image: radial-gradient(circle at center, black 0%, transparent 72%);
+          pointer-events: none;
+        }
+
+        .orb {
+          position: absolute;
+          border-radius: 999px;
+          filter: blur(22px);
+          opacity: 0.72;
+          pointer-events: none;
+        }
+
+        .orbOne {
+          width: 280px;
+          height: 280px;
+          background: rgba(123, 58, 237, 0.28);
+          top: 8%;
+          left: 6%;
+        }
+
+        .orbTwo {
+          width: 240px;
+          height: 240px;
+          background: rgba(183, 107, 255, 0.18);
+          right: 8%;
+          top: 18%;
+        }
+
+        .orbThree {
+          width: 360px;
+          height: 360px;
+          background: rgba(123, 58, 237, 0.16);
+          bottom: -120px;
+          left: 42%;
+        }
+
+        .receiptShell {
+          position: relative;
+          z-index: 1;
+          width: min(1180px, 100%);
+          display: grid;
+          grid-template-columns: 0.95fr 1.35fr;
+          gap: 20px;
+          align-items: stretch;
+        }
+
+        .heroPanel,
+        .contentPanel,
+        .emptyState {
+          border: 1px solid rgba(237, 233, 255, 0.12);
+          background: linear-gradient(145deg, rgba(17, 20, 37, 0.86), rgba(8, 11, 15, 0.86));
+          box-shadow: 0 34px 90px rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(22px);
+        }
+
+        .heroPanel {
+          min-height: 720px;
+          border-radius: 38px;
+          padding: 32px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          overflow: hidden;
+          position: sticky;
+          top: 28px;
+        }
+
+        .heroPanel::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background:
+            radial-gradient(circle at 20% 10%, rgba(183, 107, 255, 0.24), transparent 35%),
+            radial-gradient(circle at 75% 60%, rgba(123, 58, 237, 0.18), transparent 36%);
+          pointer-events: none;
+        }
+
+        .brandPill,
+        .heroCopy,
+        .companyMark,
+        .heroStats,
+        .heroFooter {
+          position: relative;
+          z-index: 1;
+        }
+
+        .brandPill {
+          width: fit-content;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 14px;
+          border-radius: 999px;
+          background: rgba(237, 233, 255, 0.08);
+          border: 1px solid rgba(237, 233, 255, 0.12);
+          color: #ede9ff;
+          font-size: 14px;
+          font-weight: 950;
+          letter-spacing: -0.04em;
+        }
+
+        .brandPill span:last-child,
+        .poweredBy strong span {
+          color: #b76bff;
+        }
+
+        .companyMark {
+          width: 118px;
+          height: 118px;
+          border-radius: 34px;
+          background:
+            linear-gradient(#111425, #111425) padding-box,
+            linear-gradient(135deg, rgba(183, 107, 255, 0.8), rgba(123, 58, 237, 0.18)) border-box;
+          border: 1px solid transparent;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          box-shadow: 0 30px 80px rgba(123, 58, 237, 0.28);
+        }
+
+        .companyMark img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .companyMark strong {
+          font-size: 52px;
+          color: #b76bff;
+        }
+
+        .statusBadge {
+          width: fit-content;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 9px 12px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          margin-bottom: 18px;
+        }
+
+        .statusBadge.confirmed,
+        .headerSeal.confirmed {
+          background: rgba(34, 197, 94, 0.12);
+          border: 1px solid rgba(34, 197, 94, 0.24);
+          color: #bbf7d0;
+        }
+
+        .statusBadge.pending,
+        .headerSeal.pending {
+          background: rgba(245, 158, 11, 0.12);
+          border: 1px solid rgba(245, 158, 11, 0.24);
+          color: #fde68a;
+        }
+
+        .heroCopy h1 {
+          margin: 0;
+          max-width: 420px;
+          font-size: clamp(48px, 5.8vw, 84px);
+          line-height: 0.9;
+          letter-spacing: -0.085em;
+          color: #ffffff;
+        }
+
+        .heroCopy p {
+          max-width: 390px;
+          margin: 20px 0 0;
+          color: #a7b0c5;
+          font-size: 16px;
+          line-height: 1.7;
+        }
+
+        .heroStats {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 10px;
+          margin-top: 30px;
+        }
+
+        .heroStats div {
+          padding: 15px;
+          border-radius: 22px;
+          background: rgba(237, 233, 255, 0.07);
+          border: 1px solid rgba(237, 233, 255, 0.1);
+          display: flex;
+          justify-content: space-between;
+          gap: 14px;
+          align-items: center;
+        }
+
+        .heroStats span,
+        .heroFooter span,
+        .eyebrow,
+        .sectionHeading span,
+        .summaryRibbon span,
+        .infoTile span,
+        .socialCard span,
+        .detailCard small {
+          color: #a7b0c5;
+          font-size: 11px;
+          font-weight: 950;
+          text-transform: uppercase;
+          letter-spacing: 0.09em;
+        }
+
+        .heroStats strong {
+          color: #f8fafc;
+          text-align: right;
+          font-size: 14px;
+        }
+
+        .heroFooter {
+          padding-top: 22px;
+          border-top: 1px solid rgba(237, 233, 255, 0.1);
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+        }
+
+        .heroFooter strong {
+          font-size: 18px;
+          color: #ede9ff;
+        }
+
+        .contentPanel {
+          border-radius: 38px;
+          padding: 28px;
+        }
+
+        .contentHeader {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 18px;
+          margin-bottom: 18px;
+        }
+
+        .contentHeader h2 {
+          margin: 8px 0 8px;
+          font-size: clamp(32px, 4vw, 52px);
+          line-height: 0.95;
+          letter-spacing: -0.07em;
+        }
+
+        .contentHeader p {
+          margin: 0;
+          color: #a7b0c5;
+          font-size: 15px;
+          line-height: 1.6;
+        }
+
+        .contentHeader p strong {
+          color: #fff;
+        }
+
+        .headerSeal {
+          white-space: nowrap;
+          border-radius: 999px;
+          padding: 10px 14px;
+          font-size: 12px;
+          font-weight: 950;
+        }
+
+        .summaryRibbon {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin-bottom: 24px;
+        }
+
+        .summaryRibbon div {
+          padding: 18px;
+          border-radius: 26px;
+          background:
+            linear-gradient(145deg, rgba(123, 58, 237, 0.18), rgba(237, 233, 255, 0.06));
+          border: 1px solid rgba(183, 107, 255, 0.18);
+        }
+
+        .summaryRibbon strong {
+          display: block;
+          margin-top: 7px;
+          color: #fff;
+          font-size: 20px;
+          letter-spacing: -0.04em;
+        }
+
+        .timelineSection,
+        .infoGrid,
+        .actions,
+        .socialCard {
+          margin-top: 20px;
+        }
+
+        .sectionHeading {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+          margin-bottom: 14px;
+        }
+
+        .sectionHeading strong {
+          font-size: 20px;
+          color: #fff;
+        }
+
+        .serviceTimeline {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        .serviceTimeline::before {
+          content: '';
+          position: absolute;
+          left: 22px;
+          top: 18px;
+          bottom: 18px;
+          width: 1px;
+          background: linear-gradient(180deg, rgba(183, 107, 255, 0.7), rgba(183, 107, 255, 0.04));
+        }
+
+        .serviceCard {
+          position: relative;
+          display: grid;
+          grid-template-columns: 46px 1fr;
+          gap: 14px;
+        }
+
+        .timelineDot {
+          position: relative;
+          z-index: 1;
+          width: 46px;
+          height: 46px;
+          border-radius: 18px;
+          background: linear-gradient(135deg, #7b3aed, #b76bff);
+          box-shadow: 0 18px 40px rgba(123, 58, 237, 0.32);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #fff;
+          font-weight: 950;
+        }
+
+        .serviceBody {
+          padding: 18px;
+          border-radius: 28px;
+          background: rgba(237, 233, 255, 0.06);
+          border: 1px solid rgba(237, 233, 255, 0.12);
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+        }
+
+        .serviceTop {
+          display: flex;
+          justify-content: space-between;
+          gap: 16px;
+          align-items: flex-start;
+          margin-bottom: 14px;
+        }
+
+        .serviceTag {
+          display: inline-flex;
+          padding: 7px 10px;
+          border-radius: 999px;
+          background: rgba(183, 107, 255, 0.14);
+          color: #ede9ff;
+          font-size: 11px;
+          font-weight: 950;
+          margin-bottom: 10px;
+        }
+
+        .serviceTop h3 {
+          margin: 0 0 5px;
+          color: #fff;
+          font-size: 20px;
+          letter-spacing: -0.04em;
+        }
+
+        .serviceTop p {
+          margin: 0;
+          color: #a7b0c5;
+          font-size: 14px;
+          line-height: 1.4;
+        }
+
+        .servicePrice {
+          white-space: nowrap;
+          color: #fff;
+          font-size: 16px;
+        }
+
+        .detailGrid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+          gap: 10px;
+        }
+
+        .detailCard {
+          min-height: 72px;
+          border-radius: 20px;
+          background: rgba(8, 11, 15, 0.38);
+          border: 1px solid rgba(237, 233, 255, 0.1);
+          padding: 12px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .detailIcon {
+          width: 38px;
+          height: 38px;
+          min-width: 38px;
+          border-radius: 14px;
+          background: rgba(183, 107, 255, 0.12);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .detailCard strong {
+          display: block;
+          color: #f8fafc;
+          font-size: 13px;
+          margin-top: 4px;
+          line-height: 1.25;
+        }
+
+        .policyNotice {
+          margin-top: 12px;
+          border-radius: 18px;
+          background: rgba(245, 158, 11, 0.08);
+          border: 1px solid rgba(245, 158, 11, 0.22);
+          color: #fed7aa;
+          padding: 13px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          font-size: 13px;
+          line-height: 1.45;
+        }
+
+        .policyNotice strong {
+          color: #ffedd5;
+        }
+
+        .infoGrid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+        }
+
+        .infoTile {
+          padding: 16px;
+          border-radius: 22px;
+          background: rgba(237, 233, 255, 0.05);
+          border: 1px solid rgba(237, 233, 255, 0.1);
+        }
+
+        .infoTile.wide {
+          grid-column: 1 / -1;
+        }
+
+        .infoTile strong {
+          display: block;
+          color: #fff;
+          margin-top: 7px;
+          font-size: 14px;
+          line-height: 1.45;
+        }
+
+        .actions {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+        }
+
+        .actionButton,
+        .socialActions a {
+          min-height: 54px;
+          border-radius: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+          font-weight: 950;
+          color: #fff;
+          text-align: center;
+          padding: 14px;
+          transition: transform 0.2s ease, filter 0.2s ease;
+        }
+
+        .actionButton:hover,
+        .socialActions a:hover {
+          transform: translateY(-2px);
+          filter: brightness(1.05);
+        }
+
+        .actionButton.whatsapp {
+          background: linear-gradient(135deg, #16a34a, #22c55e);
+          box-shadow: 0 18px 36px rgba(34, 197, 94, 0.18);
+        }
+
+        .actionButton.calendar {
+          background: linear-gradient(135deg, #7b3aed, #b76bff);
+          box-shadow: 0 18px 36px rgba(123, 58, 237, 0.22);
+        }
+
+        .socialCard {
+          border-radius: 28px;
+          padding: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          background:
+            radial-gradient(circle at right, rgba(183, 107, 255, 0.16), transparent 34%),
+            rgba(237, 233, 255, 0.06);
+          border: 1px solid rgba(183, 107, 255, 0.18);
+        }
+
+        .socialCard strong {
+          display: block;
+          color: #fff;
+          margin-top: 6px;
+          font-size: 20px;
+        }
+
+        .socialCard p {
+          color: #a7b0c5;
+          margin: 7px 0 0;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+
+        .socialActions {
+          min-width: 190px;
+          display: grid;
+          gap: 10px;
+        }
+
+        .socialActions a {
+          min-height: 46px;
+          background: rgba(237, 233, 255, 0.08);
+          border: 1px solid rgba(237, 233, 255, 0.12);
+          font-size: 13px;
+        }
+
+        .poweredBy {
+          margin-top: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          color: #a7b0c5;
+          font-size: 13px;
+        }
+
+        .poweredBy strong {
+          color: #fff;
+          font-size: 16px;
+          letter-spacing: -0.04em;
+        }
+
+        .emptyState {
+          position: relative;
+          z-index: 1;
+          max-width: 460px;
+          width: 100%;
+          border-radius: 34px;
+          padding: 34px;
+          text-align: center;
+        }
+
+        .emptyIcon {
+          width: 70px;
+          height: 70px;
+          margin: 0 auto 18px;
+          border-radius: 24px;
+          background: rgba(183, 107, 255, 0.14);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #b76bff;
+          font-size: 28px;
+          font-weight: 950;
+        }
+
+        .emptyState h1 {
+          color: #fff;
+          margin: 0 0 10px;
+          letter-spacing: -0.05em;
+        }
+
+        .emptyState p {
+          color: #a7b0c5;
+          margin: 0 0 20px;
+          line-height: 1.5;
+        }
+
+        .emptyState strong {
+          color: #fff;
+          letter-spacing: -0.04em;
+        }
+
+        .emptyState strong span {
+          color: #b76bff;
+        }
+
+        @media (max-width: 980px) {
+          .page {
+            align-items: flex-start;
+            padding: 18px;
+          }
+
+          .receiptShell {
+            grid-template-columns: 1fr;
+          }
+
+          .heroPanel {
+            position: relative;
+            top: 0;
+            min-height: auto;
+            gap: 30px;
+          }
+
+          .heroStats {
+            grid-template-columns: repeat(3, 1fr);
+          }
+
+          .heroStats div {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .heroStats strong {
+            text-align: left;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .page {
+            padding: 12px;
+          }
+
+          .heroPanel,
+          .contentPanel {
+            border-radius: 28px;
+            padding: 20px;
+          }
+
+          .companyMark {
+            width: 92px;
+            height: 92px;
+            border-radius: 28px;
+          }
+
+          .companyMark strong {
+            font-size: 40px;
+          }
+
+          .heroCopy h1 {
+            font-size: 48px;
+          }
+
+          .heroStats,
+          .summaryRibbon,
+          .infoGrid,
+          .actions {
+            grid-template-columns: 1fr;
+          }
+
+          .contentHeader {
+            flex-direction: column;
+          }
+
+          .headerSeal {
+            width: fit-content;
+          }
+
+          .serviceCard {
+            grid-template-columns: 1fr;
+          }
+
+          .serviceTimeline::before {
+            display: none;
+          }
+
+          .timelineDot {
+            width: 42px;
+            height: 42px;
+            border-radius: 16px;
+          }
+
+          .serviceTop {
+            flex-direction: column;
+          }
+
+          .socialCard {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .socialActions {
+            min-width: 0;
+          }
+        }
+      `}</style>
     </main>
   );
 }

@@ -1608,24 +1608,50 @@ const styles = `
     box-sizing: border-box;
   }
 
+  :global(html),
+  :global(body) {
+    margin: 0;
+    background: #080B0F;
+  }
+
   .page {
     min-height: 100vh;
     background:
-      radial-gradient(circle at 18% 8%, rgba(219, 39, 119, 0.18), transparent 28%),
-      radial-gradient(circle at 82% 6%, rgba(124, 58, 237, 0.22), transparent 30%),
-      linear-gradient(180deg, #fff7fb 0%, #f8fafc 48%, #eef2ff 100%);
-    color: #0f172a;
+      radial-gradient(circle at 12% 0%, rgba(123, 58, 237, 0.34), transparent 32%),
+      radial-gradient(circle at 88% 10%, rgba(183, 107, 255, 0.23), transparent 30%),
+      radial-gradient(circle at 50% 100%, rgba(123, 58, 237, 0.18), transparent 34%),
+      linear-gradient(180deg, #080B0F 0%, #0B0F19 46%, #111425 100%);
+    color: #F8FAFC;
+    overflow-x: hidden;
+  }
+
+  .page::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size: 54px 54px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent 72%);
   }
 
   .shell {
+    position: relative;
+    z-index: 1;
     width: 100%;
-    max-width: 980px;
+    max-width: 1040px;
     min-height: 100vh;
     margin: 0 auto;
-    padding: 28px 24px 42px;
+    padding: 24px 20px 40px;
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+
+  .shell > .wizardSteps {
+    display: none;
   }
 
   .topBar {
@@ -1633,59 +1659,126 @@ const styles = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 14px;
-    margin-bottom: 38px;
+    gap: 12px;
+    margin-bottom: 22px;
   }
 
   .marca,
   .secureBadge {
-    background: rgba(255, 255, 255, 0.86);
-    border: 1px solid rgba(226, 232, 240, 0.95);
-    box-shadow: 0 14px 38px rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(237, 233, 255, 0.12);
+    background: rgba(17, 20, 37, 0.72);
+    backdrop-filter: blur(18px);
     border-radius: 999px;
-    padding: 10px 16px;
+    box-shadow: 0 18px 55px rgba(0, 0, 0, 0.28);
   }
 
   .marca {
+    padding: 10px 16px;
+    color: #F8FAFC;
     font-size: 18px;
     font-weight: 950;
-    letter-spacing: -0.05em;
-    color: #111827;
+    letter-spacing: -0.06em;
   }
 
   .marca span,
   .footerBrand strong span {
-    color: #db2777;
+    color: #B76BFF;
+    text-shadow: 0 0 22px rgba(183, 107, 255, 0.42);
   }
 
   .secureBadge {
-    font-size: 13px;
-    font-weight: 800;
-    color: #475569;
+    padding: 10px 14px;
+    color: #C4B5FD;
+    font-size: 12px;
+    font-weight: 850;
   }
 
   .hero {
+    position: relative;
     width: 100%;
-    max-width: 760px;
-    text-align: center;
+    max-width: 720px;
+    margin-bottom: 18px;
+  }
+
+  .heroBackgroundGlow {
+    position: absolute;
+    inset: -50px 20%;
+    background: radial-gradient(circle, rgba(123, 58, 237, 0.26), transparent 64%);
+    filter: blur(10px);
+    pointer-events: none;
+  }
+
+  .empresaHeroCard {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(237, 233, 255, 0.14);
+    background: linear-gradient(145deg, rgba(17, 20, 37, 0.86), rgba(8, 11, 15, 0.86));
+    border-radius: 32px;
+    padding: 24px;
+    box-shadow: 0 34px 90px rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(18px);
+  }
+
+  .empresaHeroCard::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, rgba(255,255,255,0.12), transparent 28%, transparent 72%, rgba(183,107,255,0.1));
+    pointer-events: none;
+  }
+
+  .heroOfficialBadge,
+  .heroMiniBadge,
+  .tag {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: fit-content;
+    margin: 0 auto 18px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    color: #EDE9FF;
+    background: rgba(123, 58, 237, 0.16);
+    border: 1px solid rgba(183, 107, 255, 0.28);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .heroOfficialBadge span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: #7B3AED;
+    color: white;
+  }
+
+  .empresaHeroCentered {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 24px;
+    text-align: center;
   }
 
   .empresaLogoBox {
-    width: 82px;
-    height: 82px;
+    width: 86px;
+    height: 86px;
     border-radius: 28px;
-    background: rgba(255, 255, 255, 0.94);
-    border: 1px solid rgba(226, 232, 240, 0.95);
-    box-shadow: 0 20px 55px rgba(15, 23, 42, 0.1);
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
     margin-bottom: 16px;
+    background: linear-gradient(145deg, rgba(237, 233, 255, 0.12), rgba(123, 58, 237, 0.12));
+    border: 1px solid rgba(237, 233, 255, 0.2);
+    box-shadow: 0 22px 60px rgba(123, 58, 237, 0.26);
   }
 
   .empresaLogo {
@@ -1695,81 +1788,71 @@ const styles = `
   }
 
   .empresaLogoFallback {
+    color: #EDE9FF;
     font-size: 34px;
     font-weight: 950;
-    color: #7c3aed;
-  }
-
-  .tag {
-    display: inline-flex;
-    border-radius: 999px;
-    padding: 9px 13px;
-    background: rgba(124, 58, 237, 0.1);
-    color: #6d28d9;
-    font-size: 13px;
-    font-weight: 900;
-    margin-bottom: 14px;
   }
 
   .hero h1 {
     margin: 0;
-    font-size: clamp(44px, 7vw, 78px);
-    line-height: 0.96;
+    max-width: 660px;
+    font-size: clamp(34px, 7vw, 66px);
+    line-height: 0.95;
     letter-spacing: -0.075em;
-    color: #111827;
+    color: #F8FAFC;
   }
 
   .subtitle {
-    max-width: 650px;
-    margin: 20px 0 0;
-    font-size: 18px;
-    line-height: 1.65;
-    color: #475569;
+    max-width: 520px;
+    margin: 14px 0 0;
+    color: #A7B0C5;
+    font-size: 15px;
+    line-height: 1.6;
   }
 
-  .trustRow {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-top: 22px;
-  }
-
-  .trustItem {
-    background: rgba(255, 255, 255, 0.78);
-    border: 1px solid rgba(226, 232, 240, 0.95);
-    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.06);
-    border-radius: 20px;
-    padding: 14px;
+  .heroMiniBadges,
+  .heroMiniBadgesCompact {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    justify-content: center;
+    margin-top: 16px;
   }
 
-  .trustItem strong {
-    color: #111827;
-    font-size: 14px;
-  }
-
-  .trustItem span {
-    color: #64748b;
-    font-size: 12px;
-    line-height: 1.35;
+  .heroMiniBadge {
+    margin: 0;
+    background: rgba(237, 233, 255, 0.08);
   }
 
   .card {
     width: 100%;
-    max-width: 560px;
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.9);
+    max-width: 620px;
+    margin-bottom: 18px;
+    padding: 24px;
     border-radius: 32px;
-    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.15);
-    padding: 26px;
+    background: rgba(17, 20, 37, 0.84);
+    border: 1px solid rgba(237, 233, 255, 0.13);
+    box-shadow: 0 36px 95px rgba(0, 0, 0, 0.44);
+    backdrop-filter: blur(20px);
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    margin-bottom: 24px;
+    gap: 18px;
+  }
+
+  .wizardCard {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .wizardCard::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 88% 0%, rgba(183, 107, 255, 0.16), transparent 28%);
+    pointer-events: none;
+  }
+
+  .wizardCard > * {
+    position: relative;
+    z-index: 1;
   }
 
   .cardHeader {
@@ -1781,170 +1864,262 @@ const styles = `
 
   .cardHeader h2 {
     margin: 0;
-    font-size: 30px;
-    line-height: 1.05;
-    letter-spacing: -0.055em;
-    color: #111827;
+    color: #F8FAFC;
+    font-size: clamp(25px, 4vw, 34px);
+    line-height: 1.02;
+    letter-spacing: -0.06em;
   }
 
   .cardHeader p {
     margin: 8px 0 0;
-    font-size: 14px;
+    color: #A7B0C5;
+    font-size: 13px;
     line-height: 1.5;
-    color: #64748b;
   }
 
   .step {
-    min-width: 50px;
-    height: 50px;
+    min-width: 54px;
+    height: 54px;
     border-radius: 18px;
-    background: linear-gradient(135deg, #7c3aed, #db2777);
-    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: white;
     font-weight: 950;
-    box-shadow: 0 16px 35px rgba(219, 39, 119, 0.28);
+    background: linear-gradient(135deg, #7B3AED, #B76BFF);
+    box-shadow: 0 18px 42px rgba(123, 58, 237, 0.44);
   }
 
-  .progressSteps {
+  .progressSteps.wizardSteps {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 8px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 20px;
-    padding: 8px;
+    padding: 9px;
+    border-radius: 22px;
+    background: rgba(8, 11, 15, 0.58);
+    border: 1px solid rgba(237, 233, 255, 0.1);
   }
 
   .progressStep {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    border-radius: 15px;
-    padding: 9px 8px;
-    color: #94a3b8;
-  }
-
-  .progressStep span {
-    min-width: 22px;
-    height: 22px;
-    border-radius: 999px;
-    background: #e2e8f0;
-    color: #64748b;
+    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    gap: 6px;
+    border-radius: 16px;
+    padding: 10px 8px;
+    color: #68748A;
+    transition: all 0.18s ease;
+  }
+
+  .progressStep span,
+  .wizardBall {
+    min-width: 23px;
+    width: 23px;
+    height: 23px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(237, 233, 255, 0.1);
+    color: #A7B0C5;
+    font-size: 11px;
     font-weight: 950;
   }
 
-  .progressStep p {
+  .progressStep p,
+  .wizardStep span {
     margin: 0;
     font-size: 11px;
+    line-height: 1;
     font-weight: 900;
-    line-height: 1.2;
+    white-space: nowrap;
   }
 
   .progressStep.active {
-    background: #ffffff;
-    color: #6d28d9;
-    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+    color: #EDE9FF;
+    background: rgba(123, 58, 237, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(183, 107, 255, 0.16);
   }
 
-  .progressStep.active span {
-    background: linear-gradient(135deg, #7c3aed, #db2777);
-    color: #ffffff;
+  .progressStep.active span,
+  .wizardStep.active .wizardBall,
+  .wizardStep.done .wizardBall {
+    color: #fff;
+    background: linear-gradient(135deg, #7B3AED, #B76BFF);
   }
 
   .cpfBox,
-  .section {
+  .section,
+  .etapaBox,
+  .dadosClienteBox,
+  .rescheduleForm {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+  }
+
+  .etapaIntro {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 12px;
+    margin-top: 2px;
+  }
+
+  .etapaIntro > span {
+    width: 42px;
+    height: 42px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(123, 58, 237, 0.18);
+    border: 1px solid rgba(183, 107, 255, 0.24);
+  }
+
+  .etapaIntro strong {
+    display: block;
+    color: #F8FAFC;
+    font-size: 17px;
+    letter-spacing: -0.02em;
+  }
+
+  .etapaIntro p {
+    margin: 4px 0 0;
+    color: #A7B0C5;
+    font-size: 13px;
+    line-height: 1.45;
   }
 
   .cpfBox label,
-  .sectionTitle {
-    font-size: 13px;
+  .sectionTitle,
+  .fieldLabel {
+    color: #EDE9FF;
+    font-size: 12px;
     font-weight: 900;
-    color: #334155;
+    letter-spacing: 0.01em;
+  }
+
+  .fieldHint,
+  .security {
+    color: #7D889F;
+    font-size: 11px;
+    line-height: 1.45;
   }
 
   .cpfLine {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 140px;
+    grid-template-columns: minmax(0, 1fr) 136px;
     gap: 10px;
   }
 
   .cpfLine input,
   .field {
     width: 100%;
-    height: 50px;
-    border-radius: 16px;
-    border: 1px solid #dbe3ef;
-    background: #ffffff;
-    color: #0f172a;
+    height: 52px;
+    border-radius: 18px;
+    border: 1px solid rgba(237, 233, 255, 0.13);
+    background: rgba(8, 11, 15, 0.62);
+    color: #F8FAFC;
     outline: none;
     padding: 0 14px;
     font-size: 15px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+
+  .cpfLine input::placeholder,
+  .field::placeholder {
+    color: #68748A;
   }
 
   .cpfLine input:focus,
   .field:focus {
-    border-color: #a855f7;
-    box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.12);
+    border-color: rgba(183, 107, 255, 0.62);
+    box-shadow: 0 0 0 4px rgba(123, 58, 237, 0.18), inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+
+  .cpfLine button,
+  .primaryButton,
+  .secondaryButton,
+  .outlineButton,
+  .miniButton,
+  .whatsappButton,
+  .trocarClienteButton,
+  .removerServicoButton {
+    border: 0;
+    cursor: pointer;
+    font-weight: 950;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+  }
+
+  .cpfLine button,
+  .primaryButton,
+  .secondaryButton,
+  .miniButton {
+    color: white;
+    background: linear-gradient(135deg, #7B3AED 0%, #B76BFF 100%);
+    box-shadow: 0 18px 44px rgba(123, 58, 237, 0.34);
   }
 
   .cpfLine button,
   .secondaryButton,
   .outlineButton,
-  .miniButton,
   .whatsappButton {
-    height: 50px;
-    border: 0;
-    border-radius: 16px;
-    font-weight: 900;
-    cursor: pointer;
+    height: 52px;
+    border-radius: 18px;
   }
 
-  .cpfLine button,
-  .secondaryButton {
-    background: #0f172a;
-    color: white;
-    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.16);
+  .primaryButton {
+    width: 100%;
+    min-height: 58px;
+    border-radius: 20px;
+    padding: 0 18px;
+    font-size: 15px;
+  }
+
+  .outlineButton,
+  .trocarClienteButton {
+    width: 100%;
+    color: #EDE9FF;
+    background: rgba(237, 233, 255, 0.06);
+    border: 1px solid rgba(183, 107, 255, 0.24);
+  }
+
+  .whatsappButton {
+    width: 100%;
+    color: #EFFFF7;
+    background: rgba(22, 163, 74, 0.18);
+    border: 1px solid rgba(74, 222, 128, 0.24);
+  }
+
+  .miniButton {
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 14px;
+    white-space: nowrap;
+  }
+
+  .cpfLine button:hover,
+  .primaryButton:hover,
+  .secondaryButton:hover,
+  .outlineButton:hover,
+  .miniButton:hover,
+  .whatsappButton:hover,
+  .slot:hover,
+  .servicoPublicoCard:hover,
+  .profissionalPublicoCard:hover {
+    transform: translateY(-1px);
   }
 
   .cpfLine button:disabled,
   .outlineButton:disabled,
-  .primaryButton:disabled {
-    opacity: 0.65;
+  .primaryButton:disabled,
+  .secondaryButton:disabled,
+  .whatsappButton:disabled {
+    opacity: 0.62;
     cursor: not-allowed;
-  }
-
-  .outlineButton {
-    width: 100%;
-    background: #fff;
-    color: #7c3aed;
-    border: 1px solid #ddd6fe;
-    box-shadow: none;
-  }
-
-  .whatsappButton {
-    width: 100%;
-    background: #16a34a;
-    color: #fff;
-    margin-top: 6px;
-    box-shadow: 0 12px 24px rgba(22, 163, 74, 0.18);
-  }
-
-  .miniButton {
-    height: 38px;
-    padding: 0 14px;
-    border-radius: 12px;
-    background: #7c3aed;
-    color: #fff;
-    white-space: nowrap;
+    transform: none;
   }
 
   .successBox,
@@ -1953,67 +2128,55 @@ const styles = `
   .emptySlots,
   .policyBox,
   .dangerBox,
-  .readyBox {
+  .readyBox,
+  .resumoPrePagamentoBadge,
+  .clienteBadge,
+  .blockedText {
     border-radius: 18px;
-    padding: 12px 14px;
+    padding: 13px 14px;
     font-size: 13px;
     line-height: 1.45;
   }
 
   .successBox {
-    background: #ecfdf5;
-    border: 1px solid #bbf7d0;
-    color: #166534;
+    color: #BBF7D0;
+    background: rgba(22, 163, 74, 0.12);
+    border: 1px solid rgba(74, 222, 128, 0.22);
     display: flex;
     flex-direction: column;
     gap: 2px;
   }
 
-  .warningBox {
-    background: #fff7ed;
-    border: 1px solid #fed7aa;
-    color: #9a3412;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
+  .warningBox,
   .policyBox {
-    background: #eef2ff;
-    border: 1px solid #c7d2fe;
-    color: #3730a3;
+    color: #EDE9FF;
+    background: rgba(123, 58, 237, 0.12);
+    border: 1px solid rgba(183, 107, 255, 0.24);
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 6px;
   }
 
   .dangerBox {
     grid-column: 1 / -1;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    color: #991b1b;
+    color: #FECACA;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(248, 113, 113, 0.22);
   }
 
-  .readyBox {
-    background: #f5f3ff;
-    border: 1px solid #ddd6fe;
-    color: #5b21b6;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
+  .readyBox,
   .selectedInfo {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    color: #64748b;
+    color: #A7B0C5;
+    background: rgba(8, 11, 15, 0.54);
+    border: 1px solid rgba(237, 233, 255, 0.11);
     display: flex;
     flex-direction: column;
     gap: 3px;
   }
 
+  .readyBox strong,
   .selectedInfo strong {
-    color: #111827;
+    color: #F8FAFC;
   }
 
   .sectionTitleRow {
@@ -2024,45 +2187,198 @@ const styles = `
   }
 
   .sectionTitleRow span {
-    color: #64748b;
+    color: #A7B0C5;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 850;
   }
 
   .emptySlots {
-    background: #f8fafc;
-    border: 1px dashed #cbd5e1;
-    color: #64748b;
+    color: #A7B0C5;
+    background: rgba(8, 11, 15, 0.42);
+    border: 1px dashed rgba(237, 233, 255, 0.18);
   }
 
-  .slots {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .slot {
-    min-width: 74px;
-    height: 42px;
-    border-radius: 14px;
-    border: 1px solid #e2e8f0;
-    background: #f1f5f9;
-    color: #0f172a;
-    cursor: pointer;
-    font-weight: 900;
-  }
-
-  .slot.active {
-    background: linear-gradient(135deg, #7c3aed, #db2777);
-    color: white;
-    border-color: transparent;
-    box-shadow: 0 12px 24px rgba(219, 39, 119, 0.24);
-  }
-
-  .rescheduleList {
+  .servicosPublicos,
+  .profissionaisPublicos,
+  .rescheduleList,
+  .resumoReserva {
     display: flex;
     flex-direction: column;
     gap: 10px;
+  }
+
+  .servicoPublicoCard,
+  .profissionalPublicoCard,
+  .rescheduleCard,
+  .resumoServicoCard,
+  .resumoTotalCard,
+  .clienteSelecionadoCard,
+  .benefit {
+    width: 100%;
+    border: 1px solid rgba(237, 233, 255, 0.12);
+    background: rgba(8, 11, 15, 0.56);
+    border-radius: 22px;
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.18);
+  }
+
+  .servicoPublicoCard,
+  .profissionalPublicoCard {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    text-align: left;
+    color: inherit;
+  }
+
+  .servicoPublicoCard.active,
+  .profissionalPublicoCard.active,
+  .rescheduleCard.selected {
+    border-color: rgba(183, 107, 255, 0.54);
+    background: linear-gradient(135deg, rgba(123, 58, 237, 0.2), rgba(8, 11, 15, 0.62));
+    box-shadow: 0 0 0 4px rgba(123, 58, 237, 0.12), 0 20px 54px rgba(0, 0, 0, 0.28);
+  }
+
+  .servicoPublicoIcon,
+  .profissionalFotoFallback,
+  .clienteAvatar,
+  .resumoServicoNumero {
+    width: 46px;
+    height: 46px;
+    border-radius: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    color: white;
+    font-weight: 950;
+    background: linear-gradient(135deg, #7B3AED, #B76BFF);
+    box-shadow: 0 16px 35px rgba(123, 58, 237, 0.28);
+  }
+
+  .servicoPublicoInfo,
+  .profissionalPublicoInfo,
+  .resumoServicoInfo,
+  .clienteInfo {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .servicoPublicoInfo strong,
+  .profissionalPublicoInfo strong,
+  .rescheduleCard strong,
+  .resumoServicoInfo strong,
+  .clienteInfo strong {
+    color: #F8FAFC;
+    font-size: 15px;
+    line-height: 1.2;
+  }
+
+  .servicoPublicoInfo p,
+  .profissionalPublicoInfo p,
+  .rescheduleCard p,
+  .resumoServicoInfo span,
+  .resumoServicoInfo small,
+  .clienteInfo span {
+    margin: 0;
+    color: #A7B0C5;
+    font-size: 12px;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+
+  .servicoPublicoMeta,
+  .profissionalServicos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  .servicoPublicoMeta span,
+  .profissionalServicos span,
+  .prePagamentoTag {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    min-height: 25px;
+    border-radius: 999px;
+    padding: 5px 8px;
+    color: #DDE3F0;
+    background: rgba(237, 233, 255, 0.08);
+    border: 1px solid rgba(237, 233, 255, 0.12);
+    font-size: 11px;
+    font-weight: 850;
+  }
+
+  .prePagamentoTag,
+  .resumoPrePagamentoBadge {
+    color: #EDE9FF !important;
+    background: rgba(123, 58, 237, 0.16) !important;
+    border-color: rgba(183, 107, 255, 0.26) !important;
+  }
+
+  .servicoPublicoCheck,
+  .profissionalCheck {
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: rgba(237, 233, 255, 0.08);
+    border: 1px solid rgba(237, 233, 255, 0.13);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .servicoPublicoCard.active .servicoPublicoCheck,
+  .profissionalPublicoCard.active .profissionalCheck {
+    background: #7B3AED;
+    border-color: #B76BFF;
+  }
+
+  .profissionalFotoBox {
+    width: 52px;
+    height: 52px;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(237, 233, 255, 0.16);
+    background: rgba(237, 233, 255, 0.07);
+  }
+
+  .profissionalFoto {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .slots {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .slot {
+    height: 44px;
+    border-radius: 16px;
+    border: 1px solid rgba(237, 233, 255, 0.12);
+    background: rgba(8, 11, 15, 0.54);
+    color: #DDE3F0;
+    cursor: pointer;
+    font-weight: 950;
+  }
+
+  .slot.active {
+    color: #fff;
+    border-color: rgba(183, 107, 255, 0.62);
+    background: linear-gradient(135deg, #7B3AED, #B76BFF);
+    box-shadow: 0 16px 34px rgba(123, 58, 237, 0.32);
   }
 
   .rescheduleCard {
@@ -2070,151 +2386,213 @@ const styles = `
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 12px;
     align-items: center;
-    border: 1px solid #e2e8f0;
-    background: #fff;
-    border-radius: 18px;
     padding: 14px;
   }
 
-  .rescheduleCard.selected {
-    border-color: #a855f7;
-    box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.1);
-  }
-
-  .rescheduleCard strong {
-    display: block;
-    color: #111827;
-    margin-bottom: 4px;
-  }
-
-  .rescheduleCard p {
-    margin: 0 0 4px;
-    color: #475569;
-    font-size: 13px;
-    line-height: 1.45;
-  }
-
-  .rescheduleCard span {
-    color: #64748b;
-    font-size: 12px;
-    font-weight: 800;
-  }
-
   .blockedText {
-    font-size: 12px;
-    font-weight: 900;
-    color: #991b1b;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: 999px;
-    padding: 8px 10px;
+    color: #FECACA;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(248, 113, 113, 0.2);
     white-space: nowrap;
+    font-weight: 900;
   }
 
   .rescheduleForm {
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid rgba(237, 233, 255, 0.1);
     padding-top: 14px;
   }
 
-  .primaryButton {
-    height: 56px;
-    border: 0;
-    border-radius: 18px;
-    background: linear-gradient(135deg, #7c3aed, #db2777);
-    color: white;
-    font-size: 16px;
-    font-weight: 950;
-    cursor: pointer;
-    box-shadow: 0 20px 38px rgba(219, 39, 119, 0.26);
+  .clienteSelecionadoCard {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
   }
 
-  .primaryButton:hover,
-  .secondaryButton:hover,
-  .cpfLine button:hover,
-  .outlineButton:hover,
-  .miniButton:hover,
-  .whatsappButton:hover,
-  .slot:hover {
-    transform: translateY(-1px);
+  .clienteSelecionadoTop {
+    display: flex;
+    gap: 12px;
+    align-items: center;
   }
 
-  .security {
-    margin: -2px 0 0;
-    text-align: center;
+  .clienteSelecionadoFooter {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .clienteBadge {
+    color: #BBF7D0;
+    background: rgba(22, 163, 74, 0.12);
+    border: 1px solid rgba(74, 222, 128, 0.2);
+    font-weight: 900;
+  }
+
+  .trocarClienteButton {
+    width: auto;
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 14px;
+  }
+
+  .resumoServicoCard {
+    padding: 14px;
+  }
+
+  .resumoServicoTopo {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .removerServicoButton {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    color: #FECACA;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(248, 113, 113, 0.18);
+    font-size: 20px;
+  }
+
+  .resumoServicoDetalhes,
+  .resumoTotalValores {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .resumoServicoDetalhes div,
+  .resumoTotalValores div {
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(237, 233, 255, 0.06);
+    border: 1px solid rgba(237, 233, 255, 0.09);
+  }
+
+  .resumoServicoDetalhes span,
+  .resumoTotalValores span {
+    display: block;
+    color: #7D889F;
+    font-size: 11px;
+    font-weight: 850;
+    margin-bottom: 4px;
+  }
+
+  .resumoServicoDetalhes strong,
+  .resumoTotalValores strong {
+    display: block;
+    color: #F8FAFC;
+    font-size: 13px;
+    line-height: 1.25;
+  }
+
+  .resumoPrePagamentoBadge {
+    margin-top: 10px;
+    font-weight: 900;
+  }
+
+  .resumoTotalCard {
+    padding: 14px;
+    background: linear-gradient(135deg, rgba(123, 58, 237, 0.18), rgba(8, 11, 15, 0.68));
+    border-color: rgba(183, 107, 255, 0.28);
+  }
+
+  .resumoTotalCard small {
+    display: block;
+    margin-top: 10px;
+    color: #A7B0C5;
     font-size: 12px;
-    line-height: 1.5;
-    color: #64748b;
+    line-height: 1.45;
+  }
+
+  .wizardActions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .wizardActions .primaryButton,
+  .wizardActions .outlineButton {
+    height: auto;
+    min-height: 54px;
   }
 
   .benefits {
     width: 100%;
-    max-width: 820px;
+    max-width: 720px;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
+    gap: 12px;
   }
 
   .benefit {
-    background: rgba(255, 255, 255, 0.78);
-    border: 1px solid rgba(226, 232, 240, 0.95);
-    box-shadow: 0 14px 40px rgba(15, 23, 42, 0.07);
-    border-radius: 22px;
-    padding: 18px;
+    padding: 16px;
     text-align: center;
   }
 
   .benefit span {
     display: block;
-    font-size: 22px;
+    font-size: 20px;
     margin-bottom: 8px;
   }
 
   .benefit strong {
-    display: block;
-    font-size: 14px;
-    color: #111827;
-    margin-bottom: 5px;
+    color: #F8FAFC;
+    font-size: 13px;
   }
 
   .benefit p {
-    margin: 0;
-    font-size: 13px;
-    line-height: 1.45;
-    color: #64748b;
+    margin: 5px 0 0;
+    color: #A7B0C5;
+    font-size: 12px;
+    line-height: 1.4;
   }
 
   .footerBrand {
-    margin-top: 6px;
-    color: #64748b;
-    font-size: 12px;
+    margin-top: 10px;
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 7px;
+    color: #7D889F;
+    font-size: 12px;
+  }
+
+  .footerBrand p {
+    margin: 0;
   }
 
   .footerBrand strong {
-    color: #111827;
-    font-size: 13px;
+    color: #F8FAFC;
     letter-spacing: -0.04em;
   }
 
   .loadingPage {
     min-height: 100vh;
-    background: #f8fafc;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(123, 58, 237, 0.28), transparent 34%),
+      #080B0F;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 24px;
+    color: #F8FAFC;
   }
 
   .loadingCard {
     width: 100%;
     max-width: 360px;
-    background: white;
     border-radius: 28px;
     padding: 30px;
     text-align: center;
-    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.1);
+    background: rgba(17, 20, 37, 0.86);
+    border: 1px solid rgba(237, 233, 255, 0.13);
+    box-shadow: 0 26px 70px rgba(0, 0, 0, 0.38);
   }
 
   .loadingPulse {
@@ -2224,1538 +2602,114 @@ const styles = `
 
   .loadingCard h1 {
     margin: 0;
-    color: #111827;
+    color: #F8FAFC;
     font-size: 24px;
   }
 
   .loadingCard p {
     margin: 8px 0 0;
-    color: #64748b;
+    color: #A7B0C5;
   }
 
-
-  .fieldGroup {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .fieldLabel {
-    font-size: 12px;
-    font-weight: 800;
-    color: #475569;
-  }
-
-  .fieldHint {
-    font-size: 11px;
-    color: #94a3b8;
-  }
-
-.clienteSelecionadoCard {
-  background: linear-gradient(135deg, #ffffff, #faf5ff);
-  border: 1px solid #e9d5ff;
-  border-radius: 24px;
-  padding: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  box-shadow: 0 20px 45px rgba(124, 58, 237, 0.08);
-}
-
-.clienteSelecionadoTop {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-}
-
-.clienteAvatar {
-  width: 58px;
-  height: 58px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #7c3aed, #db2777);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  font-weight: 950;
-  box-shadow: 0 14px 28px rgba(124, 58, 237, 0.22);
-}
-
-.clienteInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.clienteInfo strong {
-  font-size: 18px;
-  color: #111827;
-}
-
-.clienteInfo span {
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 700;
-}
-
-.clienteSelecionadoFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.clienteBadge {
-  background: #ecfdf5;
-  color: #166534;
-  border: 1px solid #bbf7d0;
-  border-radius: 999px;
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.trocarClienteButton {
-  height: 42px;
-  border: 0;
-  border-radius: 14px;
-  padding: 0 16px;
-  background: #fff;
-  border: 1px solid #ddd6fe;
-  color: #7c3aed;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.profissionaisPublicos {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.profissionalPublicoCard {
-  width: 100%;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  border-radius: 22px;
-  padding: 14px;
-  display: grid;
-  grid-template-columns: 66px minmax(0, 1fr) 30px;
-  gap: 14px;
-  align-items: center;
-  cursor: pointer;
-  text-align: left;
-  transition: 0.18s ease;
-}
-
-.profissionalPublicoCard:hover {
-  transform: translateY(-1px);
-  border-color: #c084fc;
-  box-shadow: 0 14px 30px rgba(124, 58, 237, 0.1);
-}
-
-.profissionalPublicoCard.active {
-  border-color: #a855f7;
-  background: linear-gradient(135deg, #ffffff, #faf5ff);
-  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.12);
-}
-
-.profissionalFotoBox {
-  width: 66px;
-  height: 66px;
-  border-radius: 22px;
-  overflow: hidden;
-  background: #eef2ff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.profissionalFoto {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.profissionalFotoFallback {
-  width: 100%;
-  height: 100%;
-  border-radius: 22px;
-  background: linear-gradient(135deg, #7c3aed, #db2777);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: 950;
-}
-
-.profissionalPublicoInfo {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.profissionalPublicoInfo strong {
-  color: #111827;
-  font-size: 15px;
-}
-
-.profissionalPublicoInfo p {
-  margin: 0;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.profissionalServicos {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 3px;
-}
-
-.profissionalServicos span {
-  background: #ede9fe;
-  color: #5b21b6;
-  border: 1px solid #ddd6fe;
-  border-radius: 999px;
-  padding: 5px 8px;
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.profissionalCheck {
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  background: #ecfdf5;
-  color: #16a34a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 950;
-}
-
-.hero {
-  position: relative;
-  width: 100%;
-  max-width: 900px;
-  margin-bottom: 28px;
-}
-
-.heroBackgroundGlow {
-  position: absolute;
-  inset: -40px 40px auto;
-  height: 180px;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.24), rgba(219, 39, 119, 0.24));
-  filter: blur(50px);
-  border-radius: 999px;
-  z-index: 0;
-}
-
-.empresaHeroCard {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(253, 244, 255, 0.9)),
-    radial-gradient(circle at top right, rgba(219, 39, 119, 0.12), transparent 42%);
-  border: 1px solid rgba(255, 255, 255, 0.96);
-  border-radius: 36px;
-  padding: 24px;
-  box-shadow: 0 32px 90px rgba(15, 23, 42, 0.14);
-  backdrop-filter: blur(18px);
-}
-
-.empresaHeroTop {
-  display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
-  gap: 20px;
-  align-items: center;
-}
-
-.empresaHeroInfo {
-  min-width: 0;
-  text-align: left;
-}
-
-.empresaHeroInfo h1 {
-  margin: 8px 0 0;
-  font-size: clamp(34px, 6vw, 62px);
-  line-height: 0.96;
-  letter-spacing: -0.07em;
-  color: #111827;
-}
-
-.empresaHeroInfo .subtitle {
-  max-width: 620px;
-  margin: 14px 0 0;
-  font-size: 16px;
-  line-height: 1.6;
-  color: #475569;
-}
-
-.empresaExtraInfos {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-top: 22px;
-}
-
-.empresaInfoItem {
-  min-width: 0;
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(226, 232, 240, 0.92);
-  border-radius: 22px;
-  padding: 14px;
-}
-
-.empresaInfoItem > span {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #7c3aed, #db2777);
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 12px 24px rgba(219, 39, 119, 0.18);
-}
-
-.empresaInfoItem strong {
-  display: block;
-  color: #111827;
-  font-size: 13px;
-  margin-bottom: 3px;
-}
-
-.empresaInfoItem p {
-  margin: 0;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.35;
-  word-break: break-word;
-}
-
-.empresaHeroCard .trustRow {
-  margin-top: 18px;
-}
-
-.servicosPublicos {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.servicoPublicoCard {
-  width: 100%;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  border-radius: 22px;
-  padding: 14px;
-  display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) 30px;
-  gap: 13px;
-  align-items: center;
-  cursor: pointer;
-  text-align: left;
-  transition: 0.18s ease;
-}
-
-.servicoPublicoCard:hover {
-  transform: translateY(-1px);
-  border-color: #c084fc;
-  box-shadow: 0 14px 30px rgba(124, 58, 237, 0.1);
-}
-
-.servicoPublicoCard.active {
-  border-color: #a855f7;
-  background: linear-gradient(135deg, #ffffff, #faf5ff);
-  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.12);
-}
-
-.servicoPublicoIcon {
-  width: 48px;
-  height: 48px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #7c3aed, #db2777);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  box-shadow: 0 14px 28px rgba(219, 39, 119, 0.18);
-}
-
-.servicoPublicoInfo {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.servicoPublicoInfo strong {
-  color: #111827;
-  font-size: 15px;
-}
-
-.servicoPublicoInfo p {
-  margin: 0;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.servicoPublicoMeta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 2px;
-}
-
-.servicoPublicoMeta span {
-  background: #f8fafc;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-  border-radius: 999px;
-  padding: 5px 8px;
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.servicoPublicoMeta .prePagamentoTag {
-  background: #fff7ed;
-  color: #9a3412;
-  border-color: #fed7aa;
-}
-
-.servicoPublicoCheck {
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  background: #ecfdf5;
-  color: #16a34a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 950;
-}
-
-.mobileStickyBar {
-  display: none;
-}
-
-.heroOfficialBadge {
-  width: fit-content;
-  margin: 0 auto 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border-radius: 999px;
-  padding: 10px 16px;
-  background: rgba(124, 58, 237, 0.1);
-  color: #6d28d9;
-  font-size: 13px;
-  font-weight: 950;
-}
-
-.heroOfficialBadge span {
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #7c3aed, #db2777);
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-}
-
-.empresaHeroCentered {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.empresaHeroCentered .empresaLogoBox {
-  margin: 0 0 16px;
-  width: 92px;
-  height: 92px;
-  border-radius: 30px;
-}
-
-.empresaHeroCentered h1 {
-  margin: 0;
-  font-size: clamp(48px, 8vw, 82px);
-  line-height: 0.92;
-  letter-spacing: -0.075em;
-  color: #0f172a;
-}
-
-.empresaHeroCentered .subtitle {
-  max-width: 560px;
-  margin: 18px auto 0;
-  font-size: 18px;
-  line-height: 1.55;
-  color: #475569;
-}
-
-.heroMiniBadges {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 24px;
-}
-
-.heroMiniBadge {
-  min-height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  padding: 8px 14px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid #e2e8f0;
-  color: #475569;
-  font-size: 13px;
-  font-weight: 900;
-  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.05);
-}
-
-.heroBanner {
-  margin-top: 34px;
-  min-height: 96px;
-  display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) 92px;
-  gap: 18px;
-  align-items: center;
-  border-radius: 28px;
-  padding: 18px 22px;
-  background:
-    radial-gradient(circle at right, rgba(219, 39, 119, 0.12), transparent 34%),
-    linear-gradient(135deg, rgba(250, 245, 255, 0.96), rgba(255, 255, 255, 0.92));
-  border: 1px solid #e9d5ff;
-  overflow: hidden;
-}
-
-.heroBannerIcon {
-  width: 58px;
-  height: 58px;
-  border-radius: 20px;
-  background: #ffffff;
-  color: #7c3aed;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  box-shadow: 0 16px 30px rgba(124, 58, 237, 0.14);
-}
-
-.heroBannerText {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  text-align: left;
-}
-
-.heroBannerText strong {
-  color: #0f172a;
-  font-size: 18px;
-  line-height: 1.25;
-}
-
-.heroBannerText span {
-  color: #64748b;
-  font-size: 14px;
-  line-height: 1.45;
-}
-
-.heroBannerIllustration {
-  width: 78px;
-  height: 78px;
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at 70% 70%, rgba(219, 39, 119, 0.28), transparent 32%),
-    linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(219, 39, 119, 0.12));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-}
-
-.benefitsMinimal {
-  max-width: 900px;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
-  border-radius: 32px;
-  padding: 22px;
-  gap: 0;
-}
-
-.benefitMinimal {
-  border-radius: 0;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  padding: 22px 18px;
-  position: relative;
-}
-
-.benefitMinimal:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  top: 22px;
-  right: 0;
-  width: 1px;
-  height: calc(100% - 44px);
-  background: #e2e8f0;
-}
-
-.benefitMinimal span {
-  width: 70px;
-  height: 70px;
-  margin: 0 auto 14px;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at 70% 30%, rgba(219, 39, 119, 0.18), transparent 32%),
-    linear-gradient(135deg, rgba(124, 58, 237, 0.13), rgba(219, 39, 119, 0.12));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 34px;
-}
-
-.benefitMinimal strong {
-  font-size: 17px;
-  letter-spacing: -0.035em;
-}
-
-.footerBrandPremium {
-  margin-top: 22px;
-  justify-content: center;
-  font-size: 18px;
-  gap: 12px;
-}
-
-.footerBrandPremium > span {
-  color: #a855f7;
-  font-size: 18px;
-}
-
-.footerBrandPremium p {
-  margin: 0;
-  color: #64748b;
-  font-size: 18px;
-}
-
-.footerBrandPremium strong {
-  font-size: 24px;
-  color: #0f172a;
-}
-
-  @media (max-width: 720px) {
+  @media (max-width: 760px) {
     .shell {
-      padding: 18px 14px 28px;
+      padding: 16px 12px 28px;
+      align-items: stretch;
     }
 
     .topBar {
-      margin-bottom: 28px;
+      margin-bottom: 14px;
     }
 
     .secureBadge {
       display: none;
     }
 
+    .hero {
+      max-width: none;
+      margin-bottom: 12px;
+    }
+
+    .empresaHeroCard {
+      padding: 18px;
+      border-radius: 28px;
+    }
+
+    .empresaLogoBox {
+      width: 72px;
+      height: 72px;
+      border-radius: 24px;
+    }
+
     .hero h1 {
-      font-size: 44px;
-    }
-
-    .subtitle {
-      font-size: 15px;
-    }
-
-    .trustRow {
-      grid-template-columns: 1fr;
+      font-size: clamp(30px, 10vw, 46px);
     }
 
     .card {
+      max-width: none;
+      padding: 18px;
       border-radius: 28px;
-      padding: 20px;
     }
 
-    .progressSteps {
-      grid-template-columns: 1fr;
+    .cardHeader {
+      gap: 12px;
+    }
+
+    .step {
+      min-width: 48px;
+      height: 48px;
+      border-radius: 16px;
+    }
+
+    .progressSteps.wizardSteps {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .progressStep {
+      justify-content: flex-start;
+      padding: 9px 8px;
     }
 
     .cpfLine {
       grid-template-columns: 1fr;
     }
 
-    .rescheduleCard {
+    .servicoPublicoCard,
+    .profissionalPublicoCard {
+      grid-template-columns: auto 1fr;
+    }
+
+    .servicoPublicoCheck,
+    .profissionalCheck {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+    }
+
+    .slots {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .wizardActions,
+    .resumoServicoDetalhes,
+    .resumoTotalValores,
+    .benefits,
+    .clienteSelecionadoFooter {
       grid-template-columns: 1fr;
     }
+  }
 
-    .miniButton {
-      width: 100%;
+  @media (max-width: 420px) {
+    .progressSteps.wizardSteps {
+      grid-template-columns: repeat(2, 1fr);
     }
 
-    .blockedText {
-      text-align: center;
+    .slots {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .benefits {
-      grid-template-columns: 1fr;
-    }
-
-.empresaHeroCard {
-  border-radius: 30px;
-  padding: 20px;
-}
-
-.empresaHeroTop {
-  grid-template-columns: 1fr;
-  text-align: center;
-}
-
-.empresaHeroInfo {
-  text-align: center;
-}
-
-.empresaLogoBox {
-  margin: 0 auto 4px;
-}
-
-.empresaExtraInfos {
-  grid-template-columns: 1fr;
-}
-
-.heroBackgroundGlow {
-  inset: -30px 20px auto;
-  height: 150px;
-}
-
-.cardHeader {
-  flex-direction: column;
-}
-
-.step {
-  width: 100%;
-  height: 44px;
-}
-
-.servicoPublicoCard {
-  grid-template-columns: 44px minmax(0, 1fr) 28px;
-  padding: 13px;
-}
-
-.servicoPublicoIcon {
-  width: 44px;
-  height: 44px;
-  border-radius: 16px;
-}
-
-.profissionalPublicoCard {
-  grid-template-columns: 56px minmax(0, 1fr) 28px;
-  padding: 13px;
-}
-
-.profissionalFotoBox {
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
-}
-
-.mobileStickyBar {
-  position: fixed;
-  left: 12px;
-  right: 12px;
-  bottom: 12px;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  background: rgba(15, 23, 42, 0.96);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 22px;
-  padding: 12px;
-  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.32);
-  backdrop-filter: blur(14px);
-}
-
-.mobileStickyBar div {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.mobileStickyBar span {
-  color: #cbd5e1;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.mobileStickyBar strong {
-  max-width: 190px;
-  color: #ffffff;
-  font-size: 13px;
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.mobileStickyBar button {
-  min-width: 92px;
-  height: 44px;
-  border: 0;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #7c3aed, #db2777);
-  color: #ffffff;
-  font-weight: 950;
-  cursor: pointer;
-}
-
-.page {
-  padding-bottom: 82px;
-}
-
-.heroOfficialBadge {
-  margin-bottom: 16px;
-  padding: 9px 13px;
-  font-size: 12px;
-}
-
-.empresaHeroCentered .empresaLogoBox {
-  width: 78px;
-  height: 78px;
-  border-radius: 26px;
-  margin-bottom: 14px;
-}
-
-.empresaHeroCentered h1 {
-  font-size: 44px;
-  letter-spacing: -0.065em;
-}
-
-.empresaHeroCentered .subtitle {
-  font-size: 15px;
-  line-height: 1.55;
-  margin-top: 14px;
-}
-
-.heroMiniBadges {
-  margin-top: 18px;
-  gap: 8px;
-}
-
-.heroMiniBadge {
-  width: 100%;
-  min-height: 38px;
-  font-size: 12px;
-}
-
-.heroBanner {
-  margin-top: 24px;
-  grid-template-columns: 1fr;
-  text-align: center;
-  padding: 18px;
-  border-radius: 24px;
-}
-
-.heroBannerIcon,
-.heroBannerIllustration {
-  margin: 0 auto;
-}
-
-.heroBannerText {
-  text-align: center;
-}
-
-.heroBannerText strong {
-  font-size: 16px;
-}
-
-.heroBannerText span {
-  font-size: 13px;
-}
-
-.benefitsMinimal {
-  padding: 14px;
-  border-radius: 28px;
-  gap: 0;
-}
-
-.benefitMinimal {
-  padding: 22px 14px;
-}
-
-.benefitMinimal:not(:last-child)::after {
-  display: none;
-}
-
-.benefitMinimal:not(:last-child) {
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.benefitMinimal span {
-  width: 62px;
-  height: 62px;
-  font-size: 30px;
-  margin-bottom: 12px;
-}
-
-.benefitMinimal strong {
-  font-size: 16px;
-}
-
-.footerBrandPremium {
-  margin-top: 18px;
-  font-size: 15px;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.footerBrandPremium p {
-  font-size: 15px;
-}
-
-.footerBrandPremium strong {
-  font-size: 20px;
-}
-
-/* =========================================
-   MOBILE RESPONSIVO PREMIUM
-========================================= */
-
-@media (max-width: 768px) {
-
-  .shell {
-    padding: 18px 14px 120px;
-  }
-
-  .topBar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    margin-bottom: 24px;
-  }
-
-  .marca,
-  .secureBadge {
-    width: 100%;
-    justify-content: center;
-    text-align: center;
-  }
-
-  .empresaHeroCard {
-    padding: 18px;
-    border-radius: 28px;
-    overflow: hidden;
-  }
-
-  .empresaHeroCentered h1 {
-    font-size: 42px;
-    line-height: 0.95;
-    word-break: break-word;
-  }
-
-  .empresaHeroCentered .subtitle {
-    font-size: 15px;
-    line-height: 1.5;
-  }
-
-  .heroMiniBadges {
-    gap: 8px;
-  }
-
-  .heroMiniBadge {
-    width: 100%;
-    min-height: auto;
-    justify-content: center;
-    text-align: center;
-  }
-
-  .heroBanner {
-    grid-template-columns: 1fr;
-    text-align: center;
-    gap: 14px;
-    padding: 18px;
-  }
-
-  .heroBannerText {
-    text-align: center;
-  }
-
-  .heroBannerIllustration {
-    margin: 0 auto;
-  }
-
-  .card {
-    padding: 18px;
-    border-radius: 26px;
-  }
-
-  .cardHeader {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .cardHeader h2 {
-    font-size: 24px;
-  }
-
-  .step {
-    width: 52px;
-    height: 52px;
-  }
-
-  .progressSteps {
-    grid-template-columns: 1fr;
-  }
-
-  .cpfLine {
-    grid-template-columns: 1fr;
-  }
-
-  .cpfLine button,
-  .secondaryButton,
-  .outlineButton,
-  .primaryButton,
-  .whatsappButton {
-    width: 100%;
-  }
-
-  .servicoPublicoCard {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
-
-  .servicoPublicoIcon {
-    margin: 0 auto;
-  }
-
-  .servicoPublicoCheck {
-    margin: 0 auto;
-  }
-
-  .profissionalPublicoCard {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
-
-  .profissionalFotoBox {
-    margin: 0 auto;
-  }
-
-  .profissionalCheck {
-    margin: 0 auto;
-  }
-
-  .clienteSelecionadoTop {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .clienteSelecionadoFooter {
-    flex-direction: column;
-  }
-
-  .trocarClienteButton {
-    width: 100%;
-  }
-
-  .rescheduleCard {
-    grid-template-columns: 1fr;
-  }
-
-  .benefits {
-    grid-template-columns: 1fr;
-  }
-
-  .benefitsMinimal {
-    padding: 12px;
-  }
-
-  .benefitMinimal {
-    padding: 18px 12px;
-  }
-
-  .benefitMinimal:not(:last-child)::after {
-    display: none;
-  }
-
-  .mobileStickyBar {
-    position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    z-index: 999;
-    background: rgba(15, 23, 42, 0.96);
-    backdrop-filter: blur(14px);
-    border-radius: 22px;
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    box-shadow: 0 25px 60px rgba(15, 23, 42, 0.4);
-  }
-
-  .mobileStickyBar div {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .mobileStickyBar span {
-    color: rgba(255,255,255,0.7);
-    font-size: 11px;
-    font-weight: 700;
-  }
-
-  .mobileStickyBar strong {
-    color: white;
-    font-size: 14px;
-    line-height: 1.4;
-  }
-
-  .mobileStickyBar button {
-    width: 100%;
-    height: 50px;
-    border: 0;
-    border-radius: 16px;
-    background: linear-gradient(135deg, #7c3aed, #db2777);
-    color: white;
-    font-weight: 900;
-    font-size: 15px;
-  }
-
-  .footerBrandPremium {
-    flex-wrap: wrap;
-    text-align: center;
-  }
-
-  input,
-  button,
-  select,
-  textarea {
-    font-size: 16px !important;
-  }
-}
-
-/* EXTRA SMALL DEVICES */
-
-@media (max-width: 480px) {
-
-  .empresaHeroCentered h1 {
-    font-size: 34px;
-  }
-
-  .cardHeader h2 {
-    font-size: 22px;
-  }
-
-  .subtitle {
-    font-size: 14px !important;
-  }
-
-  .heroBannerText strong {
-    font-size: 16px;
-  }
-
-  .heroBannerText span {
-    font-size: 13px;
-  }
-
-  .slot {
-    width: 100%;
-  }
-
-  .servicoPublicoMeta {
-    justify-content: center;
-  }
-
-  .profissionalServicos {
-    justify-content: center;
-  }
-
-/* =========================================
-   CORREÇÃO FINAL ANTI-CORTE MOBILE
-========================================= */
-
-:global(html),
-:global(body) {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-:global(*) {
-  max-width: 100%;
-}
-
-.page {
-  width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-.shell {
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-.hero,
-.empresaHeroCard,
-.card,
-.benefits,
-.footerBrand,
-.cpfBox,
-.section {
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-button,
-input,
-select,
-textarea {
-  max-width: 100%;
-}
-
-@media (max-width: 768px) {
-  .shell {
-    width: 100%;
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-
-  .hero,
-  .empresaHeroCard,
-  .card,
-  .benefitsMinimal {
-    width: 100%;
-    max-width: calc(100vw - 24px);
-  }
-
-  .heroBackgroundGlow {
-    display: none;
-  }
-
-  .heroBanner {
-    width: 100%;
-    max-width: 100%;
-    overflow: hidden;
-  }
-
-  .empresaHeroCentered h1,
-  .cardHeader h2,
-  .heroBannerText strong,
-  .heroBannerText span,
-  .clienteInfo strong,
-  .clienteInfo span {
-    word-break: break-word;
-    overflow-wrap: anywhere;
-  }
-
-  .cpfLine,
-  .progressSteps,
-  .rescheduleCard,
-  .servicoPublicoCard,
-  .profissionalPublicoCard {
-    width: 100%;
-    max-width: 100%;
-  }
-}
-
-
-
-  .wizardCard {
-    gap: 18px;
-  }
-
-  .wizardSteps {
-    grid-template-columns: repeat(6, 1fr);
-  }
-
-  .etapaBox {
-    animation: etapaEntrada 0.22s ease;
-  }
-
-  .etapaIntro {
-    display: flex;
-    gap: 14px;
-    align-items: flex-start;
-    padding: 16px;
-    border-radius: 22px;
-    background: linear-gradient(135deg, #faf5ff, #ffffff);
-    border: 1px solid #e9d5ff;
-  }
-
-  .etapaIntro > span {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, #7c3aed, #db2777);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 14px 26px rgba(124, 58, 237, 0.2);
-  }
-
-  .etapaIntro strong {
-    display: block;
-    color: #111827;
-    font-size: 17px;
-    margin-bottom: 4px;
-  }
-
-  .etapaIntro p {
-    margin: 0;
-    color: #64748b;
-    font-size: 13px;
-    line-height: 1.45;
-  }
-
-  .dadosClienteBox {
-    padding-top: 4px;
-  }
-
-  .wizardActions {
-    display: grid;
-    grid-template-columns: 1fr 1.4fr;
-    gap: 10px;
-    margin-top: 4px;
-  }
-
-  .resumoReserva {
-    display: grid;
-    gap: 12px;
-  }
-
-  .resumoServicoCard,
-  .resumoTotalCard {
-    border: 1px solid #e2e8f0;
-    border-radius: 22px;
-    background: linear-gradient(135deg, #ffffff, #f8fafc);
-    padding: 14px;
-    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
-  }
-
-  .resumoServicoTopo {
-    display: grid;
-    grid-template-columns: 42px minmax(0, 1fr) auto;
-    gap: 12px;
-    align-items: center;
-  }
-
-  .resumoServicoNumero {
-    width: 42px;
-    height: 42px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, #7c3aed, #db2777);
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 15px;
-    font-weight: 950;
-    box-shadow: 0 12px 24px rgba(219, 39, 119, 0.2);
-  }
-
-  .resumoServicoInfo {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .resumoServicoInfo span,
-  .resumoServicoDetalhes span,
-  .resumoTotalCard span {
-    color: #64748b;
-    font-size: 12px;
-    font-weight: 900;
-  }
-
-  .resumoServicoInfo strong,
-  .resumoServicoDetalhes strong,
-  .resumoTotalCard strong {
-    color: #111827;
-    font-size: 14px;
-  }
-
-  .resumoServicoInfo small,
-  .resumoTotalCard small {
-    color: #64748b;
-    font-size: 12px;
-    font-weight: 800;
-  }
-
-  .removerServicoButton {
-    width: 34px;
-    height: 34px;
-    border: 0;
-    border-radius: 999px;
-    background: #fef2f2;
-    color: #991b1b;
-    font-size: 20px;
-    font-weight: 950;
-    cursor: pointer;
-  }
-
-  .resumoServicoDetalhes {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-    gap: 8px;
-    margin-top: 12px;
-  }
-
-  .resumoServicoDetalhes > div {
-    min-width: 0;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    background: #f8fafc;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .resumoPrePagamentoBadge {
-    margin-top: 12px;
-    border-radius: 999px;
-    background: #fdf2f8;
-    border: 1px solid #fbcfe8;
-    color: #be185d;
-    padding: 8px 10px;
-    font-size: 12px;
-    font-weight: 950;
-    text-align: center;
-  }
-
-  .resumoTotalCard {
-    background: linear-gradient(135deg, #7c3aed, #db2777);
-    border-color: transparent;
-    color: #ffffff;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .resumoTotalValores {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px;
-  }
-
-  .resumoTotalValores > div {
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.14);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .resumoTotalCard span,
-  .resumoTotalCard strong,
-  .resumoTotalCard small {
-    color: #ffffff;
-  }
-
-  .resumoTotalCard strong {
-    font-size: 24px;
-    letter-spacing: -0.04em;
-  }
-
-  @keyframes etapaEntrada {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
+    .cardHeader h2 {
+      font-size: 26px;
     }
   }
-
-  @media (max-width: 768px) {
-    .wizardSteps {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .wizardActions {
-      grid-template-columns: 1fr;
-    }
-
-    .etapaIntro {
-      padding: 14px;
-    }
-  
-.wizardSteps{
-display:flex;
-align-items:center;
-gap:12px;
-overflow:auto;
-padding:14px 4px 20px;
-margin-bottom:20px;
-}
-
-.wizardStep{
-display:flex;
-align-items:center;
-gap:8px;
-opacity:.45;
-font-weight:700;
-white-space:nowrap;
-transition:.2s;
-}
-
-.wizardStep.active{
-opacity:1;
-color:#4f46e5;
-}
-
-.wizardStep.done{
-opacity:1;
-color:#22c55e;
-}
-
-.wizardBall{
-width:34px;
-height:34px;
-border-radius:999px;
-display:flex;
-align-items:center;
-justify-content:center;
-background:#e2e8f0;
-font-size:14px;
-font-weight:800;
-}
-
-.wizardStep.active .wizardBall{
-background:#4f46e5;
-color:#fff;
-}
-
-.wizardStep.done .wizardBall{
-background:#22c55e;
-color:#fff;
-}
 `;
