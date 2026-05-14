@@ -666,7 +666,7 @@ export default async function SucessoDetalhesPage({
         </section>
       </section>
 
-      <style jsx>{`
+      <style>{`
         * {
           box-sizing: border-box;
         }
