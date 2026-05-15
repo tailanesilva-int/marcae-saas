@@ -286,12 +286,22 @@ export async function POST(
 
     const fileName = `comprovante-${id}.pdf`;
 
-    const evolutionResponse = await enviarDocumentoEvolution({
-      number: numeroDestino,
-      caption,
-      fileName,
-      mediaUrl: pdfUrl,
-    });
+const pdfResponse = await fetch(pdfUrl);
+
+if (!pdfResponse.ok) {
+  throw new Error('Não foi possível gerar o PDF.');
+}
+
+const pdfArrayBuffer = await pdfResponse.arrayBuffer();
+
+const pdfBase64 = Buffer.from(pdfArrayBuffer).toString('base64');
+
+const evolutionResponse = await enviarDocumentoEvolution({
+  number: numeroDestino,
+  caption,
+  fileName,
+  mediaUrl: `data:application/pdf;base64,${pdfBase64}`,
+});
 
     return NextResponse.json({
       success: true,
