@@ -16,11 +16,6 @@ export default function EnviarComprovanteWhatsAppButton({
   async function enviarComprovante() {
     if (enviando) return;
 
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => {
-      controller.abort();
-    }, 30000);
-
     try {
       setEnviando(true);
 
@@ -30,22 +25,10 @@ export default function EnviarComprovanteWhatsAppButton({
         `/api/agendamentos/${agendamentoId}/enviar-comprovante-whatsapp${params}`,
         {
           method: 'POST',
-          signal: controller.signal,
         }
       );
 
-      const text = await res.text();
-
-      let data: any = null;
-
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch {
-        data = {
-          success: false,
-          error: text || 'Resposta inválida do servidor.',
-        };
-      }
+      const data = await res.json();
 
       if (!res.ok || !data?.success) {
         alert(data?.error || `Erro ao enviar comprovante. Status: ${res.status}`);
@@ -53,18 +36,10 @@ export default function EnviarComprovanteWhatsAppButton({
       }
 
       alert('Comprovante enviado com sucesso pelo WhatsApp.');
-    } catch (error: any) {
-      if (error?.name === 'AbortError') {
-        alert(
-          'Tempo esgotado ao enviar o comprovante. A Evolution API demorou mais de 30 segundos para responder.'
-        );
-        return;
-      }
-
+    } catch (error) {
       console.error(error);
       alert('Erro ao enviar comprovante pelo WhatsApp.');
     } finally {
-      window.clearTimeout(timeout);
       setEnviando(false);
     }
   }
@@ -82,8 +57,8 @@ export default function EnviarComprovanteWhatsAppButton({
       }}
     >
       {enviando
-        ? 'Enviando comprovante...'
-        : 'Enviar comprovante em PDF no WhatsApp'}
+        ? 'Enviando confirmação...'
+        : 'Enviar confirmação no WhatsApp'}
     </button>
   );
 }
