@@ -117,22 +117,23 @@ async function enviarTextoEvolution({
       `Acesse seu comprovante digital:\n${comprovanteUrl}`,
   };
 
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: apiKey,
-      'ngrok-skip-browser-warning': 'true',
-    },
-    body: JSON.stringify(payload),
-  });
+  fetch(endpoint, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    apikey: apiKey,
+    'ngrok-skip-browser-warning': 'true',
+  },
+  body: JSON.stringify(payload),
+}).catch((error) => {
+  console.error('Erro assíncrono Evolution:', error);
+});
 
-  const data = await res.text();
-
-  console.log(data);
-
-  return data;
-}
+return {
+  queued: true,
+  endpoint,
+  number,
+};
 
 export async function POST(request: NextRequest, { params }: RouteProps) {
   try {
