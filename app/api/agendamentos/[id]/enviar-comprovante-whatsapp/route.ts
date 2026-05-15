@@ -166,10 +166,10 @@ async function enviarDocumentoEvolution({
 
   const payload = {
     number,
-    mediatype: 'document',
-    mediaType: 'document',
-    mimetype: 'application/pdf',
-    mimeType: 'application/pdf',
+    mediatype: 'image',
+mediaType: 'image',
+mimetype: 'image/png',
+mimeType: 'image/png',
     caption,
     fileName,
     filename: fileName,
@@ -280,27 +280,14 @@ export async function POST(
       `\nQualquer dúvida, é só responder por aqui.`;
 
     const baseUrl = getBaseUrl(request);
-    const pdfUrl =
-      `${baseUrl}/api/agendamentos/${id}/comprovante-pdf` +
-      (ids.length ? `?ids=${encodeURIComponent(ids.join(','))}` : '');
-
-    const fileName = `comprovante-${id}.pdf`;
-
-const pdfResponse = await fetch(pdfUrl);
-
-if (!pdfResponse.ok) {
-  throw new Error('Não foi possível gerar o PDF.');
-}
-
-const pdfArrayBuffer = await pdfResponse.arrayBuffer();
-
-const pdfBase64 = Buffer.from(pdfArrayBuffer).toString('base64');
+    const imageUrl =
+  `${baseUrl}/api/agendamentos/${id}/comprovante-imagem`;
 
 const evolutionResponse = await enviarDocumentoEvolution({
   number: numeroDestino,
   caption,
-  fileName,
-  mediaUrl: `data:application/pdf;base64,${pdfBase64}`,
+  fileName: `comprovante-${id}.png`,
+  mediaUrl: imageUrl,
 });
 
     return NextResponse.json({
