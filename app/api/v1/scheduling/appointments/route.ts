@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     const dataHoraFim = addMinutes(dataHoraInicio, servico.duracaoMin);
 
     const cpfLimpo = String(cliente.cpf || '').replace(/\D/g, '');
+    const whatsappLimpo = String(cliente.whatsapp || '').replace(/\D/g, '');
 
 let clienteRegistro = null;
 
@@ -51,7 +52,7 @@ if (clienteRegistro) {
     data: {
       nome: cliente.nome,
       cpf: cpfLimpo || null,
-      whatsapp: cliente.whatsapp,
+      whatsapp: whatsappLimpo,
       dataNascimento: cliente.dataNascimento
         ? new Date(`${cliente.dataNascimento}T00:00:00`)
         : null,
@@ -62,7 +63,7 @@ if (clienteRegistro) {
     data: {
       empresaId,
       nome: cliente.nome,
-      whatsapp: cliente.whatsapp,
+      whatsapp: whatsappLimpo,
       cpf: cpfLimpo || null,
       dataNascimento: cliente.dataNascimento
         ? new Date(`${cliente.dataNascimento}T00:00:00`)
