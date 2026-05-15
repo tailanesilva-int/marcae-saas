@@ -83,64 +83,53 @@ function formatarHora(data?: string | Date | null) {
   }).format(new Date(data));
 }
 
-async function enviarImagemEvolution({
+async function enviarTextoEvolution({
   number,
   caption,
+  id,
 }: {
   number: string;
   caption: string;
+  id: string;
 }) {
   const apiUrl = process.env.EVOLUTION_API_URL?.replace(/\/$/, '');
   const apiKey = process.env.EVOLUTION_API_KEY;
+
   const instance =
-    process.env.EVOLUTION_INSTANCE || process.env.EVOLUTION_INSTANCE_NAME;
+    process.env.EVOLUTION_INSTANCE ||
+    process.env.EVOLUTION_INSTANCE_NAME;
 
   if (!apiUrl || !apiKey || !instance) {
     throw new Error(
-      'Configuração da Evolution API incompleta. Verifique EVOLUTION_API_URL, EVOLUTION_API_KEY e EVOLUTION_INSTANCE.'
+      'Configuração da Evolution API incompleta.'
     );
   }
 
-  const endpoint = `${apiUrl}/message/sendMedia/${instance}`;
+  const endpoint = `${apiUrl}/message/sendText/${instance}`;
 
-  const formData = new FormData();
-  formData.append('number', number);
-  formData.append('mediatype', 'image');
-  formData.append(
-    'media',
-    'https://upload.wikimedia.org/wikipedia/commons/3/3f/Placeholder_view_vector.svg'
-  );
-  formData.append('caption', caption);
-  formData.append('fileName', 'comprovante-marcae.png');
+  const comprovanteUrl =
+    `${process.env.NEXT_PUBLIC_APP_URL}/sucesso/${id}`;
+
+  const payload = {
+    number,
+    text:
+      `${caption}\n\n` +
+      `Acesse seu comprovante digital:\n${comprovanteUrl}`,
+  };
 
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
+      'Content-Type': 'application/json',
       apikey: apiKey,
       'ngrok-skip-browser-warning': 'true',
     },
-    body: formData,
+    body: JSON.stringify(payload),
   });
 
-  const texto = await res.text();
+  const data = await res.text();
 
-  let data: any = null;
-
-  try {
-    data = texto ? JSON.parse(texto) : null;
-  } catch {
-    data = texto;
-  }
-
-  if (!res.ok) {
-    console.error('Erro Evolution API:', data);
-
-    throw new Error(
-      typeof data === 'string'
-        ? data
-        : data?.message || data?.error || 'Erro ao enviar mídia pela Evolution API.'
-    );
-  }
+  console.log(data);
 
   return data;
 }
@@ -201,10 +190,11 @@ export async function POST(request: NextRequest, { params }: RouteProps) {
         : '') +
       `\nQualquer dúvida, é só responder por aqui.`;
 
-    const evolutionResponse = await enviarImagemEvolution({
-      number: numeroDestino,
-      caption,
-    });
+    const evolutionResponse = await enviarTextoEvolution({
+  number: numeroDestino,
+  caption,
+  id,
+});
 
     return NextResponse.json({
       success: true,
