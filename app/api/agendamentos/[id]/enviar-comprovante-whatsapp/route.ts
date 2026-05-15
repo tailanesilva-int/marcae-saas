@@ -134,6 +134,7 @@ return {
   endpoint,
   number,
 };
+{
 
 export async function POST(request: NextRequest, { params }: RouteProps) {
   try {
