@@ -121,16 +121,34 @@ function getBaseUrl(request: NextRequest) {
   return `${protocol}://${host}`;
 }
 
+async function fetchComTimeout(
+  url: string,
+  options: RequestInit,
+  timeoutMs = 30000
+) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function enviarDocumentoEvolution({
   number,
   caption,
   fileName,
-  base64,
+  mediaUrl,
 }: {
   number: string;
   caption: string;
   fileName: string;
-  base64: string;
+  mediaUrl: string;
 }) {
   const apiUrl = process.env.EVOLUTION_API_URL?.replace(/\/$/, '');
   const apiKey = process.env.EVOLUTION_API_KEY;
@@ -155,18 +173,22 @@ async function enviarDocumentoEvolution({
     caption,
     fileName,
     filename: fileName,
-    media: base64,
+    media: mediaUrl,
   };
 
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-  'Content-Type': 'application/json',
-  apikey: apiKey,
-  'ngrok-skip-browser-warning': 'true',
-},
-    body: JSON.stringify(payload),
-  });
+  const res = await fetchComTimeout(
+    endpoint,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: apiKey,
+        'ngrok-skip-browser-warning': 'true',
+      },
+      body: JSON.stringify(payload),
+    },
+    30000
+  );
 
   const texto = await res.text();
 
@@ -262,37 +284,13 @@ export async function POST(
       `${baseUrl}/api/agendamentos/${id}/comprovante-pdf` +
       (ids.length ? `?ids=${encodeURIComponent(ids.join(','))}` : '');
 
-    const pdfRes = await fetch(pdfUrl, {
-      cache: 'no-store',
-    });
-
-    if (!pdfRes.ok) {
-      const textoErro = await pdfRes.text();
-
-      console.error('Erro ao buscar PDF:', textoErro);
-
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Não foi possível gerar o PDF do comprovante.',
-        },
-        {
-          status: 500,
-        }
-      );
-    }
-
-    const pdfArrayBuffer = await pdfRes.arrayBuffer();
-    const pdfBuffer = Buffer.from(pdfArrayBuffer);
-    const base64 = pdfBuffer.toString('base64');
-
     const fileName = `comprovante-${id}.pdf`;
 
     const evolutionResponse = await enviarDocumentoEvolution({
       number: numeroDestino,
       caption,
       fileName,
-      base64,
+      mediaUrl: pdfUrl,
     });
 
     return NextResponse.json({
@@ -303,12 +301,15 @@ export async function POST(
   } catch (error: any) {
     console.error('Erro ao enviar comprovante por WhatsApp:', error);
 
+    const mensagem =
+      error?.name === 'AbortError'
+        ? 'Tempo esgotado ao conectar com a Evolution API. Verifique se a Evolution está ligada, se o ngrok aponta para localhost:8080 e se a instância está conectada.'
+        : error?.message || 'Erro ao enviar comprovante pelo WhatsApp.';
+
     return NextResponse.json(
       {
         success: false,
-        error:
-          error?.message ||
-          'Erro ao enviar comprovante pelo WhatsApp.',
+        error: mensagem,
       },
       {
         status: 500,
