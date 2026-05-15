@@ -163,7 +163,7 @@ async function enviarDocumentoEvolution({
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      apikey: apiKey,
+      apikey: apiKey || '',
       'ngrok-skip-browser-warning': 'true',
     },
     body: JSON.stringify(payload),
@@ -241,10 +241,6 @@ export async function POST(
         ? `Primeiro horário: ${formatarData(primeiroHorario)} às ${formatarHora(primeiroHorario)}\n`
         : '') +
       `\nQualquer dúvida, é só responder por aqui.`;
-
-    const baseUrl = getBaseUrl(request);
-    const imageUrl =
-  `${baseUrl}/api/agendamentos/${id}/comprovante-imagem`;
 
 const evolutionResponse = await enviarDocumentoEvolution({
   number: numeroDestino,
