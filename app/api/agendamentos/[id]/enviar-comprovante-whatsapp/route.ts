@@ -19,9 +19,7 @@ const agendamentoInclude = {
 
 async function buscarAgendamento(id: string) {
   return prisma.agendamento.findUnique({
-    where: {
-      id,
-    },
+    where: { id },
     include: agendamentoInclude,
   });
 }
@@ -30,20 +28,9 @@ async function buscarAgendamentosPorIds(ids: string[]) {
   if (ids.length === 0) return [];
 
   return prisma.agendamento.findMany({
-    where: {
-      id: {
-        in: ids,
-      },
-    },
+    where: { id: { in: ids } },
     include: agendamentoInclude,
-    orderBy: [
-      {
-        dataHoraInicio: 'asc',
-      },
-      {
-        createdAt: 'asc',
-      },
-    ],
+    orderBy: [{ dataHoraInicio: 'asc' }, { createdAt: 'asc' }],
   });
 }
 
@@ -61,14 +48,7 @@ async function buscarAgendamentosDoComprovante(id: string, ids: string[]) {
       empresaId: agendamentoPrincipal.empresaId,
     },
     include: agendamentoInclude,
-    orderBy: [
-      {
-        dataHoraInicio: 'asc',
-      },
-      {
-        createdAt: 'asc',
-      },
-    ],
+    orderBy: [{ dataHoraInicio: 'asc' }, { createdAt: 'asc' }],
   });
 }
 
@@ -103,43 +83,7 @@ function formatarHora(data?: string | Date | null) {
   }).format(new Date(data));
 }
 
-function getBaseUrl(request: NextRequest) {
-  const envUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.APP_URL ||
-    '';
-
-  if (envUrl) {
-    return envUrl.replace(/\/$/, '');
-  }
-
-  const protocol =
-    request.headers.get('x-forwarded-proto') || 'http';
-
-  const host = request.headers.get('host');
-
-  return `${protocol}://${host}`;
-}
-
-async function fetchComTimeout(
-  url: string,
-  options: RequestInit,
-  timeoutMs = 30000
-) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    return await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-async function enviarDocumentoEvolution({
+async function enviarImagemEvolution({
   number,
   caption,
 }: {
@@ -149,40 +93,59 @@ async function enviarDocumentoEvolution({
   const apiUrl = process.env.EVOLUTION_API_URL?.replace(/\/$/, '');
   const apiKey = process.env.EVOLUTION_API_KEY;
   const instance =
-    process.env.EVOLUTION_INSTANCE ||
-    process.env.EVOLUTION_INSTANCE_NAME;
+    process.env.EVOLUTION_INSTANCE || process.env.EVOLUTION_INSTANCE_NAME;
+
+  if (!apiUrl || !apiKey || !instance) {
+    throw new Error(
+      'Configuração da Evolution API incompleta. Verifique EVOLUTION_API_URL, EVOLUTION_API_KEY e EVOLUTION_INSTANCE.'
+    );
+  }
 
   const endpoint = `${apiUrl}/message/sendMedia/${instance}`;
 
-  const payload = {
-  number,
-  mediatype: 'image',
-  media:
-    'https://upload.wikimedia.org/wikipedia/commons/3/3f/Placeholder_view_vector.svg',
-  caption,
-};
+  const formData = new FormData();
+  formData.append('number', number);
+  formData.append('mediatype', 'image');
+  formData.append(
+    'media',
+    'https://upload.wikimedia.org/wikipedia/commons/3/3f/Placeholder_view_vector.svg'
+  );
+  formData.append('caption', caption);
+  formData.append('fileName', 'comprovante-marcae.png');
 
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      apikey: apiKey || '',
+      apikey: apiKey,
       'ngrok-skip-browser-warning': 'true',
     },
-    body: JSON.stringify(payload),
+    body: formData,
   });
 
-  const data = await res.text();
+  const texto = await res.text();
 
-  console.log(data);
+  let data: any = null;
+
+  try {
+    data = texto ? JSON.parse(texto) : null;
+  } catch {
+    data = texto;
+  }
+
+  if (!res.ok) {
+    console.error('Erro Evolution API:', data);
+
+    throw new Error(
+      typeof data === 'string'
+        ? data
+        : data?.message || data?.error || 'Erro ao enviar mídia pela Evolution API.'
+    );
+  }
 
   return data;
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: RouteProps
-) {
+export async function POST(request: NextRequest, { params }: RouteProps) {
   try {
     const { id } = await params;
     const idsParam = request.nextUrl.searchParams.get('ids');
@@ -201,9 +164,7 @@ export async function POST(
           success: false,
           error: 'Agendamento não encontrado.',
         },
-        {
-          status: 404,
-        }
+        { status: 404 }
       );
     }
 
@@ -223,19 +184,14 @@ export async function POST(
           success: false,
           error: 'Cliente não possui WhatsApp cadastrado.',
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
     const nomeCliente =
-      agendamento?.cliente?.nome ||
-      agendamento?.clienteNome ||
-      'Cliente';
+      agendamento?.cliente?.nome || agendamento?.clienteNome || 'Cliente';
 
     const nomeEmpresa = agendamento?.empresa?.nome || 'Empresa';
-
     const primeiroHorario = agendamentos[0]?.dataHoraInicio;
 
     const caption =
@@ -245,10 +201,10 @@ export async function POST(
         : '') +
       `\nQualquer dúvida, é só responder por aqui.`;
 
-const evolutionResponse = await enviarDocumentoEvolution({
-  number: numeroDestino,
-  caption,
-});
+    const evolutionResponse = await enviarImagemEvolution({
+      number: numeroDestino,
+      caption,
+    });
 
     return NextResponse.json({
       success: true,
@@ -258,19 +214,12 @@ const evolutionResponse = await enviarDocumentoEvolution({
   } catch (error: any) {
     console.error('Erro ao enviar comprovante por WhatsApp:', error);
 
-    const mensagem =
-      error?.name === 'AbortError'
-        ? 'Tempo esgotado ao conectar com a Evolution API. Verifique se a Evolution está ligada, se o ngrok aponta para localhost:8080 e se a instância está conectada.'
-        : error?.message || 'Erro ao enviar comprovante pelo WhatsApp.';
-
     return NextResponse.json(
       {
         success: false,
-        error: mensagem,
+        error: error?.message || 'Erro ao enviar comprovante pelo WhatsApp.',
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }
