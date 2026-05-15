@@ -142,13 +142,9 @@ async function fetchComTimeout(
 async function enviarDocumentoEvolution({
   number,
   caption,
-  fileName,
-  mediaUrl,
 }: {
   number: string;
   caption: string;
-  fileName: string;
-  mediaUrl: string;
 }) {
   const apiUrl = process.env.EVOLUTION_API_URL?.replace(/\/$/, '');
   const apiKey = process.env.EVOLUTION_API_KEY;
@@ -156,59 +152,26 @@ async function enviarDocumentoEvolution({
     process.env.EVOLUTION_INSTANCE ||
     process.env.EVOLUTION_INSTANCE_NAME;
 
-  if (!apiUrl || !apiKey || !instance) {
-    throw new Error(
-      'Configuração da Evolution API incompleta. Verifique EVOLUTION_API_URL, EVOLUTION_API_KEY e EVOLUTION_INSTANCE.'
-    );
-  }
-
-  const endpoint = `${apiUrl}/message/sendMedia/${instance}`;
+  const endpoint = `${apiUrl}/message/sendText/${instance}`;
 
   const payload = {
     number,
-    mediatype: 'image',
-mediaType: 'image',
-mimetype: 'image/png',
-mimeType: 'image/png',
-    caption,
-    fileName,
-    filename: fileName,
-    media: mediaUrl,
+    text: caption,
   };
 
-  const res = await fetchComTimeout(
-    endpoint,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: apiKey,
-        'ngrok-skip-browser-warning': 'true',
-      },
-      body: JSON.stringify(payload),
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: apiKey,
+      'ngrok-skip-browser-warning': 'true',
     },
-    30000
-  );
+    body: JSON.stringify(payload),
+  });
 
-  const texto = await res.text();
+  const data = await res.text();
 
-  let data: any = null;
-
-  try {
-    data = texto ? JSON.parse(texto) : null;
-  } catch {
-    data = texto;
-  }
-
-  if (!res.ok) {
-    console.error('Erro Evolution API:', data);
-
-    throw new Error(
-      typeof data === 'string'
-        ? data
-        : data?.message || data?.error || 'Erro ao enviar documento pela Evolution API.'
-    );
-  }
+  console.log(data);
 
   return data;
 }
@@ -286,8 +249,6 @@ export async function POST(
 const evolutionResponse = await enviarDocumentoEvolution({
   number: numeroDestino,
   caption,
-  fileName: `comprovante-${id}.png`,
-  mediaUrl: imageUrl,
 });
 
     return NextResponse.json({
