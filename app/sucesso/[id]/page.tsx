@@ -602,11 +602,11 @@ export default async function SucessoDetalhesPage({
             </div>
 
             {telefoneEmpresa && (
-              <div className="infoTile">
-                <span>Contato</span>
-                <strong>{telefoneEmpresa}</strong>
-              </div>
-            )}
+  <div className="infoTile">
+    <span>WhatsApp da empresa</span>
+    <strong>{telefoneEmpresa}</strong>
+  </div>
+)}
 
             {enderecoEmpresa && (
               <div className="infoTile wide">

@@ -152,12 +152,15 @@ async function enviarDocumentoEvolution({
     process.env.EVOLUTION_INSTANCE ||
     process.env.EVOLUTION_INSTANCE_NAME;
 
-  const endpoint = `${apiUrl}/message/sendText/${instance}`;
+  const endpoint = `${apiUrl}/message/sendMedia/${instance}`;
 
   const payload = {
-    number,
-    text: caption,
-  };
+  number,
+  mediatype: 'image',
+  media:
+    'https://upload.wikimedia.org/wikipedia/commons/3/3f/Placeholder_view_vector.svg',
+  caption,
+};
 
   const res = await fetch(endpoint, {
     method: 'POST',
