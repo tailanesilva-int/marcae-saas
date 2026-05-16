@@ -1340,6 +1340,20 @@ align-items: flex-start;
           .heroStats strong {
             text-align: left;
           }
+
+        @media (min-width: 981px) {
+          .page {
+            width: 100vw !important;
+            align-items: flex-start !important;
+            justify-content: center !important;
+          }
+
+          .receiptShell {
+            width: min(860px, 100%) !important;
+            grid-template-columns: 0.85fr 1fr !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+          }
         }
 
         @media (max-width: 640px) {
@@ -1411,18 +1425,3 @@ align-items: flex-start;
         }
       `}</style>
     </main>
-
-@media (min-width: 981px) {
-  .page {
-    width: 100vw !important;
-    align-items: flex-start !important;
-    justify-content: center !important;
-  }
-
-  .receiptShell {
-    width: min(860px, 100%) !important;
-    grid-template-columns: 0.85fr 1fr !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-  );
-}
