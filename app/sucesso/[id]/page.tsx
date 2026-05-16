@@ -688,9 +688,6 @@ export default async function SucessoDetalhesPage({
           font-family: Arial, sans-serif;
         }
 
-width: 100vw;
-align-items: flex-start;
-
         .backgroundGrid {
           position: absolute;
           inset: 0;
@@ -1313,12 +1310,29 @@ align-items: flex-start;
 
         @media (max-width: 980px) {
           .page {
+  position: relative;
+  width: 100vw;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 15% 8%, rgba(123, 58, 237, 0.35), transparent 30%),
+    radial-gradient(circle at 88% 18%, rgba(183, 107, 255, 0.22), transparent 28%),
+    radial-gradient(circle at 50% 100%, rgba(123, 58, 237, 0.22), transparent 34%),
+    linear-gradient(135deg, #080b0f 0%, #0d1020 44%, #111425 100%);
+  color: #f8fafc;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 28px 20px 40px;
+  font-family: Arial, sans-serif;
+}
             align-items: flex-start;
             padding: 18px;
           }
 
           .receiptShell {
-            grid-template-columns: 1fr;
+            width: min(860px, 100%);
+grid-template-columns: 0.85fr 1fr;
           }
 
           .heroPanel {

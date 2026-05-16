@@ -2735,5 +2735,20 @@ padding: 24px 20px 40px;
   .wizardCard {
     width: 100% !important;
   }
+  
+@media (min-width: 981px) {
+  .page {
+    width: 100vw !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
   }
+
+  .shell {
+    width: min(680px, 100%) !important;
+    max-width: 680px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
 `;
