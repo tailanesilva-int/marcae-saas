@@ -1615,11 +1615,7 @@ const styles = `
   }
 
   .page {
-
-width: 100vw;
-display: flex;
-justify-content: center;
-
+    width: 100%;
     min-height: 100vh;
     background:
       radial-gradient(circle at 12% 0%, rgba(123, 58, 237, 0.34), transparent 32%),
@@ -1628,6 +1624,8 @@ justify-content: center;
       linear-gradient(180deg, #080B0F 0%, #0B0F19 46%, #111425 100%);
     color: #F8FAFC;
     overflow-x: hidden;
+    display: flex;
+    justify-content: center;
   }
 
   .page::before {
@@ -2716,5 +2714,26 @@ padding: 24px 20px 40px;
     .cardHeader h2 {
       font-size: 26px;
     }
+
+@media (min-width: 981px) {
+  .page {
+    justify-content: center !important;
+    align-items: flex-start !important;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .shell {
+    width: 100% !important;
+    max-width: 680px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .topBar,
+  .hero,
+  .wizardCard {
+    width: 100% !important;
+  }
   }
 `;
