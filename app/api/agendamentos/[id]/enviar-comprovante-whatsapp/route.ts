@@ -117,15 +117,28 @@ async function enviarTextoEvolution({
       `Acesse seu comprovante digital:\n${comprovanteUrl}`,
   };
 
-  const res = await fetch(endpoint, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    apikey: apiKey,
-    'ngrok-skip-browser-warning': 'true',
-  },
-  body: JSON.stringify(payload),
-});
+  const controller = new AbortController();
+
+const timeout = setTimeout(() => {
+  controller.abort();
+}, 10000);
+
+let res: Response;
+
+try {
+  res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: apiKey,
+      'ngrok-skip-browser-warning': 'true',
+    },
+    body: JSON.stringify(payload),
+    signal: controller.signal,
+  });
+} finally {
+  clearTimeout(timeout);
+}
 
 const data = await res.text();
 
