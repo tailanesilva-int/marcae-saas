@@ -1712,6 +1712,9 @@ padding: 24px 20px 40px;
   }
 
   .empresaHeroCard {
+max-width: 420px;
+margin-left: auto;
+margin-right: auto;
     position: relative;
     overflow: hidden;
     border: 1px solid rgba(237, 233, 255, 0.14);
@@ -1799,7 +1802,7 @@ padding: 24px 20px 40px;
   .hero h1 {
     margin: 0;
     max-width: 660px;
-    font-size: clamp(34px, 7vw, 66px);
+    font-size: clamp(32px, 4vw, 48px);
     line-height: 0.95;
     letter-spacing: -0.075em;
     color: #F8FAFC;
