@@ -2702,7 +2702,7 @@ padding: 24px 20px 40px;
     }
   }
 
-  @media (max-width: 420px) {
+    @media (max-width: 420px) {
     .progressSteps.wizardSteps {
       grid-template-columns: repeat(2, 1fr);
     }
@@ -2714,41 +2714,23 @@ padding: 24px 20px 40px;
     .cardHeader h2 {
       font-size: 26px;
     }
-
-@media (min-width: 981px) {
-  .page {
-    justify-content: center !important;
-    align-items: flex-start !important;
-    padding-left: 20px;
-    padding-right: 20px;
   }
 
-  .shell {
-    width: 100% !important;
-    max-width: 680px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
+          @media (min-width: 981px) {
+          .page {
+            width: 100vw !important;
+            margin-left: calc(50% - 50vw) !important;
+            margin-right: calc(50% - 50vw) !important;
+            align-items: flex-start !important;
+            justify-content: center !important;
+            padding: 28px 20px 40px !important;
+          }
 
-  .topBar,
-  .hero,
-  .wizardCard {
-    width: 100% !important;
-  }
-  
-@media (min-width: 981px) {
-  .page {
-    width: 100vw !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: flex-start !important;
-  }
-
-  .shell {
-    width: min(680px, 100%) !important;
-    max-width: 680px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
-}
+          .receiptShell {
+            width: min(1180px, calc(100vw - 56px)) !important;
+            grid-template-columns: 0.95fr 1.35fr !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+          }
+        }
 `;
