@@ -1615,6 +1615,11 @@ const styles = `
   }
 
   .page {
+
+width: 100vw;
+display: flex;
+justify-content: center;
+
     min-height: 100vh;
     background:
       radial-gradient(circle at 12% 0%, rgba(123, 58, 237, 0.34), transparent 32%),
@@ -1641,10 +1646,10 @@ const styles = `
     position: relative;
     z-index: 1;
     width: 100%;
-    max-width: 1040px;
-    min-height: 100vh;
-    margin: 0 auto;
-    padding: 24px 20px 40px;
+    max-width: 760px;
+min-height: 100vh;
+margin: 0 auto;
+padding: 24px 20px 40px;
     display: flex;
     flex-direction: column;
     align-items: center;

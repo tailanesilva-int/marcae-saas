@@ -684,9 +684,12 @@ export default async function SucessoDetalhesPage({
           display: flex;
           justify-content: center;
           align-items: center;
-          padding: 28px;
+          padding: 28px 20px 40px;
           font-family: Arial, sans-serif;
         }
+
+width: 100vw;
+align-items: flex-start;
 
         .backgroundGrid {
           position: absolute;
@@ -734,7 +737,7 @@ export default async function SucessoDetalhesPage({
         .receiptShell {
           position: relative;
           z-index: 1;
-          width: min(1180px, 100%);
+          width: min(960px, 100%);
           display: grid;
           grid-template-columns: 0.95fr 1.35fr;
           gap: 20px;
