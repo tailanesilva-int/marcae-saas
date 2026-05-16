@@ -734,9 +734,9 @@ export default async function SucessoDetalhesPage({
         .receiptShell {
           position: relative;
           z-index: 1;
-          width: min(960px, 100%);
+          width: min(1040px, 100%);
           display: grid;
-          grid-template-columns: 0.95fr 1.35fr;
+          grid-template-columns: 0.9fr 1.1fr;
           gap: 20px;
           align-items: stretch;
         }
@@ -751,7 +751,7 @@ export default async function SucessoDetalhesPage({
         }
 
         .heroPanel {
-          min-height: 720px;
+          min-height: auto;
           border-radius: 38px;
           padding: 32px;
           display: flex;
@@ -1309,20 +1309,24 @@ export default async function SucessoDetalhesPage({
         }
 
                 @media (min-width: 981px) {
-          .page {
-            width: 100%;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 28px 20px 40px;
-          }
+  .page {
+    width: 100%;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 28px 20px 40px;
+  }
 
-          .receiptShell {
-            width: min(1180px, 100%);
-            grid-template-columns: 0.95fr 1.35fr;
-            margin-left: auto;
-            margin-right: auto;
-          }
-        }
+  .receiptShell {
+    width: min(1040px, 100%);
+    grid-template-columns: 0.9fr 1.1fr;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .heroPanel {
+    min-height: 660px;
+  }
+}
 
         @media (max-width: 980px) {
           .page {

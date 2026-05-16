@@ -1700,7 +1700,7 @@ padding: 24px 20px 40px;
     position: relative;
     width: 100%;
     max-width: 720px;
-    margin-bottom: 18px;
+    margin-bottom: 12px;
   }
 
   .heroBackgroundGlow {
@@ -1717,7 +1717,7 @@ padding: 24px 20px 40px;
     border: 1px solid rgba(237, 233, 255, 0.14);
     background: linear-gradient(145deg, rgba(17, 20, 37, 0.86), rgba(8, 11, 15, 0.86));
     border-radius: 32px;
-    padding: 24px;
+    padding: 26px 24px;
     box-shadow: 0 34px 90px rgba(0, 0, 0, 0.42);
     backdrop-filter: blur(18px);
   }
@@ -2696,18 +2696,27 @@ padding: 24px 20px 40px;
   }
 
   @media (min-width: 981px) {
-    .page {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-    }
-
-    .shell {
-      width: 760px;
-      max-width: 760px;
-      margin-left: auto;
-      margin-right: auto;
-    }
+  .page {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
   }
+
+  .shell {
+    width: 760px;
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: 28px;
+  }
+
+  .hero {
+    margin-bottom: 14px;
+  }
+
+  .empresaHeroCard {
+    padding: 24px 24px;
+  }
+}
 `;
