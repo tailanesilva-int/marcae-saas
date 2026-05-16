@@ -1,6 +1,5 @@
 import type { CSSProperties } from 'react';
 import { prisma } from '@/lib/prisma';
-import EnviarComprovanteWhatsAppButton from './EnviarComprovanteWhatsAppButton';
 
 type PageProps = {
   params: Promise<{
@@ -617,10 +616,14 @@ export default async function SucessoDetalhesPage({
           </section>
 
           <section className="actions">
-            <EnviarComprovanteWhatsAppButton
-              agendamentoId={id}
-              ids={ids.join(',')}
-            />
+            <a
+  href={linkWhatsapp}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="actionButton whatsapp"
+>
+  Enviar confirmação no WhatsApp
+</a>
 
             {linkGoogleAgenda && (
               <a
