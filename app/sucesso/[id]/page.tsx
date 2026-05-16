@@ -1308,31 +1308,30 @@ export default async function SucessoDetalhesPage({
           color: #b76bff;
         }
 
+                @media (min-width: 981px) {
+          .page {
+            width: 100%;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 28px 20px 40px;
+          }
+
+          .receiptShell {
+            width: min(1180px, 100%);
+            grid-template-columns: 0.95fr 1.35fr;
+            margin-left: auto;
+            margin-right: auto;
+          }
+        }
+
         @media (max-width: 980px) {
           .page {
-  position: relative;
-  width: 100vw;
-  min-height: 100vh;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 15% 8%, rgba(123, 58, 237, 0.35), transparent 30%),
-    radial-gradient(circle at 88% 18%, rgba(183, 107, 255, 0.22), transparent 28%),
-    radial-gradient(circle at 50% 100%, rgba(123, 58, 237, 0.22), transparent 34%),
-    linear-gradient(135deg, #080b0f 0%, #0d1020 44%, #111425 100%);
-  color: #f8fafc;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 28px 20px 40px;
-  font-family: Arial, sans-serif;
-}
             align-items: flex-start;
             padding: 18px;
           }
 
           .receiptShell {
-            width: min(860px, 100%);
-grid-template-columns: 0.85fr 1fr;
+            grid-template-columns: 1fr;
           }
 
           .heroPanel {
@@ -1354,20 +1353,6 @@ grid-template-columns: 0.85fr 1fr;
           .heroStats strong {
             text-align: left;
           }
-
-        @media (min-width: 981px) {
-          .page {
-            width: 100vw !important;
-            align-items: flex-start !important;
-            justify-content: center !important;
-          }
-
-          .receiptShell {
-            width: min(860px, 100%) !important;
-            grid-template-columns: 0.85fr 1fr !important;
-            margin-left: auto !important;
-            margin-right: auto !important;
-          }
         }
 
         @media (max-width: 640px) {
@@ -1381,16 +1366,6 @@ grid-template-columns: 0.85fr 1fr;
             padding: 20px;
           }
 
-          .companyMark {
-            width: 92px;
-            height: 92px;
-            border-radius: 28px;
-          }
-
-          .companyMark strong {
-            font-size: 40px;
-          }
-
           .heroCopy h1 {
             font-size: 48px;
           }
@@ -1402,12 +1377,10 @@ grid-template-columns: 0.85fr 1fr;
             grid-template-columns: 1fr;
           }
 
-          .contentHeader {
+          .contentHeader,
+          .serviceTop,
+          .socialCard {
             flex-direction: column;
-          }
-
-          .headerSeal {
-            width: fit-content;
           }
 
           .serviceCard {
@@ -1416,25 +1389,6 @@ grid-template-columns: 0.85fr 1fr;
 
           .serviceTimeline::before {
             display: none;
-          }
-
-          .timelineDot {
-            width: 42px;
-            height: 42px;
-            border-radius: 16px;
-          }
-
-          .serviceTop {
-            flex-direction: column;
-          }
-
-          .socialCard {
-            flex-direction: column;
-            align-items: stretch;
-          }
-
-          .socialActions {
-            min-width: 0;
           }
         }
       `}</style>

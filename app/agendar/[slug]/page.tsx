@@ -2614,7 +2614,7 @@ padding: 24px 20px 40px;
     color: #A7B0C5;
   }
 
-  @media (max-width: 760px) {
+    @media (max-width: 760px) {
     .shell {
       padding: 16px 12px 28px;
       align-items: stretch;
@@ -2668,29 +2668,8 @@ padding: 24px 20px 40px;
       grid-template-columns: repeat(3, 1fr);
     }
 
-    .progressStep {
-      justify-content: flex-start;
-      padding: 9px 8px;
-    }
-
     .cpfLine {
       grid-template-columns: 1fr;
-    }
-
-    .servicoPublicoCard,
-    .profissionalPublicoCard {
-      grid-template-columns: auto 1fr;
-    }
-
-    .servicoPublicoCheck,
-    .profissionalCheck {
-      position: absolute;
-      top: 14px;
-      right: 14px;
-    }
-
-    .slots {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .wizardActions,
@@ -2702,7 +2681,7 @@ padding: 24px 20px 40px;
     }
   }
 
-    @media (max-width: 420px) {
+  @media (max-width: 420px) {
     .progressSteps.wizardSteps {
       grid-template-columns: repeat(2, 1fr);
     }
@@ -2716,21 +2695,19 @@ padding: 24px 20px 40px;
     }
   }
 
-          @media (min-width: 981px) {
-          .page {
-            width: 100vw !important;
-            margin-left: calc(50% - 50vw) !important;
-            margin-right: calc(50% - 50vw) !important;
-            align-items: flex-start !important;
-            justify-content: center !important;
-            padding: 28px 20px 40px !important;
-          }
+  @media (min-width: 981px) {
+    .page {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
 
-          .receiptShell {
-            width: min(1180px, calc(100vw - 56px)) !important;
-            grid-template-columns: 0.95fr 1.35fr !important;
-            margin-left: auto !important;
-            margin-right: auto !important;
-          }
-        }
+    .shell {
+      width: 760px;
+      max-width: 760px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
 `;
