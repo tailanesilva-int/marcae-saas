@@ -1,16 +1,49 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
+import PremiumLayout from "@/components/layout/PremiumLayout";
 
 const diasSemana = [
-  { label: 'Domingo', value: 0 },
-  { label: 'Segunda', value: 1 },
-  { label: 'Terça', value: 2 },
-  { label: 'Quarta', value: 3 },
-  { label: 'Quinta', value: 4 },
-  { label: 'Sexta', value: 5 },
-  { label: 'Sábado', value: 6 },
+  { label: "Domingo", value: 0 },
+  { label: "Segunda", value: 1 },
+  { label: "Terça", value: 2 },
+  { label: "Quarta", value: 3 },
+  { label: "Quinta", value: 4 },
+  { label: "Sexta", value: 5 },
+  { label: "Sábado", value: 6 },
 ];
+
+type BlocoHorario = {
+  horaInicio: string;
+  horaFim: string;
+  servicosIds: string[];
+};
+
+type DisponibilidadeDia = {
+  diaSemana: number;
+  ativo: boolean;
+  blocos: BlocoHorario[];
+};
+
+type ComissaoServicoForm = {
+  servicoId: string;
+  tipoComissao: string;
+  valorComissao: string;
+};
+
+function criarDisponibilidadePadrao(): DisponibilidadeDia[] {
+  return diasSemana.map((d) => ({
+    diaSemana: d.value,
+    ativo: false,
+    blocos: [
+      {
+        horaInicio: "08:00",
+        horaFim: "18:00",
+        servicosIds: [],
+      },
+    ],
+  }));
+}
 
 export default function ProfissionaisPage() {
   const [empresa, setEmpresa] = useState<any>(null);
@@ -18,31 +51,38 @@ export default function ProfissionaisPage() {
   const [servicos, setServicos] = useState<any[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [salvandoProfissional, setSalvandoProfissional] = useState(false);
+  const [filtroStatus, setFiltroStatus] = useState<
+    "todos" | "ativos" | "inativos"
+  >("todos");
+  const [diaAgendaAberto, setDiaAgendaAberto] = useState<number | null>(null);
+  const [formProfissionalAberto, setFormProfissionalAberto] = useState(false);
+  const [buscaProfissional, setBuscaProfissional] = useState("");
 
   const [form, setForm] = useState({
-    nome: '',
-    bio: '',
-    fotoUrl: '',
+    nome: "",
+    bio: "",
+    fotoUrl: "",
     ativo: true,
     servicosIds: [] as string[],
-    tipoComissao: 'percentual',
-    valorComissao: '',
+    modoComissao: "geral",
+    tipoComissao: "percentual",
+    valorComissao: "",
   });
 
-  const [disponibilidade, setDisponibilidade] = useState(
-    diasSemana.map((d) => ({
-      diaSemana: d.value,
-      horaInicio: '08:00',
-      horaFim: '18:00',
-      ativo: false,
-    }))
+  const [comissoesServicos, setComissoesServicos] = useState<
+    ComissaoServicoForm[]
+  >([]);
+
+  const [disponibilidade, setDisponibilidade] = useState<DisponibilidadeDia[]>(
+    criarDisponibilidadePadrao(),
   );
 
   useEffect(() => {
-    const empresaStorage = localStorage.getItem('empresaLogada');
+    const empresaStorage = localStorage.getItem("empresaLogada");
 
     if (!empresaStorage) {
-      window.location.href = '/login';
+      window.location.href = "/login";
       return;
     }
 
@@ -71,55 +111,260 @@ export default function ProfissionaisPage() {
   }
 
   async function carregarDisponibilidade(profissionalId: string) {
-    const res = await fetch(`/api/disponibilidades?profissionalId=${profissionalId}`);
-    const data = await res.json();
-
-    if (data.success && data.disponibilidades?.length > 0) {
-      setDisponibilidade(
-        diasSemana.map((dia) => {
-          const existente = data.disponibilidades.find(
-            (d: any) => d.diaSemana === dia.value
-          );
-
-          return {
-            diaSemana: dia.value,
-            horaInicio: existente?.horaInicio || '08:00',
-            horaFim: existente?.horaFim || '18:00',
-            ativo: existente?.ativo || false,
-          };
-        })
+    try {
+      const res = await fetch(
+        `/api/disponibilidades?profissionalId=${profissionalId}`,
+        {
+          cache: "no-store",
+        },
       );
-    } else {
+
+      const data = await res.json();
+
+      if (data.success && data.disponibilidades?.length > 0) {
+        setDisponibilidade(
+          diasSemana.map((dia) => {
+            const blocosDoDia = data.disponibilidades
+              .filter(
+                (d: any) =>
+                  Number(d.diaSemana) === dia.value && d.ativo !== false,
+              )
+              .map((d: any) => ({
+                horaInicio: d.horaInicio || "08:00",
+                horaFim: d.horaFim || "18:00",
+                servicosIds: Array.isArray(d.servicos)
+                  ? d.servicos
+                      .map((item: any) => item.servicoId || item.servico?.id)
+                      .filter(Boolean)
+                  : Array.isArray(d.servicosIds)
+                    ? d.servicosIds
+                    : [],
+              }));
+
+            return {
+              diaSemana: dia.value,
+              ativo: blocosDoDia.length > 0,
+              blocos:
+                blocosDoDia.length > 0
+                  ? blocosDoDia
+                  : [
+                      {
+                        horaInicio: "08:00",
+                        horaFim: "18:00",
+                        servicosIds: [],
+                      },
+                    ],
+            };
+          }),
+        );
+      } else {
+        resetarDisponibilidade();
+      }
+    } catch (error) {
+      console.error("Erro ao carregar disponibilidade:", error);
       resetarDisponibilidade();
     }
   }
 
   function resetarDisponibilidade() {
-    setDisponibilidade(
-      diasSemana.map((d) => ({
-        diaSemana: d.value,
-        horaInicio: '08:00',
-        horaFim: '18:00',
-        ativo: false,
-      }))
-    );
+    setDisponibilidade(criarDisponibilidadePadrao());
   }
 
   function alternarServico(servicoId: string) {
     const jaSelecionado = form.servicosIds.includes(servicoId);
+    const novosServicosIds = jaSelecionado
+      ? form.servicosIds.filter((id) => id !== servicoId)
+      : [...form.servicosIds, servicoId];
 
     setForm({
       ...form,
-      servicosIds: jaSelecionado
-        ? form.servicosIds.filter((id) => id !== servicoId)
-        : [...form.servicosIds, servicoId],
+      servicosIds: novosServicosIds,
     });
+
+    if (jaSelecionado) {
+      setDisponibilidade((atual) =>
+        atual.map((dia) => ({
+          ...dia,
+          blocos: dia.blocos.map((bloco) => ({
+            ...bloco,
+            servicosIds: bloco.servicosIds.filter((id) => id !== servicoId),
+          })),
+        })),
+      );
+
+      setComissoesServicos((atual) =>
+        atual.filter((item) => item.servicoId !== servicoId),
+      );
+    } else {
+      setComissoesServicos((atual) => {
+        const jaExiste = atual.some((item) => item.servicoId === servicoId);
+
+        if (jaExiste) return atual;
+
+        return [
+          ...atual,
+          {
+            servicoId,
+            tipoComissao: "percentual",
+            valorComissao: "",
+          },
+        ];
+      });
+    }
   }
 
   function atualizarDia(index: number, campo: string, valor: any) {
-    const nova: any = [...disponibilidade];
-    nova[index][campo] = valor;
+    const nova = [...disponibilidade];
+
+    nova[index] = {
+      ...nova[index],
+      [campo]: valor,
+    };
+
     setDisponibilidade(nova);
+  }
+
+  function atualizarBloco(
+    diaIndex: number,
+    blocoIndex: number,
+    campo: "horaInicio" | "horaFim",
+    valor: string,
+  ) {
+    const nova = [...disponibilidade];
+
+    nova[diaIndex] = {
+      ...nova[diaIndex],
+      blocos: nova[diaIndex].blocos.map((bloco, index) =>
+        index === blocoIndex
+          ? {
+              ...bloco,
+              [campo]: valor,
+            }
+          : bloco,
+      ),
+    };
+
+    setDisponibilidade(nova);
+  }
+
+  function alternarServicoBloco(
+    diaIndex: number,
+    blocoIndex: number,
+    servicoId: string,
+  ) {
+    const nova = [...disponibilidade];
+
+    const bloco = nova[diaIndex].blocos[blocoIndex];
+
+    const jaExiste = bloco.servicosIds.includes(servicoId);
+
+    nova[diaIndex].blocos[blocoIndex] = {
+      ...bloco,
+      servicosIds: jaExiste
+        ? bloco.servicosIds.filter((id) => id !== servicoId)
+        : [...bloco.servicosIds, servicoId],
+    };
+
+    setDisponibilidade(nova);
+  }
+
+  function adicionarBloco(diaIndex: number) {
+    const nova = [...disponibilidade];
+
+    nova[diaIndex] = {
+      ...nova[diaIndex],
+      ativo: true,
+      blocos: [
+        ...nova[diaIndex].blocos,
+        {
+          horaInicio: "13:00",
+          horaFim: "18:00",
+          servicosIds: [],
+        },
+      ],
+    };
+
+    setDisponibilidade(nova);
+  }
+
+  function removerBloco(diaIndex: number, blocoIndex: number) {
+    const nova = [...disponibilidade];
+    const blocosAtualizados = nova[diaIndex].blocos.filter(
+      (_, index) => index !== blocoIndex,
+    );
+
+    nova[diaIndex] = {
+      ...nova[diaIndex],
+      blocos:
+        blocosAtualizados.length > 0
+          ? blocosAtualizados
+          : [
+              {
+                horaInicio: "08:00",
+                horaFim: "18:00",
+                servicosIds: [],
+              },
+            ],
+      ativo: blocosAtualizados.length > 0 ? nova[diaIndex].ativo : false,
+    };
+
+    setDisponibilidade(nova);
+  }
+
+  function copiarHorarioParaTodos(diaIndex: number) {
+    const diaOrigem = disponibilidade[diaIndex];
+
+    const novaDisponibilidade = disponibilidade.map((dia) => ({
+      ...dia,
+      ativo: diaOrigem.ativo,
+      blocos: diaOrigem.blocos.map((bloco) => ({
+        ...bloco,
+        servicosIds: [...(bloco.servicosIds || [])],
+      })),
+    }));
+
+    setDisponibilidade(novaDisponibilidade);
+  }
+
+  function copiarHorarioDiasUteis(diaIndex: number) {
+    const diaOrigem = disponibilidade[diaIndex];
+
+    const novaDisponibilidade = disponibilidade.map((dia) => {
+      if (dia.diaSemana >= 1 && dia.diaSemana <= 5) {
+        return {
+          ...dia,
+          ativo: diaOrigem.ativo,
+          blocos: diaOrigem.blocos.map((bloco) => ({
+            ...bloco,
+          })),
+        };
+      }
+
+      return dia;
+    });
+
+    setDisponibilidade(novaDisponibilidade);
+    alert("Horários copiados para os dias úteis: segunda a sexta.");
+  }
+
+  function copiarHorarioParaDia(
+    diaOrigemIndex: number,
+    diaDestinoIndex: number,
+  ) {
+    const origem = disponibilidade[diaOrigemIndex];
+
+    const novaDisponibilidade = [...disponibilidade];
+
+    novaDisponibilidade[diaDestinoIndex] = {
+      ...novaDisponibilidade[diaDestinoIndex],
+      ativo: origem.ativo,
+      blocos: origem.blocos.map((bloco) => ({
+        ...bloco,
+        servicosIds: [...(bloco.servicosIds || [])],
+      })),
+    };
+
+    setDisponibilidade(novaDisponibilidade);
   }
 
   function selecionarFoto(event: any) {
@@ -140,63 +385,241 @@ export default function ProfissionaisPage() {
   }
 
   function formatarComissao(profissional: any) {
-    if (!profissional.tipoComissao || profissional.valorComissao === null || profissional.valorComissao === undefined) {
-      return 'Comissão não configurada';
+    if (profissional.modoComissao === "por_servico") {
+      const servicosComComissao =
+        profissional.servicos?.filter(
+          (item: any) =>
+            item.tipoComissao &&
+            item.valorComissao !== null &&
+            item.valorComissao !== undefined,
+        ) || [];
+
+      if (servicosComComissao.length > 0) {
+        return `Por serviço (${servicosComComissao.length} configurado${
+          servicosComComissao.length === 1 ? "" : "s"
+        })`;
+      }
+
+      if (
+        profissional.tipoComissao &&
+        profissional.valorComissao !== null &&
+        profissional.valorComissao !== undefined
+      ) {
+        return `Por serviço com fallback geral`;
+      }
+
+      return "Por serviço sem comissão configurada";
     }
 
-    if (profissional.tipoComissao === 'percentual') {
+    if (
+      !profissional.tipoComissao ||
+      profissional.valorComissao === null ||
+      profissional.valorComissao === undefined
+    ) {
+      return "Comissão não configurada";
+    }
+
+    if (profissional.tipoComissao === "percentual") {
       return `${Number(profissional.valorComissao || 0)}% por serviço realizado`;
     }
 
-    return `R$ ${Number(profissional.valorComissao || 0).toLocaleString('pt-BR', {
+    return `R$ ${Number(profissional.valorComissao || 0).toLocaleString(
+      "pt-BR",
+      {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      },
+    )} por serviço realizado`;
+  }
+
+  function formatarComissaoServico(item: any) {
+    if (
+      !item?.tipoComissao ||
+      item?.valorComissao === null ||
+      item?.valorComissao === undefined ||
+      item?.valorComissao === ""
+    ) {
+      return "Usa fallback da comissão geral";
+    }
+
+    if (item.tipoComissao === "percentual") {
+      return `${Number(item.valorComissao || 0)}%`;
+    }
+
+    return `R$ ${Number(item.valorComissao || 0).toLocaleString("pt-BR", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    })} por serviço realizado`;
+    })}`;
+  }
+
+  function obterComissaoServico(servicoId: string) {
+    return (
+      comissoesServicos.find((item) => item.servicoId === servicoId) || {
+        servicoId,
+        tipoComissao: "percentual",
+        valorComissao: "",
+      }
+    );
+  }
+
+  function atualizarComissaoServico(
+    servicoId: string,
+    campo: "tipoComissao" | "valorComissao",
+    valor: string,
+  ) {
+    setComissoesServicos((atual) => {
+      const jaExiste = atual.some((item) => item.servicoId === servicoId);
+
+      if (!jaExiste) {
+        return [
+          ...atual,
+          {
+            servicoId,
+            tipoComissao: campo === "tipoComissao" ? valor : "percentual",
+            valorComissao: campo === "valorComissao" ? valor : "",
+          },
+        ];
+      }
+
+      return atual.map((item) =>
+        item.servicoId === servicoId
+          ? {
+              ...item,
+              [campo]: valor,
+            }
+          : item,
+      );
+    });
+  }
+
+  function servicosDoProfissional() {
+    return servicos.filter((servico) => form.servicosIds.includes(servico.id));
+  }
+
+  function normalizarDisponibilidadeParaSalvar() {
+    return disponibilidade.map((dia) => ({
+      ...dia,
+      blocos: dia.blocos.map((bloco) => ({
+        horaInicio: bloco.horaInicio,
+        horaFim: bloco.horaFim,
+        servicosIds: Array.isArray(bloco.servicosIds)
+          ? bloco.servicosIds.filter((servicoId) =>
+              form.servicosIds.includes(servicoId),
+            )
+          : [],
+      })),
+    }));
+  }
+
+  function validarDisponibilidade() {
+    for (const dia of disponibilidade) {
+      if (!dia.ativo) continue;
+
+      if (!dia.blocos || dia.blocos.length === 0) {
+        alert("Existe um dia ativo sem bloco de horário.");
+        return false;
+      }
+
+      for (const bloco of dia.blocos) {
+        if (!bloco.horaInicio || !bloco.horaFim) {
+          alert("Preencha todos os horários da agenda semanal.");
+          return false;
+        }
+
+        if (bloco.horaInicio >= bloco.horaFim) {
+          const nomeDia =
+            diasSemana.find((d) => d.value === dia.diaSemana)?.label ||
+            "dia selecionado";
+          alert(
+            `No dia ${nomeDia}, o horário inicial precisa ser menor que o horário final.`,
+          );
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   async function salvar() {
+    if (salvandoProfissional) return;
+
     if (!form.nome.trim()) {
-      alert('Informe o nome do profissional.');
+      alert("Informe o nome do profissional.");
       return;
     }
 
-    const res = await fetch('/api/profissionais', {
-      method: editandoId ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: editandoId,
-        empresaId: empresa.id,
-        ...form,
-        valorComissao:
-          form.valorComissao !== ''
-            ? Number(String(form.valorComissao).replace(',', '.'))
-            : null,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!data.success) {
-      alert(data.error || 'Erro ao salvar profissional.');
+    if (!validarDisponibilidade()) {
       return;
     }
 
-    const profissionalId = data.profissional.id;
+    try {
+      setSalvandoProfissional(true);
 
-    await fetch('/api/disponibilidades', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        empresaId: empresa.id,
-        profissionalId,
-        disponibilidades: disponibilidade,
-      }),
-    });
+      const disponibilidadeParaSalvar = normalizarDisponibilidadeParaSalvar();
 
-    alert(editandoId ? 'Profissional atualizado!' : 'Profissional cadastrado!');
+      const res = await fetch("/api/profissionais", {
+        method: editandoId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editandoId,
+          empresaId: empresa.id,
+          ...form,
+          valorComissao:
+            form.valorComissao !== ""
+              ? Number(String(form.valorComissao).replace(",", "."))
+              : null,
+          comissoesServicos: comissoesServicos
+            .filter((item) => form.servicosIds.includes(item.servicoId))
+            .map((item) => ({
+              servicoId: item.servicoId,
+              tipoComissao: item.tipoComissao || "percentual",
+              valorComissao:
+                item.valorComissao !== ""
+                  ? Number(String(item.valorComissao).replace(",", "."))
+                  : null,
+            })),
+        }),
+      });
 
-    limparFormulario();
-    carregarTudo(empresa.id);
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.error || "Erro ao salvar profissional.");
+        return;
+      }
+
+      const profissionalId = data.profissional.id;
+
+      const resDisponibilidade = await fetch("/api/disponibilidades", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          empresaId: empresa.id,
+          profissionalId,
+          disponibilidades: disponibilidadeParaSalvar,
+        }),
+      });
+
+      const dataDisponibilidade = await resDisponibilidade.json();
+
+      if (!dataDisponibilidade.success) {
+        alert(dataDisponibilidade.error || "Erro ao salvar agenda semanal.");
+        return;
+      }
+
+      alert(
+        editandoId ? "Profissional atualizado!" : "Profissional cadastrado!",
+      );
+
+      limparFormulario();
+      await carregarTudo(empresa.id);
+    } catch (error) {
+      console.error("Erro ao salvar profissional:", error);
+      alert("Erro ao salvar profissional.");
+    } finally {
+      setSalvandoProfissional(false);
+    }
   }
 
   async function editar(profissional: any) {
@@ -204,542 +627,2601 @@ export default function ProfissionaisPage() {
       profissional.servicos?.map((item: any) => item.servicoId) || [];
 
     setEditandoId(profissional.id);
+    setFormProfissionalAberto(true);
 
     setForm({
-      nome: profissional.nome || '',
-      bio: profissional.bio || '',
-      fotoUrl: profissional.fotoUrl || '',
+      nome: profissional.nome || "",
+      bio: profissional.bio || "",
+      fotoUrl: profissional.fotoUrl || "",
       ativo: profissional.ativo ?? true,
       servicosIds,
-      tipoComissao: profissional.tipoComissao || 'percentual',
+      modoComissao: profissional.modoComissao || "geral",
+      tipoComissao: profissional.tipoComissao || "percentual",
       valorComissao:
         profissional.valorComissao !== null &&
         profissional.valorComissao !== undefined
           ? String(profissional.valorComissao)
-          : '',
+          : "",
     });
+
+    setComissoesServicos(
+      profissional.servicos?.map((item: any) => ({
+        servicoId: item.servicoId,
+        tipoComissao: item.tipoComissao || "percentual",
+        valorComissao:
+          item.valorComissao !== null && item.valorComissao !== undefined
+            ? String(item.valorComissao)
+            : "",
+      })) || [],
+    );
 
     await carregarDisponibilidade(profissional.id);
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function limparFormulario() {
     setEditandoId(null);
+    setFormProfissionalAberto(false);
 
     setForm({
-      nome: '',
-      bio: '',
-      fotoUrl: '',
+      nome: "",
+      bio: "",
+      fotoUrl: "",
       ativo: true,
       servicosIds: [],
-      tipoComissao: 'percentual',
-      valorComissao: '',
+      modoComissao: "geral",
+      tipoComissao: "percentual",
+      valorComissao: "",
     });
 
+    setComissoesServicos([]);
     resetarDisponibilidade();
   }
 
+  const profissionaisFiltrados = profissionais.filter((profissional) => {
+    const termo = buscaProfissional.trim().toLowerCase();
+
+    const statusOk =
+      filtroStatus === "ativos"
+        ? profissional.ativo !== false
+        : filtroStatus === "inativos"
+          ? profissional.ativo === false
+          : true;
+
+    if (!statusOk) return false;
+    if (!termo) return true;
+
+    const nome = String(profissional.nome || "").toLowerCase();
+    const bio = String(profissional.bio || "").toLowerCase();
+    const comissao = formatarComissao(profissional).toLowerCase();
+    const servicosTexto = String(
+      profissional.servicos
+        ?.map((item: any) => item.servico?.nome || "")
+        .join(" ") || "",
+    ).toLowerCase();
+
+    return (
+      nome.includes(termo) ||
+      bio.includes(termo) ||
+      comissao.includes(termo) ||
+      servicosTexto.includes(termo)
+    );
+  });
+
+  const totalAtivos = profissionais.filter((p) => p.ativo !== false).length;
+  const totalInativos = profissionais.filter((p) => p.ativo === false).length;
+  const totalComServicos = profissionais.filter((p) => (p.servicos?.length || 0) > 0).length;
+  const comissaoMedia =
+    profissionais.length > 0
+      ? Math.round(
+          profissionais.reduce((acc, p) => acc + Number(p.valorComissao || 0), 0) /
+            profissionais.length,
+        )
+      : 0;
+
   if (!empresa) {
-    return <p style={{ padding: 40 }}>Carregando...</p>;
+    return (
+      <main style={loadingPage}>
+        <div style={loadingCard}>Carregando profissionais...</div>
+      </main>
+    );
   }
 
   return (
-    <main style={{ minHeight: '100vh', background: '#f1f5f9', padding: 30 }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <header style={headerPremium}>
-  <div style={headerConteudo}>
-    <div style={logoHeader}>
-      {empresa?.logoUrl || empresa?.logo || empresa?.imagemUrl ? (
-        <img
-          src={empresa.logoUrl || empresa.logo || empresa.imagemUrl}
-          alt={empresa.nome}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-          }}
-        />
-      ) : (
-        <span>{empresa?.nome?.charAt(0)?.toUpperCase() || 'M'}</span>
-      )}
-    </div>
+    <PremiumLayout empresa={empresa}>
+      <main className="profissionais-mobile-safe" style={page}>
+        <style jsx global>{`
+          html,
+          body {
+            max-width: 100%;
+            overflow-x: hidden;
+          }
 
-    <div>
-      <span style={badgeBoasVindas}>Equipe e agenda</span>
+          .profissionais-mobile-safe,
+          .profissionais-mobile-safe * {
+            box-sizing: border-box;
+          }
 
-      <h1 style={tituloHeader}>Profissionais</h1>
+          .profissionais-mobile-safe {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+          }
 
-      <p style={subtituloHeader}>
-        Cadastre profissionais, vincule serviços, configure agenda semanal e comissão.
-      </p>
 
-      <div style={linhaBadgesHeader}>
-        <span style={badgeEmpresa}>🏢 {empresa?.nome || 'Meu Estúdio'}</span>
-        <span style={badgeModulo}>👥 Gestão de equipe</span>
-        <span style={badgeStatus}>✅ Ativo</span>
-      </div>
-    </div>
-  </div>
 
-  <div style={acoesHeader}>
-    <a href="/admin">
-      <button style={botaoHeaderClaro}>Admin</button>
-    </a>
+            .profissionais-grid-horizontal {
+              width: 100% !important;
+              max-width: 100% !important;
+            }
 
-    <a href="/dashboard">
-      <button style={botaoHeaderRoxo}>Dashboard</button>
-    </a>
-  </div>
-</header>
+            .profissional-card-horizontal {
+              min-width: 0 !important;
+            }
 
-        <section style={box}>
-          <h2 style={{ marginTop: 0 }}>
-            {editandoId ? 'Editar profissional' : 'Novo profissional'}
-          </h2>
+            @media (max-width: 760px) {
+              .profissionais-grid-horizontal {
+                display: flex !important;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                gap: 14px !important;
+                padding: 4px 2px 16px !important;
+                scroll-snap-type: x mandatory !important;
+                -webkit-overflow-scrolling: touch !important;
+              }
 
-          <div style={gridForm}>
-            <div style={campo}>
-              <label>Nome *</label>
-              <input
-                style={input}
-                value={form.nome}
-                onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                placeholder="Ex: João Silva"
-              />
+              .profissionais-grid-horizontal::-webkit-scrollbar {
+                height: 0 !important;
+              }
+
+              .profissional-card-horizontal {
+                flex: 0 0 82vw !important;
+                width: 82vw !important;
+                max-width: 330px !important;
+                min-width: 280px !important;
+                scroll-snap-align: start !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                justify-content: flex-start !important;
+                gap: 12px !important;
+                padding: 18px !important;
+              }
+
+              .profissional-card-horizontal .profissional-info-mobile {
+                display: grid !important;
+                grid-template-columns: 64px minmax(0, 1fr) !important;
+                align-items: flex-start !important;
+                gap: 12px !important;
+                width: 100% !important;
+              }
+
+              .profissional-card-horizontal .profissional-avatar-mobile {
+                width: 64px !important;
+                height: 64px !important;
+                min-width: 64px !important;
+                max-width: 64px !important;
+                flex: 0 0 64px !important;
+                border-radius: 20px !important;
+              }
+
+              .profissional-card-horizontal .profissional-avatar-img-mobile {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: cover !important;
+                object-position: center top !important;
+              }
+            }
+
+  
+
+          @media (max-width: 900px) {
+            .profissionais-mobile-safe section.profissionais-resumo-card {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              overflow: visible !important;
+              gap: 12px !important;
+              padding: 18px !important;
+              border-radius: 26px !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div {
+              min-width: 0 !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              scroll-snap-align: unset !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child {
+              display: grid !important;
+              grid-template-columns: 56px minmax(0, 1fr) !important;
+              gap: 14px !important;
+              align-items: start !important;
+              margin-bottom: 0 !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child > div:first-child {
+              display: contents !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child > div:first-child > div:first-child {
+              width: 56px !important;
+              height: 56px !important;
+              border-radius: 18px !important;
+              font-size: 24px !important;
+              grid-column: 1 !important;
+              grid-row: 1 / span 2 !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child > div:first-child > div:last-child {
+              grid-column: 2 !important;
+              min-width: 0 !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child > div:last-child {
+              display: none !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card h2 {
+              font-size: 25px !important;
+              line-height: 1.05 !important;
+              margin-top: 0 !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card p {
+              font-size: 13px !important;
+              line-height: 1.45 !important;
+              margin-top: 6px !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div:nth-child(2) {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 10px !important;
+              overflow: visible !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div:nth-child(2) > div {
+              min-width: 0 !important;
+              padding: 12px !important;
+              border-radius: 17px !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div:last-child {
+              display: grid !important;
+              grid-template-columns: auto minmax(0, 1fr) auto !important;
+              align-items: center !important;
+              gap: 10px !important;
+              min-height: 48px !important;
+              padding: 12px 14px !important;
+              border-radius: 18px !important;
+            }
+          }
+
+          @media (max-width: 430px) {
+              .profissional-card-horizontal {
+                flex-basis: 84vw !important;
+                width: 84vw !important;
+                min-width: 272px !important;
+              }
+            }
+
+          @media (max-width: 1180px) {
+            .profissionais-mobile-safe {
+              padding: 22px !important;
+              padding-bottom: 112px !important;
+            }
+
+            .profissionais-mobile-safe > div {
+              width: 100% !important;
+              max-width: 100% !important;
+            }
+
+            .profissionais-mobile-safe header {
+              width: 100% !important;
+              max-width: 100% !important;
+            }
+          }
+
+          @media (max-width: 900px) {
+            .profissionais-mobile-safe section[style] {
+              width: 100% !important;
+              max-width: 100% !important;
+            }
+
+            .profissionais-mobile-safe header {
+              padding: 22px !important;
+              border-radius: 26px !important;
+              align-items: flex-start !important;
+            }
+
+            .profissionais-mobile-safe header > div:first-child {
+              display: grid !important;
+              grid-template-columns: 62px minmax(0, 1fr) !important;
+              gap: 14px !important;
+              width: 100% !important;
+              min-width: 0 !important;
+            }
+
+            .profissionais-mobile-safe
+              header
+              > div:first-child
+              > div:first-child {
+              width: 62px !important;
+              height: 62px !important;
+              border-radius: 20px !important;
+              font-size: 24px !important;
+            }
+
+            .profissionais-mobile-safe header h1 {
+              font-size: 30px !important;
+              line-height: 1.05 !important;
+            }
+
+            .profissionais-mobile-safe header p {
+              font-size: 13px !important;
+              line-height: 1.5 !important;
+            }
+
+            .profissionais-mobile-safe section:nth-of-type(1) {
+              display: flex !important;
+              overflow-x: auto !important;
+              gap: 12px !important;
+              padding-bottom: 8px !important;
+              scroll-snap-type: x mandatory;
+              -webkit-overflow-scrolling: touch;
+            }
+
+            .profissionais-mobile-safe section:nth-of-type(1) > div {
+              min-width: 230px !important;
+              scroll-snap-align: start;
+            }
+
+            .profissionais-mobile-safe section:nth-of-type(2),
+            .profissionais-mobile-safe section:nth-of-type(3) {
+              padding: 18px !important;
+              border-radius: 24px !important;
+              overflow: hidden !important;
+            }
+
+            .profissionais-mobile-safe
+              section:nth-of-type(2)
+              > div[style*="grid-template-columns"],
+            .profissionais-mobile-safe
+              section:nth-of-type(2)
+              div[style*="grid-template-columns: 1fr 1fr"],
+            .profissionais-mobile-safe
+              section:nth-of-type(2)
+              div[style*="gridTemplateColumns"] {
+              grid-template-columns: 1fr !important;
+            }
+
+            .profissionais-mobile-safe input,
+            .profissionais-mobile-safe select,
+            .profissionais-mobile-safe textarea,
+            .profissionais-mobile-safe button {
+              max-width: 100% !important;
+            }
+
+            .profissionais-mobile-safe section:nth-of-type(2) h2,
+            .profissionais-mobile-safe section:nth-of-type(2) h3,
+            .profissionais-mobile-safe section:nth-of-type(3) h2 {
+              line-height: 1.15 !important;
+            }
+          }
+
+          @media (max-width: 760px) {
+            .profissionais-mobile-safe {
+              padding: 14px !important;
+              padding-bottom: 126px !important;
+            }
+
+            .profissionais-mobile-safe > div > div:first-child {
+              min-height: 66px !important;
+              border-radius: 22px !important;
+              padding: 12px 14px !important;
+            }
+
+            .profissionais-mobile-safe > div > section:first-of-type {
+              padding: 14px !important;
+              border-radius: 22px !important;
+            }
+
+            .profissionais-mobile-safe > div > section:first-of-type > div:nth-child(2) {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .profissionais-mobile-safe > div > section:nth-of-type(2),
+            .profissionais-mobile-safe > div > section:nth-of-type(3) {
+              border-radius: 22px !important;
+              padding: 14px !important;
+            }
+
+            .profissionais-mobile-safe > div > section:nth-of-type(3) > div:first-child {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+            }
+
+            .profissionais-mobile-safe > div > section:nth-of-type(3) > div:first-child > div:last-child {
+              width: 100% !important;
+              min-width: 0 !important;
+            }
+
+            .profissionais-mobile-safe header {
+              padding: 18px !important;
+              margin-bottom: 16px !important;
+            }
+
+            .profissionais-mobile-safe header > div:first-child {
+              grid-template-columns: 54px minmax(0, 1fr) !important;
+            }
+
+            .profissionais-mobile-safe
+              header
+              > div:first-child
+              > div:first-child {
+              width: 54px !important;
+              height: 54px !important;
+            }
+
+            .profissionais-mobile-safe header div[style*="gap: 10"] {
+              gap: 8px !important;
+            }
+
+            .profissionais-mobile-safe section:nth-of-type(1) > div {
+              min-width: 78vw !important;
+              padding: 18px !important;
+            }
+
+            .profissionais-mobile-safe section:nth-of-type(2),
+            .profissionais-mobile-safe section:nth-of-type(3) {
+              padding: 16px !important;
+              margin-bottom: 16px !important;
+            }
+
+            .profissionais-mobile-safe
+              section:nth-of-type(2)
+              > div:nth-of-type(1),
+            .profissionais-mobile-safe
+              section:nth-of-type(2)
+              > div:nth-of-type(1)
+              ~ div,
+            .profissionais-mobile-safe
+              section:nth-of-type(2)
+              div[style*="grid"] {
+              grid-template-columns: 1fr !important;
+              min-width: 0 !important;
+            }
+
+            .profissionais-mobile-safe
+              section:nth-of-type(2)
+              div[style*="gridColumn"] {
+              grid-column: auto !important;
+            }
+
+            .profissionais-mobile-safe label,
+            .profissionais-mobile-safe input,
+            .profissionais-mobile-safe select,
+            .profissionais-mobile-safe textarea {
+              width: 100% !important;
+            }
+
+            .profissionais-mobile-safe section:nth-of-type(2) button,
+            .profissionais-mobile-safe section:nth-of-type(3) button {
+              width: 100% !important;
+              margin-left: 0 !important;
+            }
+
+            .profissionais-mobile-safe
+              section:nth-of-type(2)
+              div[style*="display: flex"],
+            .profissionais-mobile-safe
+              section:nth-of-type(3)
+              div[style*="display: flex"] {
+              min-width: 0 !important;
+            }
+
+            .profissionais-mobile-safe
+              section:nth-of-type(2)
+              div:has(> input[type="time"]) {
+              display: grid !important;
+              grid-template-columns: 1fr auto 1fr !important;
+              gap: 8px !important;
+              align-items: center !important;
+            }
+
+            .profissionais-mobile-safe input[type="time"] {
+              min-width: 0 !important;
+              width: 100% !important;
+            }
+
+            .profissionais-mobile-safe
+              section:nth-of-type(3)
+              > div:first-child {
+              flex-direction: column !important;
+              align-items: stretch !important;
+            }
+
+            .profissionais-mobile-safe
+              section:nth-of-type(3)
+              > div:first-child
+              > div:last-child {
+              display: grid !important;
+              grid-template-columns: 1fr 1fr !important;
+              width: 100% !important;
+            }
+
+            .profissionais-mobile-safe
+              section:nth-of-type(3)
+              > div:first-child
+              > div:last-child
+              span {
+              grid-column: 1 / -1 !important;
+              text-align: center !important;
+            }
+
+            .profissionais-mobile-safe
+              section:nth-of-type(3)
+              > div:last-child
+              > div {
+              display: flex !important;
+              flex-direction: column !important;
+              align-items: stretch !important;
+              gap: 14px !important;
+              padding: 18px !important;
+            }
+
+            .profissionais-mobile-safe
+              section:nth-of-type(3)
+              > div:last-child
+              > div
+              > div:first-child {
+              flex-direction: column !important;
+              align-items: flex-start !important;
+              width: 100% !important;
+            }
+
+            .profissionais-mobile-safe
+              section:nth-of-type(3)
+              > div:last-child
+              > div
+              > div:first-child
+              > div:last-child {
+              width: 100% !important;
+              min-width: 0 !important;
+            }
+
+            .profissionais-mobile-safe
+              section:nth-of-type(3)
+              > div:last-child
+              > div
+              > div:nth-child(2) {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              width: 100% !important;
+            }
+
+            .profissionais-mobile-safe
+              section:nth-of-type(3)
+              > div:last-child
+              > div
+              > div:last-child {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              gap: 10px !important;
+              width: 100% !important;
+            }
+          }
+
+
+            .profissional-info-mobile {
+              display: flex !important;
+              flex-direction: row !important;
+              align-items: flex-start !important;
+              gap: 12px !important;
+              width: 100% !important;
+              min-width: 0 !important;
+            }
+
+            .profissional-avatar-mobile {
+              width: 72px !important;
+              height: 72px !important;
+              min-width: 72px !important;
+              max-width: 72px !important;
+              flex: 0 0 72px !important;
+              border-radius: 22px !important;
+              overflow: hidden !important;
+              align-self: flex-start !important;
+            }
+
+            .profissional-avatar-img-mobile {
+              width: 100% !important;
+              height: 100% !important;
+              object-fit: cover !important;
+              object-position: center top !important;
+              display: block !important;
+            }
+
+
+
+            .profissionais-resumo-card {
+              padding: 14px !important;
+              border-radius: 22px !important;
+              overflow: hidden !important;
+            }
+
+            .profissionais-resumo-card > div:first-child {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              gap: 12px !important;
+              margin-bottom: 12px !important;
+            }
+
+            .profissionais-resumo-card > div:first-child > div:first-child {
+              display: grid !important;
+              grid-template-columns: 42px minmax(0, 1fr) !important;
+              align-items: start !important;
+              gap: 10px !important;
+              width: 100% !important;
+              min-width: 0 !important;
+            }
+
+            .profissionais-resumo-card > div:first-child > div:first-child > div:first-child {
+              width: 42px !important;
+              height: 42px !important;
+              border-radius: 14px !important;
+              font-size: 20px !important;
+              margin: 0 !important;
+            }
+
+            .profissionais-resumo-card h2 {
+              font-size: 22px !important;
+              line-height: 1.06 !important;
+              max-width: 100% !important;
+            }
+
+            .profissionais-resumo-card p {
+              font-size: 12px !important;
+              line-height: 1.35 !important;
+              margin-top: 6px !important;
+            }
+
+            .profissionais-resumo-card > div:first-child > div:last-child {
+              width: 100% !important;
+              min-width: 0 !important;
+              padding: 10px 12px !important;
+              border-radius: 16px !important;
+              display: grid !important;
+              grid-template-columns: 1fr auto !important;
+              align-items: center !important;
+            }
+
+            .profissionais-resumo-card > div:nth-child(2) {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 8px !important;
+              width: 100% !important;
+              min-width: 0 !important;
+            }
+
+            .profissionais-resumo-card > div:nth-child(2) > div {
+              min-width: 0 !important;
+              padding: 10px !important;
+              border-radius: 14px !important;
+            }
+
+            .profissionais-cadastro-card {
+              padding: 14px !important;
+              border-radius: 22px !important;
+              margin-bottom: 16px !important;
+              overflow: hidden !important;
+            }
+
+            .profissionais-cadastro-card > div:first-child {
+              display: grid !important;
+              grid-template-columns: minmax(0, 1fr) 48px !important;
+              align-items: center !important;
+              gap: 12px !important;
+              width: 100% !important;
+              min-width: 0 !important;
+            }
+
+            .profissionais-cadastro-card h2 {
+              font-size: 23px !important;
+              line-height: 1.05 !important;
+              max-width: 100% !important;
+            }
+
+            .profissionais-cadastro-card p {
+              font-size: 12px !important;
+              line-height: 1.35 !important;
+              margin-top: 6px !important;
+            }
+
+            .profissionais-cadastro-card .profissional-botao-plus {
+              width: 48px !important;
+              min-width: 48px !important;
+              max-width: 48px !important;
+              height: 48px !important;
+              min-height: 48px !important;
+              padding: 0 !important;
+              margin-left: 0 !important;
+              border-radius: 16px !important;
+              justify-self: end !important;
+              font-size: 26px !important;
+            }
+
+
+
+          @media (max-width: 900px) {
+            .profissionais-mobile-safe section.profissionais-resumo-card {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              overflow: visible !important;
+              gap: 12px !important;
+              padding: 18px !important;
+              border-radius: 26px !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div {
+              min-width: 0 !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              scroll-snap-align: unset !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child {
+              display: grid !important;
+              grid-template-columns: 56px minmax(0, 1fr) !important;
+              gap: 14px !important;
+              align-items: start !important;
+              margin-bottom: 0 !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child > div:first-child {
+              display: contents !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child > div:first-child > div:first-child {
+              width: 56px !important;
+              height: 56px !important;
+              border-radius: 18px !important;
+              font-size: 24px !important;
+              grid-column: 1 !important;
+              grid-row: 1 / span 2 !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child > div:first-child > div:last-child {
+              grid-column: 2 !important;
+              min-width: 0 !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child > div:last-child {
+              display: none !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card h2 {
+              font-size: 25px !important;
+              line-height: 1.05 !important;
+              margin-top: 0 !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card p {
+              font-size: 13px !important;
+              line-height: 1.45 !important;
+              margin-top: 6px !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div:nth-child(2) {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 10px !important;
+              overflow: visible !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div:nth-child(2) > div {
+              min-width: 0 !important;
+              padding: 12px !important;
+              border-radius: 17px !important;
+            }
+
+            .profissionais-mobile-safe section.profissionais-resumo-card > div:last-child {
+              display: grid !important;
+              grid-template-columns: auto minmax(0, 1fr) auto !important;
+              align-items: center !important;
+              gap: 10px !important;
+              min-height: 48px !important;
+              padding: 12px 14px !important;
+              border-radius: 18px !important;
+            }
+          }
+
+          @media (max-width: 430px) {
+            .profissionais-mobile-safe header > div:first-child {
+              grid-template-columns: 1fr !important;
+            }
+
+            .profissionais-mobile-safe
+              header
+              > div:first-child
+              > div:first-child {
+              width: 52px !important;
+              height: 52px !important;
+            }
+
+            .profissionais-mobile-safe
+              section:nth-of-type(3)
+              > div:first-child
+              > div:last-child {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        `}</style>
+
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={topoModuloCompacto}>
+            <div style={topoModuloEsquerda}>
+              <div style={topoModuloIcone}>👷</div>
+
+              <div>
+                <h1 style={topoModuloTitulo}>Profissionais</h1>
+                <p style={topoModuloSubtitulo}>
+                  Equipe, agenda semanal, serviços e comissão.
+                </p>
+              </div>
             </div>
 
-            <div style={campo}>
-              <label>Foto do profissional</label>
-              <input
-                type="file"
-                accept="image/*"
-                style={input}
-                onChange={selecionarFoto}
-              />
+            <div style={topoModuloBadge}>
+              {totalAtivos} ativo{totalAtivos === 1 ? "" : "s"}
+            </div>
+          </div>
 
-              {form.fotoUrl && (
-                <img
-                  src={form.fotoUrl}
-                  alt="Prévia"
-                  style={{
-                    width: 76,
-                    height: 76,
-                    borderRadius: 999,
-                    objectFit: 'cover',
-                    border: '2px solid #e2e8f0',
-                    marginTop: 8,
-                  }}
+          <section className="profissionais-resumo-card" style={equipeDashboardCard}>
+            <div style={equipeDashboardHeader}>
+              <div style={equipeDashboardTituloBox}>
+                <div style={equipeDashboardIcone}>💎</div>
+
+                <div>
+                  <span style={sectionEyebrow}>Equipe inteligente</span>
+                  <h2 style={sectionTitle}>Resumo profissional</h2>
+                  <p style={dashboardTexto}>
+                    Visão rápida da equipe, comissão e disponibilidade.
+                  </p>
+                </div>
+              </div>
+
+              <div style={dashboardTotalBox}>
+                <span>Equipe</span>
+                <strong>{profissionais.length}</strong>
+              </div>
+            </div>
+
+            <div style={dashboardStatsGrid}>
+              <div style={dashboardStatItem}>
+                <span>Ativos</span>
+                <strong>{totalAtivos}</strong>
+              </div>
+
+              <div style={dashboardStatItem}>
+                <span>Inativos</span>
+                <strong>{totalInativos}</strong>
+              </div>
+
+              <div style={dashboardStatItem}>
+                <span>Com serviços</span>
+                <strong>{totalComServicos}</strong>
+              </div>
+
+              <div style={dashboardStatItem}>
+                <span>Comissão média</span>
+                <strong>{comissaoMedia}%</strong>
+              </div>
+            </div>
+          </section>
+
+          <section className="profissionais-cadastro-card" style={formCardCompacto}>
+            <div style={cadastroCompactHeader}>
+              <div>
+                <h2 style={sectionTitle}>{editandoId ? "Editar profissional" : "Cadastrar profissional"}</h2>
+                <p style={cadastroCompactTexto}>
+                  Configure dados, serviços, agenda semanal e comissão.
+                </p>
+              </div>
+
+              <button
+                className="profissional-botao-plus"
+                type="button"
+                onClick={() => setFormProfissionalAberto((aberto) => !aberto)}
+                aria-label={
+                  formProfissionalAberto
+                    ? "Fechar cadastro de profissional"
+                    : "Abrir cadastro de profissional"
+                }
+                style={{
+                  ...botaoAbrirCadastro,
+                  background: formProfissionalAberto
+                    ? "rgba(255,255,255,0.08)"
+                    : `linear-gradient(135deg, ${empresa?.corSidebar || "#7c3aed"}, ${
+                        empresa?.corSecundaria || "#06b6d4"
+                      })`,
+                  boxShadow: formProfissionalAberto
+                    ? "none"
+                    : `0 16px 36px ${hexToRgba(empresa?.corSidebar || "#7c3aed", 0.28)}`,
+                }}
+              >
+                {formProfissionalAberto ? "×" : "+"}
+              </button>
+            </div>
+
+            {formProfissionalAberto && (
+              <>
+
+            <div style={gridForm}>
+              <div style={campo}>
+                <label>Nome *</label>
+                <input
+                  style={input}
+                  value={form.nome}
+                  onChange={(e) => setForm({ ...form, nome: e.target.value })}
+                  placeholder="Ex: João Silva"
                 />
-              )}
-            </div>
+              </div>
 
-            <div style={{ ...campo, gridColumn: '1 / -1' }}>
-              <label>Bio / descrição</label>
-              <textarea
-                style={{ ...input, minHeight: 90, resize: 'vertical' }}
-                value={form.bio}
-                onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                placeholder="Ex: Especialista em cortes femininos..."
-              />
-            </div>
+              <div style={campo}>
+                <label>Foto do profissional</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={input}
+                  onChange={selecionarFoto}
+                />
 
-            <label style={checkLinha}>
-              <input
-                type="checkbox"
-                checked={form.ativo}
-                onChange={(e) => setForm({ ...form, ativo: e.target.checked })}
-              />
-              Profissional ativo
-            </label>
+                {form.fotoUrl && (
+                  <img
+                    src={form.fotoUrl}
+                    alt="Prévia"
+                    style={{
+                      width: 76,
+                      height: 76,
+                      borderRadius: 999,
+                      objectFit: "cover",
+                      border: "2px solid #e2e8f0",
+                      marginTop: 8,
+                    }}
+                  />
+                )}
+              </div>
 
-            <div style={{ ...campo, gridColumn: '1 / -1', marginTop: 8 }}>
-              <h3 style={{ marginBottom: 4 }}>Comissão do profissional</h3>
-              <p style={{ margin: '0 0 12px', color: '#64748b', fontSize: 13 }}>
-                Informe se a comissão será calculada por percentual do serviço ou por valor fixo.
-              </p>
+              <div style={{ ...campo, gridColumn: "1 / -1" }}>
+                <label>Bio / descrição</label>
+                <textarea
+                  style={{ ...input, minHeight: 90, resize: "vertical" }}
+                  value={form.bio}
+                  onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                  placeholder="Ex: Especialista em cortes femininos..."
+                />
+              </div>
 
-              <div style={comissaoGrid}>
-                <div style={campo}>
-                  <label>Tipo de comissão</label>
-                  <select
-                    style={input}
-                    value={form.tipoComissao}
-                    onChange={(e) =>
-                      setForm({ ...form, tipoComissao: e.target.value })
+              <label style={checkLinha}>
+                <input
+                  type="checkbox"
+                  checked={form.ativo}
+                  onChange={(e) =>
+                    setForm({ ...form, ativo: e.target.checked })
+                  }
+                />
+                Profissional ativo
+              </label>
+
+              <div style={{ ...campo, gridColumn: "1 / -1", marginTop: 8 }}>
+                <h3 style={{ marginBottom: 4 }}>Comissão do profissional</h3>
+                <p
+                  style={{ margin: "0 0 12px", color: "#94a3b8", fontSize: 13 }}
+                >
+                  Escolha se este profissional recebe uma comissão geral ou uma
+                  comissão diferenciada por serviço realizado.
+                </p>
+
+                <div style={modoComissaoGrid}>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, modoComissao: "geral" })}
+                    style={
+                      form.modoComissao === "geral"
+                        ? modoComissaoAtivo
+                        : modoComissaoInativo
                     }
                   >
-                    <option value="percentual">Percentual (%)</option>
-                    <option value="fixo">Valor fixo (R$)</option>
-                  </select>
+                    <strong>Comissão geral</strong>
+                    <span>Usa a mesma regra para todos os serviços.</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm({ ...form, modoComissao: "por_servico" })
+                    }
+                    style={
+                      form.modoComissao === "por_servico"
+                        ? modoComissaoAtivo
+                        : modoComissaoInativo
+                    }
+                  >
+                    <strong>Comissão por serviço</strong>
+                    <span>Permite percentual ou valor fixo por serviço.</span>
+                  </button>
                 </div>
 
-                <div style={campo}>
-                  <label>
-                    {form.tipoComissao === 'percentual'
-                      ? 'Percentual da comissão'
-                      : 'Valor fixo da comissão'}
-                  </label>
-                  <input
-                    style={input}
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder={
-                      form.tipoComissao === 'percentual'
-                        ? 'Ex: 40'
-                        : 'Ex: 25,00'
-                    }
-                    value={form.valorComissao}
-                    onChange={(e) =>
-                      setForm({ ...form, valorComissao: e.target.value })
-                    }
-                  />
+                <div style={{ ...comissaoGrid, marginTop: 14 }}>
+                  <div style={campo}>
+                    <label>
+                      {form.modoComissao === "por_servico"
+                        ? "Tipo de comissão geral fallback"
+                        : "Tipo de comissão"}
+                    </label>
+                    <select
+                      style={input}
+                      value={form.tipoComissao}
+                      onChange={(e) =>
+                        setForm({ ...form, tipoComissao: e.target.value })
+                      }
+                    >
+                      <option value="percentual">Percentual (%)</option>
+                      <option value="fixo">Valor fixo (R$)</option>
+                    </select>
+                  </div>
+
+                  <div style={campo}>
+                    <label>
+                      {form.modoComissao === "por_servico"
+                        ? "Comissão geral fallback"
+                        : form.tipoComissao === "percentual"
+                          ? "Percentual da comissão"
+                          : "Valor fixo da comissão"}
+                    </label>
+                    <input
+                      style={input}
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder={
+                        form.tipoComissao === "percentual"
+                          ? "Ex: 40"
+                          : "Ex: 25,00"
+                      }
+                      value={form.valorComissao}
+                      onChange={(e) =>
+                        setForm({ ...form, valorComissao: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+
+                {form.modoComissao === "por_servico" && (
+                  <div style={comissaoAviso}>
+                    💡 Configure a comissão individual nos serviços marcados
+                    abaixo. Se algum serviço ficar sem comissão específica, o
+                    sistema usa a comissão geral fallback.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div style={{ marginTop: 26 }}>
+              <h3>Serviços que este profissional realiza</h3>
+
+              {servicos.length === 0 ? (
+                <p style={{ color: "#64748b" }}>
+                  Nenhum serviço cadastrado. Cadastre serviços primeiro.
+                </p>
+              ) : (
+                <div style={servicosGrid}>
+                  {servicos.map((servico) => {
+                    const selecionado = form.servicosIds.includes(servico.id);
+
+                    return (
+                      <label
+                        key={servico.id}
+                        style={selecionado ? checkboxCardSelecionado : checkboxCard}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selecionado}
+                          onChange={() => alternarServico(servico.id)}
+                          style={checkboxReal}
+                        />
+
+                        <span style={selecionado ? checkboxVisualSelecionado : checkboxVisual}>
+                          {selecionado ? "✓" : ""}
+                        </span>
+
+                        <div style={checkboxTextoArea}>
+                          <strong style={checkboxTitulo}>{servico.nome}</strong>
+                          <span style={checkboxDescricao}>
+                            {servico.duracaoMin} min · R$ {servico.valor}
+                          </span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+
+              {form.modoComissao === "por_servico" &&
+                servicosDoProfissional().length > 0 && (
+                  <div style={comissoesServicosBox}>
+                    <div style={comissoesServicosHeader}>
+                      <div>
+                        <h3 style={{ margin: 0 }}>Comissão por serviço</h3>
+                        <p style={comissoesServicosTexto}>
+                          Defina uma comissão individual para cada serviço deste
+                          profissional.
+                        </p>
+                      </div>
+
+                      <span style={badgeComissaoPremium}>
+                        {servicosDoProfissional().length} serviço
+                        {servicosDoProfissional().length === 1 ? "" : "s"}
+                      </span>
+                    </div>
+
+                    <div style={comissoesServicosLista}>
+                      {servicosDoProfissional().map((servico) => {
+                        const comissaoServico = obterComissaoServico(
+                          servico.id,
+                        );
+
+                        return (
+                          <div key={servico.id} style={comissaoServicoCard}>
+                            <div>
+                              <strong style={comissaoServicoNome}>
+                                {servico.nome}
+                              </strong>
+                              <p style={comissaoServicoDetalhe}>
+                                Valor do serviço: R${" "}
+                                {Number(servico.valor || 0).toLocaleString(
+                                  "pt-BR",
+                                  {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  },
+                                )}
+                              </p>
+                            </div>
+
+                            <div style={comissaoServicoCampos}>
+                              <div style={campo}>
+                                <label>Tipo</label>
+                                <select
+                                  style={input}
+                                  value={comissaoServico.tipoComissao}
+                                  onChange={(e) =>
+                                    atualizarComissaoServico(
+                                      servico.id,
+                                      "tipoComissao",
+                                      e.target.value,
+                                    )
+                                  }
+                                >
+                                  <option value="percentual">
+                                    Percentual (%)
+                                  </option>
+                                  <option value="fixo">Valor fixo (R$)</option>
+                                </select>
+                              </div>
+
+                              <div style={campo}>
+                                <label>
+                                  {comissaoServico.tipoComissao === "percentual"
+                                    ? "Percentual"
+                                    : "Valor fixo"}
+                                </label>
+                                <input
+                                  style={input}
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  placeholder={
+                                    comissaoServico.tipoComissao ===
+                                    "percentual"
+                                      ? "Ex: 40"
+                                      : "Ex: 60,00"
+                                  }
+                                  value={comissaoServico.valorComissao}
+                                  onChange={(e) =>
+                                    atualizarComissaoServico(
+                                      servico.id,
+                                      "valorComissao",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+            </div>
+
+            <div style={{ marginTop: 28 }}>
+              <h3 style={{ marginBottom: 4 }}>Agenda semanal</h3>
+              <p style={{ margin: "0 0 14px", color: "#64748b", fontSize: 13 }}>
+                Configure múltiplos blocos por dia. Exemplo: 08:00 às 12:00 e
+                13:00 às 18:00.
+              </p>
+
+              <div style={agendaResumoBox}>
+                <div style={agendaResumoTopo}>
+                  <button
+                    type="button"
+                    onClick={() => copiarHorarioParaTodos(1)}
+                    style={botaoAgendaAcao}
+                  >
+                    📅 Copiar todos
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const todosAtivos = disponibilidade.every((dia) => dia.ativo);
+                      setDisponibilidade((atual) =>
+                        atual.map((dia) => ({ ...dia, ativo: !todosAtivos })),
+                      );
+                    }}
+                    style={botaoAgendaLink}
+                  >
+                    {disponibilidade.every((dia) => dia.ativo)
+                      ? "Desmarcar todos"
+                      : "Marcar todos"}
+                  </button>
+                </div>
+
+                <div style={agendaListaMobile}> 
+                  {diasSemana.map((dia, index) => {
+                    const ativo = disponibilidade[index].ativo;
+                    const aberto = diaAgendaAberto === index;
+
+                    return (
+                      <div key={dia.value} style={agendaDiaLinhaBox}>
+                        <div style={agendaDiaLinha}>
+                          <label style={agendaDiaCheckLabel}>
+                            <input
+                              type="checkbox"
+                              checked={ativo}
+                              onChange={(e) =>
+                                atualizarDia(index, "ativo", e.target.checked)
+                              }
+                              style={checkboxReal}
+                            />
+
+                            <span style={ativo ? checkboxVisualSelecionado : checkboxVisual}>
+                              {ativo ? "✓" : ""}
+                            </span>
+                          </label>
+
+                          <strong style={agendaDiaNome}>{dia.label}</strong>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDiaAgendaAberto(aberto ? null : index)
+                            }
+                            style={ativo ? botaoEditarHorariosAtivo : botaoEditarHorariosInativo}
+                            disabled={!ativo}
+                          >
+                            📅 {aberto ? "Ocultar horários" : "Editar horários"}
+                          </button>
+
+                          <span style={ativo ? badgeDiaAtivoPremium : badgeDiaInativoPremium}>
+                            {ativo ? "Ativo" : "Inativo"}
+                          </span>
+                        </div>
+
+                        {aberto && ativo && (
+                          <div style={agendaDiaDetalhe}>
+                            <div style={agendaDiaAcoesInline}>
+                              <button
+                                type="button"
+                                onClick={() => copiarHorarioParaTodos(index)}
+                                style={botaoCopiarHorarioPremium}
+                              >
+                                Copiar para todos
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => copiarHorarioDiasUteis(index)}
+                                style={botaoCopiarHorarioPremium}
+                              >
+                                Copiar dias úteis
+                              </button>
+                            </div>
+
+                            <div style={blocosWrapper}>
+                              {disponibilidade[index].blocos.map((bloco, blocoIndex) => (
+                                <div key={`${dia.value}-${blocoIndex}`} style={blocoCardPremium}>
+                                  <div style={blocoLinhaPremium}>
+                                    <input
+                                      type="time"
+                                      value={bloco.horaInicio}
+                                      onChange={(e) =>
+                                        atualizarBloco(
+                                          index,
+                                          blocoIndex,
+                                          "horaInicio",
+                                          e.target.value,
+                                        )
+                                      }
+                                      style={inputHorarioPremium}
+                                    />
+
+                                    <span style={separadorHorario}>até</span>
+
+                                    <input
+                                      type="time"
+                                      value={bloco.horaFim}
+                                      onChange={(e) =>
+                                        atualizarBloco(
+                                          index,
+                                          blocoIndex,
+                                          "horaFim",
+                                          e.target.value,
+                                        )
+                                      }
+                                      style={inputHorarioPremium}
+                                    />
+
+                                    {disponibilidade[index].blocos.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => removerBloco(index, blocoIndex)}
+                                        style={botaoRemoverBlocoPremium}
+                                        title="Remover horário"
+                                      >
+                                        ×
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  <div style={servicosBlocoBox}>
+                                    <span style={servicosBlocoTitulo}>
+                                      Serviços neste horário
+                                    </span>
+
+                                    {servicosDoProfissional().length === 0 ? (
+                                      <span style={servicosBlocoVazio}>
+                                        Marque primeiro os serviços que este profissional realiza.
+                                      </span>
+                                    ) : (
+                                      <div style={servicosBlocoGrid}>
+                                        {servicosDoProfissional().map((servico) => {
+                                          const selecionado = bloco.servicosIds.includes(servico.id);
+
+                                          return (
+                                            <button
+                                              key={servico.id}
+                                              type="button"
+                                              onClick={() =>
+                                                alternarServicoBloco(index, blocoIndex, servico.id)
+                                              }
+                                              style={
+                                                selecionado
+                                                  ? servicoBlocoSelecionado
+                                                  : servicoBlocoNaoSelecionado
+                                              }
+                                            >
+                                              {servico.nome}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+
+                                    <p style={servicosBlocoAjuda}>
+                                      Se nenhum serviço for marcado, este horário ficará disponível para todos os serviços do profissional.
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => adicionarBloco(index)}
+                              style={botaoAdicionarBlocoPremium}
+                            >
+                              + Adicionar horário
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
-          </div>
 
-          <div style={{ marginTop: 26 }}>
-            <h3>Serviços que este profissional realiza</h3>
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                marginTop: 24,
+                flexWrap: "wrap",
+              }}
+            >
+              <button
+                onClick={salvar}
+                disabled={salvandoProfissional}
+                style={{
+                  ...botaoPrincipal,
+                  opacity: salvandoProfissional ? 0.65 : 1,
+                  cursor: salvandoProfissional ? "not-allowed" : "pointer",
+                }}
+              >
+                {salvandoProfissional
+                  ? editandoId
+                    ? "Salvando alterações..."
+                    : "Cadastrando profissional..."
+                  : editandoId
+                    ? "Salvar alterações"
+                    : "Cadastrar profissional"}
+              </button>
 
-            {servicos.length === 0 ? (
-              <p style={{ color: '#64748b' }}>
-                Nenhum serviço cadastrado. Cadastre serviços primeiro.
+              {editandoId && (
+                <button onClick={limparFormulario} style={botaoSecundario}>
+                  Cancelar edição
+                </button>
+              )}
+            </div>
+              </>
+            )}
+          </section>
+
+          <section style={listaCardCompacto}>
+            <div style={listaHeader}>
+              <div>
+                <h2 style={sectionTitle}>Lista de profissionais</h2>
+                <p style={listaDescricao}>
+                  Pesquise por nome, serviço, descrição ou comissão. Arraste os cards no mobile.
+                </p>
+              </div>
+
+              <div style={listaAcoesCompactas}>
+                <div style={buscaAreaCompacta}>
+                  <span style={buscaIcone}>🔎</span>
+                  <input
+                    value={buscaProfissional}
+                    onChange={(e) => setBuscaProfissional(e.target.value)}
+                    placeholder="Buscar profissional, serviço ou comissão"
+                    style={inputBuscaCompacto}
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button
+                  onClick={() => setFiltroStatus("todos")}
+                  style={{
+                    ...filtroBotao,
+                    background:
+                      filtroStatus === "todos"
+                        ? "rgba(124,58,237,0.22)"
+                        : "rgba(255,255,255,0.04)",
+                  }}
+                >
+                  Todos
+                </button>
+
+                <button
+                  onClick={() => setFiltroStatus("ativos")}
+                  style={{
+                    ...filtroBotao,
+                    background:
+                      filtroStatus === "ativos"
+                        ? "rgba(34,197,94,0.18)"
+                        : "rgba(255,255,255,0.04)",
+                  }}
+                >
+                  Ativos
+                </button>
+
+                <button
+                  onClick={() => setFiltroStatus("inativos")}
+                  style={{
+                    ...filtroBotao,
+                    background:
+                      filtroStatus === "inativos"
+                        ? "rgba(239,68,68,0.18)"
+                        : "rgba(255,255,255,0.04)",
+                  }}
+                >
+                  Inativos
+                </button>
+
+                <span style={listaBadge}>
+                  {profissionaisFiltrados.length} profissionais
+                </span>
+                </div>
+              </div>
+            </div>
+
+            {carregando && <p>Carregando profissionais...</p>}
+
+            {!carregando && profissionais.length === 0 && (
+              <p style={{ color: "#64748b" }}>
+                Nenhum profissional cadastrado ainda.
               </p>
-            ) : (
-              <div style={servicosGrid}>
-                {servicos.map((servico) => (
-                  <label key={servico.id} style={checkboxCard}>
-                    <input
-                      type="checkbox"
-                      checked={form.servicosIds.includes(servico.id)}
-                      onChange={() => alternarServico(servico.id)}
-                    />
+            )}
+
+            <div className="profissionais-grid-horizontal" style={profissionaisGrid}>
+              {profissionaisFiltrados.map((p) => (
+                <div
+                  key={p.id}
+                  className="profissional-card-horizontal"
+                  style={{
+                    ...cardProfissional,
+                    opacity: p.ativo ? 1 : 0.72,
+                  }}
+                >
+                  <div className="profissional-info-mobile" style={profissionalInfo}>
+                    <div className="profissional-avatar-mobile" style={avatarPremium}>
+                      {p.fotoUrl ? (
+                        <img
+                          src={p.fotoUrl}
+                          alt={p.nome}
+                          className="profissional-avatar-img-mobile"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            objectPosition: "center top",
+                            display: "block",
+                          }}
+                        />
+                      ) : (
+                        p.nome?.charAt(0)?.toUpperCase()
+                      )}
+                    </div>
 
                     <div>
-                      <strong>{servico.nome}</strong>
-                      <div style={{ fontSize: 12, color: '#64748b' }}>
-                        {servico.duracaoMin} min · R$ {servico.valor}
+                      <div style={profissionalNomeLinha}>
+                        <strong style={profissionalNome}>{p.nome}</strong>
+
+                        <span
+                          style={
+                            p.ativo
+                              ? badgeProfissionalAtivo
+                              : badgeProfissionalInativo
+                          }
+                        >
+                          {p.ativo ? "Ativo" : "Inativo"}
+                        </span>
+                      </div>
+
+                      <p style={profissionalBio}>
+                        {p.bio || "Sem descrição cadastrada"}
+                      </p>
+
+                      <div style={profissionalTags}>
+                        {p.servicos?.length > 0 ? (
+                          p.servicos.map((item: any) => (
+                            <span key={item.id} style={badgeServicoPremium}>
+                              {item.servico?.nome}
+                              {p.modoComissao === "por_servico"
+                                ? ` · ${formatarComissaoServico(item)}`
+                                : ""}
+                            </span>
+                          ))
+                        ) : (
+                          <span style={badgeCinzaPremium}>
+                            Sem serviços vinculados
+                          </span>
+                        )}
+
+                        <span style={badgeComissaoPremium}>
+                          {formatarComissao(p)}
+                        </span>
                       </div>
                     </div>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
+                  </div>
 
-          <div style={{ marginTop: 28 }}>
-            <h3>Agenda semanal</h3>
+                  <div style={analyticsRow}>
+                    <div style={analyticsMiniCard}>
+                      <span style={analyticsLabel}>Serviços</span>
 
-            <div style={agendaGrid}>
-              {diasSemana.map((dia, index) => (
-                <div key={dia.value} style={diaCard}>
-                  <label style={diaTitulo}>
-                    <input
-                      type="checkbox"
-                      checked={disponibilidade[index].ativo}
-                      onChange={(e) =>
-                        atualizarDia(index, 'ativo', e.target.checked)
-                      }
-                    />
-                    {dia.label}
-                  </label>
+                      <strong style={analyticsValue}>
+                        {p.servicos?.length || 0}
+                      </strong>
+                    </div>
 
-                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                    <input
-                      type="time"
-                      value={disponibilidade[index].horaInicio}
-                      onChange={(e) =>
-                        atualizarDia(index, 'horaInicio', e.target.value)
-                      }
-                      style={input}
-                    />
+                    <div style={analyticsMiniCard}>
+                      <span style={analyticsLabel}>Comissão</span>
 
-                    <input
-                      type="time"
-                      value={disponibilidade[index].horaFim}
-                      onChange={(e) =>
-                        atualizarDia(index, 'horaFim', e.target.value)
-                      }
-                      style={input}
-                    />
+                      <strong style={analyticsValue}>
+                        {formatarComissao(p)}
+                      </strong>
+                    </div>
+
+                    <div style={analyticsMiniCard}>
+                      <span style={analyticsLabel}>Agenda</span>
+
+                      <strong
+                        style={{
+                          ...analyticsValue,
+                          color: p.ativo ? "#4ade80" : "#f87171",
+                        }}
+                      >
+                        {p.ativo ? "Ativa" : "Inativa"}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div style={profissionalActions}>
+                    <button
+                      onClick={() => editar(p)}
+                      style={{
+                        ...botaoEditarPremium,
+                        background: `linear-gradient(135deg, ${empresa?.corSidebar || "#d709ab"}, ${
+                          empresa?.corSecundaria || "#57f755"
+                        })`,
+                      }}
+                    >
+                      Editar profissional
+                    </button>
+
+                    <button
+                      onClick={async () => {
+                        const confirmar = confirm(
+                          p.ativo === false
+                            ? "Deseja ativar este profissional?"
+                            : "Deseja inativar este profissional?",
+                        );
+
+                        if (!confirmar) return;
+
+                        const res = await fetch("/api/profissionais", {
+                          method: "PUT",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            ...p,
+                            empresaId: empresa.id,
+                            servicosIds:
+                              p.servicos?.map((item: any) => item.servicoId) ||
+                              [],
+                            modoComissao: p.modoComissao || "geral",
+                            tipoComissao: p.tipoComissao || null,
+                            valorComissao: p.valorComissao ?? null,
+                            comissoesServicos:
+                              p.servicos?.map((item: any) => ({
+                                servicoId: item.servicoId,
+                                tipoComissao: item.tipoComissao || null,
+                                valorComissao: item.valorComissao ?? null,
+                              })) || [],
+                            ativo: p.ativo === false,
+                          }),
+                        });
+
+                        const data = await res.json();
+
+                        if (!data.success) {
+                          alert(
+                            data.error || "Erro ao atualizar profissional.",
+                          );
+                          return;
+                        }
+
+                        await carregarTudo(empresa.id);
+                      }}
+                      style={{
+                        ...botaoEditarPremium,
+                        marginLeft: 10,
+                        background:
+                          p.ativo === false
+                            ? "rgba(34,197,94,0.12)"
+                            : "rgba(239,68,68,0.12)",
+                        border:
+                          p.ativo === false
+                            ? "1px solid rgba(34,197,94,0.22)"
+                            : "1px solid rgba(239,68,68,0.22)",
+                        color: p.ativo === false ? "#86efac" : "#fca5a5",
+                      }}
+                    >
+                      {p.ativo === false
+                        ? "✅ Ativar profissional"
+                        : "🚫 Inativar profissional"}
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-            <button onClick={salvar} style={botaoPrincipal}>
-              {editandoId ? 'Salvar alterações' : 'Cadastrar profissional'}
-            </button>
-
-            {editandoId && (
-              <button onClick={limparFormulario} style={botaoSecundario}>
-                Cancelar edição
-              </button>
-            )}
-          </div>
-        </section>
-
-        <section style={box}>
-          <h2 style={{ marginTop: 0 }}>Lista de profissionais</h2>
-
-          {carregando && <p>Carregando profissionais...</p>}
-
-          {!carregando && profissionais.length === 0 && (
-            <p style={{ color: '#64748b' }}>
-              Nenhum profissional cadastrado ainda.
-            </p>
-          )}
-
-          <div style={{ display: 'grid', gap: 12 }}>
-            {profissionais.map((p) => (
-              <div key={p.id} style={cardProfissional}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={avatar}>
-                    {p.fotoUrl ? (
-                      <img
-                        src={p.fotoUrl}
-                        alt={p.nome}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                        }}
-                      />
-                    ) : (
-                      p.nome?.charAt(0)?.toUpperCase()
-                    )}
-                  </div>
-
-                  <div>
-                    <strong>{p.nome}</strong>
-
-                    <div style={{ fontSize: 13, color: '#64748b', marginTop: 3 }}>
-                      {p.bio || 'Sem descrição'}
-                    </div>
-
-                    <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      {p.servicos?.length > 0 ? (
-                        p.servicos.map((item: any) => (
-                          <span key={item.id} style={badgeServico}>
-                            {item.servico?.nome}
-                          </span>
-                        ))
-                      ) : (
-                        <span style={badgeCinza}>Sem serviços vinculados</span>
-                      )}
-
-                      <span style={badgeComissao}>
-                        {formatarComissao(p)}
-                      </span>
-                    </div>
-
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        marginTop: 8,
-                        padding: '4px 8px',
-                        borderRadius: 999,
-                        fontSize: 12,
-                        background: p.ativo ? '#dcfce7' : '#fee2e2',
-                        color: p.ativo ? '#166534' : '#991b1b',
-                      }}
-                    >
-                      {p.ativo ? 'Ativo' : 'Inativo'}
-                    </span>
-                  </div>
-                </div>
-
-                <button onClick={() => editar(p)} style={botaoSecundario}>
-                  Editar
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-    </main>
+          </section>
+        </div>
+      </main>
+    </PremiumLayout>
   );
 }
 
+
+function hexToRgba(hex: string, alpha: number) {
+  if (!hex) return `rgba(124,58,237,${alpha})`;
+
+  const cleanHex = String(hex).replace("#", "");
+
+  if (cleanHex.length !== 6) {
+    return `rgba(124,58,237,${alpha})`;
+  }
+
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+
+
+const sectionEyebrow = {
+  display: "inline-block",
+  color: "#38bdf8",
+  fontSize: 12,
+  fontWeight: 900,
+  textTransform: "uppercase" as const,
+  letterSpacing: ".08em",
+  marginBottom: 10,
+};
+
+const sectionTitle = {
+  margin: 0,
+  color: "#fff",
+  fontSize: 28,
+  fontWeight: 950,
+  letterSpacing: "-0.03em",
+  lineHeight: 1.08,
+};
+
+const topoModuloCompacto = {
+  minHeight: 72,
+  borderRadius: 24,
+  padding: "14px 16px",
+  marginBottom: 14,
+  background: "rgba(2,6,23,0.78)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  boxShadow: "0 20px 55px rgba(0,0,0,0.26)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 14,
+  color: "#fff",
+};
+
+const topoModuloEsquerda = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  minWidth: 0,
+};
+
+const topoModuloIcone = {
+  width: 44,
+  height: 44,
+  borderRadius: 16,
+  background: "linear-gradient(135deg, #7c3aed, #06b6d4)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 20,
+  flexShrink: 0,
+  boxShadow: "0 16px 36px rgba(124,58,237,0.26)",
+};
+
+const topoModuloTitulo = {
+  margin: 0,
+  color: "#fff",
+  fontSize: 24,
+  fontWeight: 950,
+  letterSpacing: "-0.03em",
+  lineHeight: 1.05,
+};
+
+const topoModuloSubtitulo = {
+  margin: "5px 0 0",
+  color: "#94a3b8",
+  fontSize: 13,
+  fontWeight: 700,
+  lineHeight: 1.35,
+};
+
+const topoModuloBadge = {
+  padding: "9px 12px",
+  borderRadius: 999,
+  background: "rgba(34,197,94,0.14)",
+  border: "1px solid rgba(34,197,94,0.20)",
+  color: "#bbf7d0",
+  fontSize: 12,
+  fontWeight: 950,
+  whiteSpace: "nowrap" as const,
+};
+
+const equipeDashboardCard = {
+  borderRadius: 26,
+  padding: 18,
+  background: "rgba(15,23,42,0.88)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  backdropFilter: "blur(14px)",
+  boxShadow: "0 22px 60px rgba(0,0,0,0.22)",
+  marginBottom: 16,
+  color: "#fff",
+};
+
+const equipeDashboardHeader = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 14,
+  alignItems: "center",
+  marginBottom: 12,
+  flexWrap: "wrap" as const,
+};
+
+const equipeDashboardTituloBox = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  minWidth: 0,
+};
+
+const equipeDashboardIcone = {
+  width: 44,
+  height: 44,
+  borderRadius: 16,
+  background: "linear-gradient(135deg, #7c3aed, #06b6d4)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 23,
+  flexShrink: 0,
+};
+
+const dashboardTexto = {
+  margin: "8px 0 0",
+  color: "#94a3b8",
+  fontSize: 14,
+  lineHeight: 1.55,
+};
+
+const dashboardTotalBox = {
+  minWidth: 116,
+  borderRadius: 18,
+  padding: "12px 14px",
+  background: "rgba(2,6,23,0.58)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  color: "#fff",
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 3,
+};
+
+const dashboardStatsGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+  gap: 10,
+};
+
+const dashboardStatItem = {
+  borderRadius: 14,
+  padding: 12,
+  background: "rgba(2,6,23,0.56)",
+  border: "1px solid rgba(255,255,255,0.06)",
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 8,
+  color: "#fff",
+};
+
+const formCardCompacto = {
+  borderRadius: 30,
+  padding: 24,
+  background: "rgba(15,23,42,0.88)",
+  border: "1px solid rgba(124,58,237,0.30)",
+  backdropFilter: "blur(14px)",
+  boxShadow: "0 30px 80px rgba(0,0,0,0.26)",
+  marginBottom: 24,
+  color: "#fff",
+};
+
+const cadastroCompactHeader = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 14,
+};
+
+const cadastroCompactTexto = {
+  margin: "8px 0 0",
+  color: "#94a3b8",
+  fontSize: 14,
+  lineHeight: 1.55,
+};
+
+const botaoAbrirCadastro = {
+  width: 48,
+  height: 48,
+  borderRadius: 16,
+  border: "1px solid rgba(255,255,255,0.10)",
+  color: "#fff",
+  fontSize: 27,
+  fontWeight: 950,
+  lineHeight: 1,
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+};
+
+const listaCardCompacto = {
+  borderRadius: 24,
+  padding: 18,
+  background: "rgba(15,23,42,0.88)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  backdropFilter: "blur(14px)",
+  boxShadow: "0 30px 80px rgba(0,0,0,0.24)",
+  color: "#fff",
+};
+
+const listaAcoesCompactas = {
+  display: "grid",
+  gap: 10,
+  minWidth: 280,
+};
+
+const buscaAreaCompacta = {
+  width: "100%",
+  height: 48,
+  borderRadius: 16,
+  background: "rgba(2,6,23,0.66)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  padding: "0 14px",
+};
+
+const buscaIcone = {
+  color: "#94a3b8",
+  fontSize: 15,
+};
+
+const inputBuscaCompacto = {
+  flex: 1,
+  border: "none",
+  background: "transparent",
+  outline: "none",
+  color: "#fff",
+  fontSize: 13,
+  minWidth: 0,
+};
+
 const header = {
-  background: '#fff',
+  background: "#fff",
   borderRadius: 22,
   padding: 24,
   marginBottom: 22,
-  boxShadow: '0 10px 30px rgba(15,23,42,0.08)',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
+  boxShadow: "0 10px 30px rgba(15,23,42,0.08)",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
 };
 
 const box = {
-  background: '#fff',
-  padding: 24,
-  borderRadius: 22,
-  marginBottom: 22,
-  boxShadow: '0 10px 30px rgba(15,23,42,0.08)',
+  background: "rgba(15,23,42,0.92)",
+  padding: 28,
+  borderRadius: 28,
+  marginBottom: 24,
+  border: "1px solid rgba(255,255,255,0.08)",
+  boxShadow: "0 24px 70px rgba(0,0,0,0.38)",
+  color: "#fff",
 };
 
 const gridForm = {
-  display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
   gap: 16,
 };
 
 const campo = {
-  display: 'flex',
-  flexDirection: 'column' as const,
+  display: "flex",
+  flexDirection: "column" as const,
   gap: 6,
   fontWeight: 600,
 };
 
 const input = {
-  padding: 12,
-  borderRadius: 12,
-  border: '1px solid #cbd5e1',
-  outline: 'none',
+  padding: 13,
+  borderRadius: 16,
+  border: "1px solid rgba(255,255,255,0.10)",
+  outline: "none",
+  background: "rgba(2,6,23,0.72)",
+  color: "#fff",
+  fontWeight: 700,
 };
 
 const checkLinha = {
-  display: 'flex',
-  alignItems: 'center',
+  display: "flex",
+  alignItems: "center",
   gap: 8,
   fontWeight: 600,
 };
 
 const comissaoGrid = {
-  display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
   gap: 12,
 };
 
+const modoComissaoGrid = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: 12,
+};
+
+const modoComissaoAtivo = {
+  padding: 16,
+  borderRadius: 18,
+  border: "1px solid rgba(167,139,250,0.52)",
+  background:
+    "linear-gradient(135deg, rgba(124,58,237,0.30), rgba(215,9,171,0.16))",
+  color: "#fff",
+  cursor: "pointer",
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 6,
+  textAlign: "left" as const,
+  boxShadow: "0 18px 44px rgba(124,58,237,0.18)",
+};
+
+const modoComissaoInativo = {
+  padding: 16,
+  borderRadius: 18,
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "rgba(2,6,23,0.55)",
+  color: "#cbd5e1",
+  cursor: "pointer",
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 6,
+  textAlign: "left" as const,
+};
+
+const comissaoAviso = {
+  marginTop: 14,
+  padding: 14,
+  borderRadius: 16,
+  border: "1px solid rgba(34,197,94,0.20)",
+  background: "rgba(34,197,94,0.10)",
+  color: "#bbf7d0",
+  fontSize: 13,
+  fontWeight: 700,
+  lineHeight: 1.5,
+};
+
+const comissoesServicosBox = {
+  marginTop: 18,
+  padding: 18,
+  borderRadius: 22,
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "rgba(2,6,23,0.42)",
+};
+
+const comissoesServicosHeader = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: 12,
+  marginBottom: 14,
+};
+
+const comissoesServicosTexto = {
+  margin: "6px 0 0",
+  color: "#94a3b8",
+  fontSize: 13,
+  lineHeight: 1.5,
+};
+
+const comissoesServicosLista = {
+  display: "grid",
+  gap: 12,
+};
+
+const comissaoServicoCard = {
+  padding: 14,
+  borderRadius: 18,
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "rgba(15,23,42,0.78)",
+  display: "grid",
+  gridTemplateColumns: "1fr 1.3fr",
+  gap: 14,
+  alignItems: "center",
+};
+
+const comissaoServicoNome = {
+  color: "#fff",
+  fontSize: 15,
+  fontWeight: 950,
+};
+
+const comissaoServicoDetalhe = {
+  margin: "6px 0 0",
+  color: "#94a3b8",
+  fontSize: 12,
+};
+
+const comissaoServicoCampos = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: 10,
+};
+
 const servicosGrid = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(2, 1fr)',
+  display: "grid",
+  gridTemplateColumns: "repeat(2, 1fr)",
   gap: 10,
 };
 
 const checkboxCard = {
-  display: 'flex',
-  gap: 10,
-  alignItems: 'center',
-  padding: 12,
-  borderRadius: 14,
-  border: '1px solid #e2e8f0',
-  background: '#f8fafc',
-  cursor: 'pointer',
+  minHeight: 84,
+  display: "grid",
+  gridTemplateColumns: "36px minmax(0, 1fr)",
+  gap: 16,
+  alignItems: "center",
+  padding: "18px 20px",
+  borderRadius: 22,
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "rgba(2,6,23,0.55)",
+  color: "#e5e7eb",
+  cursor: "pointer",
+  position: "relative" as const,
+  overflow: "hidden",
+};
+
+const checkboxCardSelecionado = {
+  ...checkboxCard,
+  border: "1px solid rgba(167,139,250,0.45)",
+  background:
+    "linear-gradient(135deg, rgba(124,58,237,0.22), rgba(2,6,23,0.66))",
+  boxShadow: "0 18px 42px rgba(124,58,237,0.16)",
+};
+
+const checkboxReal = {
+  position: "absolute" as const,
+  opacity: 0,
+  pointerEvents: "none" as const,
+};
+
+const checkboxVisual = {
+  width: 28,
+  height: 28,
+  borderRadius: 8,
+  border: "2px solid rgba(148,163,184,0.80)",
+  background: "rgba(2,6,23,0.42)",
+  color: "#fff",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 18,
+  fontWeight: 950,
+  boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.03)",
+};
+
+const checkboxVisualSelecionado = {
+  ...checkboxVisual,
+  border: "2px solid rgba(167,139,250,0.95)",
+  background: "linear-gradient(135deg, #a855f7, #7c3aed)",
+  boxShadow: "0 12px 26px rgba(124,58,237,0.34)",
+};
+
+const checkboxTextoArea = {
+  minWidth: 0,
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 4,
+};
+
+const checkboxTitulo = {
+  color: "#fff",
+  fontSize: 17,
+  lineHeight: 1.12,
+  fontWeight: 950,
+  wordBreak: "break-word" as const,
+};
+
+const checkboxDescricao = {
+  color: "#94a3b8",
+  fontSize: 13,
+  lineHeight: 1.35,
+  fontWeight: 750,
 };
 
 const agendaGrid = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(2, 1fr)',
+  display: "grid",
+  gridTemplateColumns: "repeat(2, 1fr)",
   gap: 12,
 };
 
 const diaCard = {
-  padding: 14,
-  borderRadius: 14,
-  border: '1px solid #e2e8f0',
-  background: '#f8fafc',
+  padding: 16,
+  borderRadius: 20,
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "rgba(2,6,23,0.55)",
+};
+
+const diaTopo = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 10,
 };
 
 const diaTitulo = {
-  display: 'flex',
+  display: "flex",
   gap: 8,
-  alignItems: 'center',
+  alignItems: "center",
+  fontWeight: 900,
+  color: "#ffffff",
+};
+
+const agendaResumoBox = {
+  borderRadius: 24,
+  padding: 16,
+  background: "rgba(2,6,23,0.48)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
+};
+
+const agendaResumoTopo = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 12,
+  flexWrap: "wrap" as const,
+  marginBottom: 14,
+};
+
+const botaoAgendaAcao = {
+  padding: "12px 18px",
+  borderRadius: 16,
+  border: "1px solid rgba(168,85,247,0.55)",
+  background: "rgba(88,28,135,0.24)",
+  color: "#ddd6fe",
+  fontWeight: 950,
+  cursor: "pointer",
+};
+
+const botaoAgendaLink = {
+  padding: "12px 10px",
+  borderRadius: 14,
+  border: "none",
+  background: "transparent",
+  color: "#c084fc",
+  fontWeight: 950,
+  cursor: "pointer",
+};
+
+const agendaListaMobile = {
+  display: "grid",
+  gap: 0,
+};
+
+const agendaDiaLinhaBox = {
+  borderTop: "1px solid rgba(255,255,255,0.08)",
+};
+
+const agendaDiaLinha = {
+  minHeight: 66,
+  display: "grid",
+  gridTemplateColumns: "34px minmax(0, 1fr) auto auto",
+  alignItems: "center",
+  gap: 12,
+  padding: "12px 0",
+};
+
+const agendaDiaCheckLabel = {
+  width: 34,
+  height: 34,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
+  position: "relative" as const,
+};
+
+const agendaDiaNome = {
+  minWidth: 0,
+  color: "#fff",
+  fontSize: 16,
+  fontWeight: 950,
+};
+
+const botaoEditarHorariosAtivo = {
+  padding: "10px 14px",
+  borderRadius: 14,
+  border: "1px solid rgba(168,85,247,0.55)",
+  background: "rgba(88,28,135,0.24)",
+  color: "#ddd6fe",
+  fontSize: 12,
+  fontWeight: 950,
+  cursor: "pointer",
+  whiteSpace: "nowrap" as const,
+};
+
+const botaoEditarHorariosInativo = {
+  ...botaoEditarHorariosAtivo,
+  opacity: 0.45,
+  cursor: "not-allowed",
+};
+
+const badgeDiaAtivoPremium = {
+  padding: "8px 12px",
+  borderRadius: 999,
+  background: "rgba(34,197,94,0.18)",
+  color: "#86efac",
+  border: "1px solid rgba(34,197,94,0.20)",
+  fontSize: 12,
+  fontWeight: 950,
+  whiteSpace: "nowrap" as const,
+};
+
+const badgeDiaInativoPremium = {
+  ...badgeDiaAtivoPremium,
+  background: "rgba(148,163,184,0.13)",
+  color: "#cbd5e1",
+  border: "1px solid rgba(148,163,184,0.16)",
+};
+
+const agendaDiaDetalhe = {
+  padding: "0 0 14px 46px",
+  display: "grid",
+  gap: 12,
+};
+
+const agendaDiaAcoesInline = {
+  display: "flex",
+  gap: 8,
+  flexWrap: "wrap" as const,
+};
+
+const botaoCopiarHorarioPremium = {
+  padding: "9px 12px",
+  borderRadius: 12,
+  border: "1px solid rgba(255,255,255,0.10)",
+  background: "rgba(255,255,255,0.05)",
+  color: "#e9d5ff",
+  fontSize: 11,
+  fontWeight: 900,
+  cursor: "pointer",
+};
+
+const blocoCardPremium = {
+  background: "rgba(15,23,42,0.82)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  borderRadius: 18,
+  padding: 14,
+};
+
+const blocoLinhaPremium = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr) auto",
+  alignItems: "center",
+  gap: 8,
+};
+
+const inputHorarioPremium = {
+  width: "100%",
+  minWidth: 0,
+  padding: "10px 11px",
+  borderRadius: 12,
+  border: "1px solid rgba(255,255,255,0.10)",
+  outline: "none",
+  background: "rgba(2,6,23,0.72)",
+  color: "#fff",
+  fontWeight: 800,
+};
+
+const botaoRemoverBlocoPremium = {
+  width: 32,
+  height: 32,
+  borderRadius: 999,
+  border: "1px solid rgba(239,68,68,0.20)",
+  background: "rgba(239,68,68,0.14)",
+  color: "#fecaca",
+  fontWeight: 950,
+  cursor: "pointer",
+};
+
+const botaoAdicionarBlocoPremium = {
+  padding: "12px 14px",
+  borderRadius: 14,
+  border: "1px dashed rgba(168,85,247,0.55)",
+  background: "rgba(88,28,135,0.18)",
+  color: "#e9d5ff",
+  fontWeight: 950,
+  cursor: "pointer",
+  width: "100%",
+};
+
+const blocosWrapper = {
+  display: "grid",
+  gap: 8,
+  marginTop: 12,
+};
+
+const blocoLinha = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  flexWrap: "wrap" as const,
+};
+
+const inputHorario = {
+  padding: "10px 11px",
+  borderRadius: 12,
+  border: "1px solid rgba(255,255,255,0.10)",
+  outline: "none",
+  background: "rgba(2,6,23,0.72)",
+  color: "#fff",
   fontWeight: 700,
 };
 
+const separadorHorario = {
+  color: "#94a3b8",
+  fontSize: 12,
+  fontWeight: 800,
+};
+
+const botaoAdicionarBloco = {
+  marginTop: 12,
+  padding: "9px 12px",
+  borderRadius: 12,
+  border: "1px dashed #4f46e5",
+  background: "#eef2ff",
+  color: "#3730a3",
+  fontWeight: 900,
+  cursor: "pointer",
+  width: "100%",
+};
+
+const botaoCopiarHorario = {
+  padding: "6px 10px",
+  borderRadius: 10,
+  border: "1px solid #c7d2fe",
+  background: "#fff",
+  color: "#4338ca",
+  fontSize: 11,
+  fontWeight: 800,
+  cursor: "pointer",
+};
+
+const botaoRemoverBloco = {
+  width: 30,
+  height: 30,
+  borderRadius: 999,
+  border: "none",
+  background: "#fee2e2",
+  color: "#991b1b",
+  fontWeight: 900,
+  cursor: "pointer",
+};
+
+const badgeDiaAtivo = {
+  padding: "4px 8px",
+  borderRadius: 999,
+  fontSize: 11,
+  background: "#dcfce7",
+  color: "#166534",
+  fontWeight: 900,
+};
+
+const badgeDiaInativo = {
+  padding: "4px 8px",
+  borderRadius: 999,
+  fontSize: 11,
+  background: "#e2e8f0",
+  color: "#475569",
+  fontWeight: 900,
+};
+
 const cardProfissional = {
-  border: '1px solid #e2e8f0',
-  borderRadius: 16,
-  padding: 16,
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  background: '#f8fafc',
+  border: "1px solid rgba(255,255,255,0.08)",
+  borderRadius: 28,
+  padding: 22,
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  background: "linear-gradient(180deg, rgba(15,23,42,0.96), rgba(2,6,23,0.96))",
+  color: "#fff",
+  boxShadow: "0 24px 70px rgba(0,0,0,0.35)",
+  position: "relative" as const,
+  overflow: "hidden",
 };
 
 const avatar = {
   width: 54,
   height: 54,
   borderRadius: 999,
-  background: '#e0e7ff',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
+  background: "#e0e7ff",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
   fontWeight: 800,
-  color: '#4f46e5',
-  overflow: 'hidden',
+  color: "#4f46e5",
+  overflow: "hidden",
 };
 
 const badgeServico = {
-  padding: '4px 8px',
+  padding: "4px 8px",
   borderRadius: 999,
   fontSize: 12,
-  background: '#e0e7ff',
-  color: '#3730a3',
+  background: "#e0e7ff",
+  color: "#3730a3",
   fontWeight: 600,
 };
 
 const badgeComissao = {
-  padding: '4px 8px',
+  padding: "4px 8px",
   borderRadius: 999,
   fontSize: 12,
-  background: '#ecfdf5',
-  color: '#166534',
+  background: "#ecfdf5",
+  color: "#166534",
   fontWeight: 700,
 };
 
 const badgeCinza = {
-  padding: '4px 8px',
+  padding: "4px 8px",
   borderRadius: 999,
   fontSize: 12,
-  background: '#e2e8f0',
-  color: '#475569',
+  background: "#e2e8f0",
+  color: "#475569",
 };
 
 const botaoPrincipal = {
-  padding: '12px 18px',
+  padding: "12px 18px",
   borderRadius: 12,
-  border: 'none',
-  background: '#4f46e5',
-  color: '#fff',
+  border: "none",
+  background: "#4f46e5",
+  color: "#fff",
   fontWeight: 700,
-  cursor: 'pointer',
+  cursor: "pointer",
 };
 
 const botaoSecundario = {
-  padding: '12px 18px',
+  padding: "12px 18px",
   borderRadius: 12,
-  border: '1px solid #cbd5e1',
-  background: '#fff',
-  color: '#0f172a',
+  border: "1px solid #cbd5e1",
+  background: "#fff",
+  color: "#0f172a",
   fontWeight: 700,
-  cursor: 'pointer',
+  cursor: "pointer",
 };
 
 const headerPremium = {
-  background: 'linear-gradient(135deg, #4f46e5, #9333ea)',
-  color: '#fff',
+  background: "linear-gradient(135deg, #4f46e5, #9333ea)",
+  color: "#fff",
   borderRadius: 28,
   padding: 34,
   marginBottom: 24,
-  boxShadow: '0 20px 40px rgba(79,70,229,0.24)',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
+  boxShadow: "0 20px 40px rgba(79,70,229,0.24)",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
   gap: 24,
-  flexWrap: 'wrap' as const,
+  flexWrap: "wrap" as const,
 };
 
 const headerConteudo = {
-  display: 'flex',
-  alignItems: 'center',
+  display: "flex",
+  alignItems: "center",
   gap: 20,
 };
 
@@ -747,22 +3229,22 @@ const logoHeader = {
   width: 82,
   height: 82,
   borderRadius: 24,
-  overflow: 'hidden',
-  background: 'rgba(255,255,255,0.14)',
-  border: '2px solid rgba(255,255,255,0.18)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
+  overflow: "hidden",
+  background: "rgba(255,255,255,0.14)",
+  border: "2px solid rgba(255,255,255,0.18)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
   fontSize: 32,
   fontWeight: 900,
-  color: '#fff',
+  color: "#fff",
 };
 
 const badgeBoasVindas = {
-  display: 'inline-block',
-  background: 'rgba(255,255,255,0.14)',
-  color: '#fff',
-  padding: '6px 12px',
+  display: "inline-block",
+  background: "rgba(255,255,255,0.14)",
+  color: "#fff",
+  padding: "6px 12px",
   borderRadius: 999,
   fontSize: 12,
   fontWeight: 900,
@@ -773,73 +3255,415 @@ const tituloHeader = {
   margin: 0,
   fontSize: 38,
   fontWeight: 950,
-  color: '#fff',
+  color: "#fff",
   lineHeight: 1,
 };
 
 const subtituloHeader = {
-  margin: '10px 0 0',
-  color: 'rgba(255,255,255,0.84)',
+  margin: "10px 0 0",
+  color: "rgba(255,255,255,0.84)",
   fontSize: 15,
   fontWeight: 600,
 };
 
 const linhaBadgesHeader = {
-  display: 'flex',
+  display: "flex",
   gap: 10,
-  flexWrap: 'wrap' as const,
+  flexWrap: "wrap" as const,
   marginTop: 16,
 };
 
 const badgeEmpresa = {
-  background: 'rgba(255,255,255,0.14)',
-  color: '#fff',
-  padding: '8px 13px',
+  background: "rgba(255,255,255,0.14)",
+  color: "#fff",
+  padding: "8px 13px",
   borderRadius: 999,
   fontSize: 12,
   fontWeight: 900,
 };
 
 const badgeModulo = {
-  background: '#dbeafe',
-  color: '#1d4ed8',
-  padding: '8px 13px',
+  background: "#dbeafe",
+  color: "#1d4ed8",
+  padding: "8px 13px",
   borderRadius: 999,
   fontSize: 12,
   fontWeight: 900,
 };
 
 const badgeStatus = {
-  background: '#22c55e',
-  color: '#fff',
-  padding: '8px 13px',
+  background: "#22c55e",
+  color: "#fff",
+  padding: "8px 13px",
   borderRadius: 999,
   fontSize: 12,
   fontWeight: 900,
 };
 
 const acoesHeader = {
-  display: 'flex',
+  display: "flex",
   gap: 10,
-  flexWrap: 'wrap' as const,
+  flexWrap: "wrap" as const,
 };
 
 const botaoHeaderClaro = {
-  padding: '13px 18px',
+  padding: "13px 18px",
   borderRadius: 14,
-  border: '1px solid rgba(255,255,255,0.22)',
-  background: 'rgba(255,255,255,0.14)',
-  color: '#fff',
+  border: "1px solid rgba(255,255,255,0.22)",
+  background: "rgba(255,255,255,0.14)",
+  color: "#fff",
   fontWeight: 900,
-  cursor: 'pointer',
+  cursor: "pointer",
 };
 
 const botaoHeaderRoxo = {
-  padding: '13px 18px',
+  padding: "13px 18px",
   borderRadius: 14,
-  border: 'none',
-  background: '#fff',
-  color: '#6d28d9',
+  border: "none",
+  background: "#fff",
+  color: "#6d28d9",
   fontWeight: 900,
-  cursor: 'pointer',
+  cursor: "pointer",
+};
+
+const blocoCard = {
+  background: "rgba(15,23,42,0.92)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  borderRadius: 18,
+  padding: 14,
+};
+
+const servicosBlocoBox = {
+  marginTop: 12,
+  paddingTop: 12,
+  borderTop: "1px dashed rgba(255,255,255,0.14)",
+};
+
+const servicosBlocoTitulo = {
+  display: "block",
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#e5e7eb",
+  marginBottom: 8,
+};
+
+const servicosBlocoVazio = {
+  fontSize: 12,
+  color: "#94a3b8",
+};
+
+const servicosBlocoGrid = {
+  display: "flex",
+  flexWrap: "wrap" as const,
+  gap: 8,
+};
+
+const servicoBlocoSelecionado = {
+  padding: "7px 10px",
+  borderRadius: 999,
+  border: "1px solid #4f46e5",
+  background: "#4f46e5",
+  color: "#fff",
+  fontSize: 11,
+  fontWeight: 900,
+  cursor: "pointer",
+};
+
+const servicoBlocoNaoSelecionado = {
+  padding: "7px 10px",
+  borderRadius: 999,
+  border: "1px solid #cbd5e1",
+  background: "#fff",
+  color: "#475569",
+  fontSize: 11,
+  fontWeight: 800,
+  cursor: "pointer",
+};
+
+const servicosBlocoAjuda = {
+  margin: "8px 0 0",
+  color: "#94a3b8",
+  fontSize: 11,
+  lineHeight: 1.4,
+};
+
+const loadingPage = {
+  minHeight: "100vh",
+  background: "#020617",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+const loadingCard = {
+  background: "rgba(15,23,42,0.92)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  borderRadius: 24,
+  padding: 24,
+  color: "#fff",
+  fontWeight: 900,
+};
+
+const page = {
+  minHeight: "100vh",
+  padding: 28,
+  background: "#020617",
+};
+
+const metricsGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(4, 1fr)",
+  gap: 18,
+  marginBottom: 24,
+};
+
+const metricCard = {
+  background: "rgba(15,23,42,0.92)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  borderRadius: 24,
+  padding: 22,
+  display: "flex",
+  gap: 16,
+  alignItems: "center",
+  boxShadow: "0 20px 50px rgba(0,0,0,0.28)",
+};
+
+const metricIcon = {
+  width: 54,
+  height: 54,
+  borderRadius: 18,
+  background: "linear-gradient(135deg,#d709ab,#7c3aed)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 24,
+};
+
+const metricLabel = {
+  margin: 0,
+  fontSize: 12,
+  color: "#94a3b8",
+  fontWeight: 800,
+};
+
+const metricValue = {
+  display: "block",
+  fontSize: 30,
+  color: "#fff",
+  fontWeight: 900,
+  marginTop: 4,
+};
+
+const metricSub = {
+  display: "block",
+  marginTop: 4,
+  color: "#64748b",
+  fontSize: 12,
+};
+
+const profissionaisGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+  gap: 16,
+};
+
+const profissionalInfo = {
+  display: "flex",
+  alignItems: "center",
+  gap: 18,
+};
+
+const avatarPremium = {
+  width: 72,
+  height: 72,
+  minWidth: 72,
+  maxWidth: 72,
+  flex: "0 0 72px",
+  borderRadius: 22,
+  background: "linear-gradient(135deg,#d709ab,#7c3aed)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontWeight: 950,
+  color: "#fff",
+  fontSize: 26,
+  overflow: "hidden",
+  boxShadow: "0 18px 45px rgba(215,9,171,0.22)",
+};
+
+const profissionalNomeLinha = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  flexWrap: "wrap" as const,
+};
+
+const profissionalNome = {
+  color: "#fff",
+  fontSize: 22,
+  fontWeight: 950,
+};
+
+const profissionalBio = {
+  margin: "6px 0 0",
+  color: "#94a3b8",
+  fontSize: 13,
+  lineHeight: 1.5,
+};
+
+const profissionalTags = {
+  marginTop: 12,
+  display: "flex",
+  gap: 8,
+  flexWrap: "wrap" as const,
+};
+
+const badgeProfissionalAtivo = {
+  padding: "5px 11px",
+  borderRadius: 999,
+  background: "rgba(34,197,94,0.14)",
+  color: "#86efac",
+  border: "1px solid rgba(34,197,94,0.28)",
+  fontSize: 11,
+  fontWeight: 900,
+};
+
+const badgeProfissionalInativo = {
+  padding: "5px 11px",
+  borderRadius: 999,
+  background: "rgba(239,68,68,0.14)",
+  color: "#fca5a5",
+  border: "1px solid rgba(239,68,68,0.28)",
+  fontSize: 11,
+  fontWeight: 900,
+};
+
+const badgeServicoPremium = {
+  padding: "6px 10px",
+  borderRadius: 999,
+  background: "rgba(59,130,246,0.14)",
+  color: "#93c5fd",
+  border: "1px solid rgba(59,130,246,0.28)",
+  fontSize: 12,
+  fontWeight: 850,
+};
+
+const badgeComissaoPremium = {
+  padding: "6px 10px",
+  borderRadius: 999,
+  background: "rgba(34,197,94,0.14)",
+  color: "#86efac",
+  border: "1px solid rgba(34,197,94,0.28)",
+  fontSize: 12,
+  fontWeight: 850,
+};
+
+const badgeCinzaPremium = {
+  padding: "6px 10px",
+  borderRadius: 999,
+  background: "rgba(148,163,184,0.14)",
+  color: "#cbd5e1",
+  border: "1px solid rgba(148,163,184,0.24)",
+  fontSize: 12,
+  fontWeight: 850,
+};
+
+const profissionalActions = {
+  display: "flex",
+  justifyContent: "flex-end",
+  alignItems: "center",
+};
+
+const botaoEditarPremium = {
+  padding: "12px 16px",
+  borderRadius: 14,
+  border: "1px solid rgba(255,255,255,0.10)",
+  background: "rgba(255,255,255,0.06)",
+  color: "#fff",
+  fontWeight: 900,
+  cursor: "pointer",
+};
+
+const listaHeader = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: 16,
+  marginBottom: 22,
+};
+
+const listaKicker = {
+  display: "inline-block",
+  color: "#a78bfa",
+  fontSize: 12,
+  fontWeight: 900,
+  textTransform: "uppercase" as const,
+  letterSpacing: 0.8,
+  marginBottom: 8,
+};
+
+const listaTitulo = {
+  margin: 0,
+  color: "#fff",
+  fontSize: 26,
+  fontWeight: 950,
+};
+
+const listaDescricao = {
+  margin: "8px 0 0",
+  color: "#94a3b8",
+  lineHeight: 1.5,
+};
+
+const listaBadge = {
+  background: "rgba(34,197,94,0.14)",
+  color: "#86efac",
+  border: "1px solid rgba(34,197,94,0.28)",
+  padding: "8px 12px",
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 900,
+  whiteSpace: "nowrap" as const,
+};
+
+const analyticsRow = {
+  display: "flex",
+  gap: 12,
+  marginTop: 14,
+  flexWrap: "wrap" as const,
+};
+
+const analyticsMiniCard = {
+  minWidth: 110,
+  padding: "10px 12px",
+  borderRadius: 16,
+  background: "rgba(255,255,255,0.03)",
+  border: "1px solid rgba(255,255,255,0.06)",
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 4,
+};
+
+const analyticsLabel = {
+  fontSize: 11,
+  color: "#64748b",
+  fontWeight: 700,
+  textTransform: "uppercase" as const,
+  letterSpacing: 0.4,
+};
+
+const analyticsValue = {
+  color: "#fff",
+  fontSize: 16,
+  fontWeight: 900,
+};
+
+const filtroBotao = {
+  padding: "10px 14px",
+  borderRadius: 14,
+  border: "1px solid rgba(255,255,255,0.08)",
+  color: "#fff",
+  background: "rgba(255,255,255,0.04)",
+  cursor: "pointer",
+  fontWeight: 800,
 };

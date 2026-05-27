@@ -34,6 +34,15 @@ export async function GET(req: Request, context: any) {
         assinaturaExpiraEm: true,
         statusFinanceiro: true,
         bloqueadoPorInadimplencia: true,
+
+        // THEME
+        corPrimaria: true,
+        corSecundaria: true,
+        corSidebar: true,
+
+        // SOCIAL
+        instagramUrl: true,
+        instagram: true,
       },
     });
 
@@ -44,7 +53,10 @@ export async function GET(req: Request, context: any) {
       );
     }
 
-    if (empresa.bloqueadoPorInadimplencia || empresa.statusFinanceiro === "inadimplente") {
+    if (
+      empresa.bloqueadoPorInadimplencia ||
+      empresa.statusFinanceiro === "inadimplente"
+    ) {
       return NextResponse.json(
         { error: "Agenda temporariamente indisponível." },
         { status: 403 }

@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { prisma } from '@/lib/prisma';
+import { gerarTemaEmpresa } from '@/app/lib/theme';
 
 type PageProps = {
   params: Promise<{
@@ -108,36 +109,44 @@ function limparTelefone(telefone?: string | null) {
   return String(telefone || '').replace(/\D/g, '');
 }
 
-function formatarEndereco(endereco: any) {
-  if (!endereco) return '';
+function formatarEndereco(empresaOuEndereco: any) {
+  if (!empresaOuEndereco) return '';
 
   try {
     const dados =
-      typeof endereco === 'string'
-        ? JSON.parse(endereco)
-        : endereco;
+      typeof empresaOuEndereco === 'string'
+        ? JSON.parse(empresaOuEndereco)
+        : empresaOuEndereco?.endereco
+          ? typeof empresaOuEndereco.endereco === 'string'
+            ? JSON.parse(empresaOuEndereco.endereco)
+            : empresaOuEndereco.endereco
+          : empresaOuEndereco;
+
+    const rua = dados?.rua || empresaOuEndereco?.rua || '';
+    const numero = dados?.numero || empresaOuEndereco?.numero || '';
+    const complemento = dados?.complemento || empresaOuEndereco?.complemento || '';
+    const cidade = dados?.cidade || empresaOuEndereco?.cidade || '';
+    const estado = dados?.estado || empresaOuEndereco?.estado || '';
+    const bairro = dados?.bairro || empresaOuEndereco?.bairro || '';
+    const cep = dados?.cep || empresaOuEndereco?.cep || '';
 
     const partes = [
-      dados?.rua,
-      dados?.numero,
-      dados?.complemento,
-    ].filter(Boolean);
-
-    const cidadeEstado = [
-      dados?.cidade,
-      dados?.estado,
-    ]
-      .filter(Boolean)
-      .join('/');
+  rua,
+  numero,
+  bairro,
+  complemento,
+].filter(Boolean);
+    const cidadeEstado = [cidade, estado].filter(Boolean).join(' - ');
 
     return [
-      partes.join(', '),
-      cidadeEstado,
-    ]
-      .filter(Boolean)
-      .join(' - ');
+  partes.join(', '),
+  cidadeEstado,
+  cep ? `CEP: ${cep}` : '',
+]
+  .filter(Boolean)
+  .join(' • ');
   } catch {
-    return String(endereco);
+    return '';
   }
 }
 
@@ -210,6 +219,30 @@ function obterValorPrePagamento(item: any) {
   return 0;
 }
 
+function promocaoFoiAplicada(item: any) {
+  return Boolean(item?.promocaoId || item?.promocaoTitulo || Number(item?.valorEconomizado || 0) > 0);
+}
+
+function formatarTipoPromocao(tipo?: string | null) {
+  if (tipo === 'servico') return 'Desconto por serviço';
+  if (tipo === 'aniversariantes') return 'Promoção de aniversário';
+  if (tipo === 'geral') return 'Promoção geral';
+
+  return 'Promoção aplicada';
+}
+
+function formatarDescontoPromocao(item: any) {
+  const desconto = Number(item?.promocaoDesconto || 0);
+
+  if (!desconto) return '';
+
+  if (item?.promocaoTipoDesconto === 'valor') {
+    return formatarMoeda(desconto);
+  }
+
+  return `${desconto}%`;
+}
+
 export default async function SucessoDetalhesPage({
   params,
   searchParams,
@@ -233,7 +266,7 @@ export default async function SucessoDetalhesPage({
   const servico = agendamento?.servico?.nome || 'serviço';
   const nomeEmpresa = agendamento?.empresa?.nome || 'Empresa';
   const telefoneEmpresa = agendamento?.empresa?.telefone || agendamento?.empresa?.whatsapp || '';
-  const enderecoEmpresa = formatarEndereco(agendamento?.empresa?.endereco);
+  const enderecoEmpresa = formatarEndereco(agendamento?.empresa);
 
   const data = agendamento?.dataHoraInicio
     ? formatarData(agendamento.dataHoraInicio)
@@ -288,13 +321,17 @@ export default async function SucessoDetalhesPage({
         item?.statusPagamento,
         Boolean(item?.servico?.exigePrePagamento)
       );
+      const promocaoItem = promocaoFoiAplicada(item)
+        ? `\n🎁 Promoção: ${item.promocaoTitulo || formatarTipoPromocao(item.promocaoTipo)}${item.promocaoUsoUnicoCpf ? ' (1x por CPF)' : ''}`
+        : '';
 
       return (
         `${index + 1}. *${nomeServico}*\n` +
         `👤 Profissional: ${nomeProfissional}\n` +
         `📅 Data: ${dataItem}\n` +
         `⏰ Horário: ${horaItem}\n` +
-        `💳 Pagamento: ${pagamentoItem}`
+        `💳 Pagamento: ${pagamentoItem}` +
+        promocaoItem
       );
     })
     .join('\n\n');
@@ -385,8 +422,30 @@ export default async function SucessoDetalhesPage({
     );
   }
 
+  const tema = gerarTemaEmpresa(agendamento?.empresa);
+
   return (
-    <main className="page">
+    <main
+      className="page"
+      style={{
+        '--marcae-primary': tema.primary,
+        '--marcae-secondary': tema.secondary,
+        '--marcae-sidebar': tema.sidebar,
+        '--marcae-primary-soft': tema.primarySoft,
+        '--marcae-secondary-soft': tema.secondarySoft,
+        '--marcae-primary-medium': tema.primaryMedium,
+        '--marcae-secondary-medium': tema.secondaryMedium,
+        '--marcae-gradient': tema.gradient,
+        '--marcae-bg': tema.bg,
+        '--marcae-bg-soft': tema.bgSoft,
+        '--marcae-card': tema.card,
+        '--marcae-card-strong': tema.cardStrong,
+        '--marcae-border': tema.border,
+        '--marcae-text': tema.text,
+        '--marcae-muted': tema.muted,
+        '--marcae-glow': tema.glow,
+      } as CSSProperties}
+    >
       <div className="backgroundGrid" />
       <div className="orb orbOne" />
       <div className="orb orbTwo" />
@@ -508,6 +567,10 @@ export default async function SucessoDetalhesPage({
                 );
                 const valorServicoItem = obterValorServico(item);
                 const valorPrePagamentoItem = obterValorPrePagamento(item);
+                const possuiPromocaoAplicada = promocaoFoiAplicada(item);
+                const valorOriginalItem = Number(item?.valorOriginalServico || item?.servico?.valor || item?.servico?.preco || valorServicoItem || 0);
+                const valorEconomizadoItem = Number(item?.valorEconomizado || Math.max(valorOriginalItem - valorServicoItem, 0));
+                const descontoPromocaoItem = formatarDescontoPromocao(item);
 
                 return (
                   <article key={item.id} className="serviceCard">
@@ -523,7 +586,12 @@ export default async function SucessoDetalhesPage({
                           <p>{formatarData(item?.dataHoraInicio)} às {formatarHora(item?.dataHoraInicio)}</p>
                         </div>
 
-                        <strong className="servicePrice">{formatarMoeda(valorServicoItem)}</strong>
+                        <div className="servicePriceBlock">
+                          {possuiPromocaoAplicada && valorOriginalItem > valorServicoItem && (
+                            <small>{formatarMoeda(valorOriginalItem)}</small>
+                          )}
+                          <strong className="servicePrice">{formatarMoeda(valorServicoItem)}</strong>
+                        </div>
                       </div>
 
                       <div className="detailGrid">
@@ -561,6 +629,44 @@ export default async function SucessoDetalhesPage({
                           </div>
                         )}
                       </div>
+
+                      {possuiPromocaoAplicada && (
+                        <div className="promoNotice">
+                          <div className="promoNoticeHeader">
+                            <span>🎁 Promoção aplicada</span>
+                            <strong>{item?.promocaoTitulo || formatarTipoPromocao(item?.promocaoTipo)}</strong>
+                          </div>
+
+                          {item?.promocaoDescricao && (
+                            <p>{item.promocaoDescricao}</p>
+                          )}
+
+                          <div className="promoNoticeGrid">
+                            <div>
+                              <small>Tipo</small>
+                              <strong>{formatarTipoPromocao(item?.promocaoTipo)}</strong>
+                            </div>
+
+                            {descontoPromocaoItem && (
+                              <div>
+                                <small>Desconto</small>
+                                <strong>{descontoPromocaoItem}</strong>
+                              </div>
+                            )}
+
+                            <div>
+                              <small>Economia</small>
+                              <strong>{formatarMoeda(valorEconomizadoItem)}</strong>
+                            </div>
+                          </div>
+
+                          {item?.promocaoUsoUnicoCpf && (
+                            <div className="promoUsoUnico">
+                              🔒 Promoção válida apenas 1 vez por CPF.
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {exigePrePagamentoItem && (
                         <div className="policyNotice">
@@ -608,11 +714,21 @@ export default async function SucessoDetalhesPage({
 )}
 
             {enderecoEmpresa && (
-              <div className="infoTile wide">
-                <span>Endereço</span>
-                <strong>{enderecoEmpresa}</strong>
-              </div>
-            )}
+  <div className="infoTile">
+    <span>Local do atendimento</span>
+
+    <strong>{enderecoEmpresa}</strong>
+
+    <a
+      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoEmpresa)}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mapsButton"
+    >
+      📍 Abrir rota
+    </a>
+  </div>
+)}
           </section>
 
           <section className="actions">
@@ -676,11 +792,11 @@ export default async function SucessoDetalhesPage({
           min-height: 100vh;
           overflow: hidden;
           background:
-            radial-gradient(circle at 15% 8%, rgba(123, 58, 237, 0.35), transparent 30%),
-            radial-gradient(circle at 88% 18%, rgba(183, 107, 255, 0.22), transparent 28%),
-            radial-gradient(circle at 50% 100%, rgba(123, 58, 237, 0.22), transparent 34%),
-            linear-gradient(135deg, #080b0f 0%, #0d1020 44%, #111425 100%);
-          color: #f8fafc;
+            radial-gradient(circle at 15% 8%, var(--marcae-primary-soft), transparent 30%),
+            radial-gradient(circle at 88% 18%, var(--marcae-secondary-soft), transparent 28%),
+            radial-gradient(circle at 50% 100%, var(--marcae-primary-soft), transparent 34%),
+            linear-gradient(135deg, var(--marcae-bg) 0%, var(--marcae-bg-soft) 44%, var(--marcae-sidebar) 100%);
+          color: var(--marcae-text);
           display: flex;
           justify-content: center;
           align-items: center;
@@ -710,7 +826,7 @@ export default async function SucessoDetalhesPage({
         .orbOne {
           width: 280px;
           height: 280px;
-          background: rgba(123, 58, 237, 0.28);
+          background: var(--marcae-primary-soft);
           top: 8%;
           left: 6%;
         }
@@ -718,7 +834,7 @@ export default async function SucessoDetalhesPage({
         .orbTwo {
           width: 240px;
           height: 240px;
-          background: rgba(183, 107, 255, 0.18);
+          background: var(--marcae-secondary-soft);
           right: 8%;
           top: 18%;
         }
@@ -726,7 +842,7 @@ export default async function SucessoDetalhesPage({
         .orbThree {
           width: 360px;
           height: 360px;
-          background: rgba(123, 58, 237, 0.16);
+          background: var(--marcae-primary-soft);
           bottom: -120px;
           left: 42%;
         }
@@ -767,8 +883,8 @@ export default async function SucessoDetalhesPage({
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(circle at 20% 10%, rgba(183, 107, 255, 0.24), transparent 35%),
-            radial-gradient(circle at 75% 60%, rgba(123, 58, 237, 0.18), transparent 36%);
+            radial-gradient(circle at 20% 10%, var(--marcae-secondary-soft), transparent 35%),
+            radial-gradient(circle at 75% 60%, var(--marcae-primary-soft), transparent 36%);
           pointer-events: none;
         }
 
@@ -790,7 +906,7 @@ export default async function SucessoDetalhesPage({
           border-radius: 999px;
           background: rgba(237, 233, 255, 0.08);
           border: 1px solid rgba(237, 233, 255, 0.12);
-          color: #ede9ff;
+          color: var(--marcae-text);
           font-size: 14px;
           font-weight: 950;
           letter-spacing: -0.04em;
@@ -798,7 +914,7 @@ export default async function SucessoDetalhesPage({
 
         .brandPill span:last-child,
         .poweredBy strong span {
-          color: #b76bff;
+          color: var(--marcae-secondary);
         }
 
         .companyMark {
@@ -806,14 +922,14 @@ export default async function SucessoDetalhesPage({
           height: 118px;
           border-radius: 34px;
           background:
-            linear-gradient(#111425, #111425) padding-box,
-            linear-gradient(135deg, rgba(183, 107, 255, 0.8), rgba(123, 58, 237, 0.18)) border-box;
+            linear-gradient(var(--marcae-sidebar), var(--marcae-sidebar)) padding-box,
+            linear-gradient(135deg, var(--marcae-secondary-soft), var(--marcae-primary-soft)) border-box;
           border: 1px solid transparent;
           display: flex;
           align-items: center;
           justify-content: center;
           overflow: hidden;
-          box-shadow: 0 30px 80px rgba(123, 58, 237, 0.28);
+          box-shadow: 0 30px 80px var(--marcae-primary-soft);
         }
 
         .companyMark img {
@@ -824,7 +940,7 @@ export default async function SucessoDetalhesPage({
 
         .companyMark strong {
           font-size: 52px;
-          color: #b76bff;
+          color: var(--marcae-secondary);
         }
 
         .statusBadge {
@@ -867,7 +983,7 @@ export default async function SucessoDetalhesPage({
         .heroCopy p {
           max-width: 390px;
           margin: 20px 0 0;
-          color: #a7b0c5;
+          color: var(--marcae-muted);
           font-size: 16px;
           line-height: 1.7;
         }
@@ -898,7 +1014,7 @@ export default async function SucessoDetalhesPage({
         .infoTile span,
         .socialCard span,
         .detailCard small {
-          color: #a7b0c5;
+          color: var(--marcae-muted);
           font-size: 11px;
           font-weight: 950;
           text-transform: uppercase;
@@ -906,7 +1022,7 @@ export default async function SucessoDetalhesPage({
         }
 
         .heroStats strong {
-          color: #f8fafc;
+          color: var(--marcae-text);
           text-align: right;
           font-size: 14px;
         }
@@ -921,7 +1037,7 @@ export default async function SucessoDetalhesPage({
 
         .heroFooter strong {
           font-size: 18px;
-          color: #ede9ff;
+          color: var(--marcae-text);
         }
 
         .contentPanel {
@@ -946,7 +1062,7 @@ export default async function SucessoDetalhesPage({
 
         .contentHeader p {
           margin: 0;
-          color: #a7b0c5;
+          color: var(--marcae-muted);
           font-size: 15px;
           line-height: 1.6;
         }
@@ -974,8 +1090,8 @@ export default async function SucessoDetalhesPage({
           padding: 18px;
           border-radius: 26px;
           background:
-            linear-gradient(145deg, rgba(123, 58, 237, 0.18), rgba(237, 233, 255, 0.06));
-          border: 1px solid rgba(183, 107, 255, 0.18);
+            linear-gradient(145deg, var(--marcae-primary-soft), rgba(237, 233, 255, 0.06));
+          border: 1px solid var(--marcae-secondary-soft);
         }
 
         .summaryRibbon strong {
@@ -1019,7 +1135,7 @@ export default async function SucessoDetalhesPage({
           top: 18px;
           bottom: 18px;
           width: 1px;
-          background: linear-gradient(180deg, rgba(183, 107, 255, 0.7), rgba(183, 107, 255, 0.04));
+          background: linear-gradient(180deg, var(--marcae-secondary-soft), var(--marcae-secondary-soft));
         }
 
         .serviceCard {
@@ -1035,8 +1151,8 @@ export default async function SucessoDetalhesPage({
           width: 46px;
           height: 46px;
           border-radius: 18px;
-          background: linear-gradient(135deg, #7b3aed, #b76bff);
-          box-shadow: 0 18px 40px rgba(123, 58, 237, 0.32);
+          background: linear-gradient(135deg, var(--marcae-primary), var(--marcae-secondary));
+          box-shadow: 0 18px 40px var(--marcae-primary-soft);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1064,8 +1180,8 @@ export default async function SucessoDetalhesPage({
           display: inline-flex;
           padding: 7px 10px;
           border-radius: 999px;
-          background: rgba(183, 107, 255, 0.14);
-          color: #ede9ff;
+          background: var(--marcae-secondary-soft);
+          color: var(--marcae-text);
           font-size: 11px;
           font-weight: 950;
           margin-bottom: 10px;
@@ -1080,7 +1196,7 @@ export default async function SucessoDetalhesPage({
 
         .serviceTop p {
           margin: 0;
-          color: #a7b0c5;
+          color: var(--marcae-muted);
           font-size: 14px;
           line-height: 1.4;
         }
@@ -1089,6 +1205,21 @@ export default async function SucessoDetalhesPage({
           white-space: nowrap;
           color: #fff;
           font-size: 16px;
+        }
+
+
+        .servicePriceBlock {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 4px;
+        }
+
+        .servicePriceBlock small {
+          color: var(--marcae-muted);
+          font-size: 12px;
+          font-weight: 800;
+          text-decoration: line-through;
         }
 
         .detailGrid {
@@ -1113,7 +1244,7 @@ export default async function SucessoDetalhesPage({
           height: 38px;
           min-width: 38px;
           border-radius: 14px;
-          background: rgba(183, 107, 255, 0.12);
+          background: var(--marcae-secondary-soft);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1121,7 +1252,7 @@ export default async function SucessoDetalhesPage({
 
         .detailCard strong {
           display: block;
-          color: #f8fafc;
+          color: var(--marcae-text);
           font-size: 13px;
           margin-top: 4px;
           line-height: 1.25;
@@ -1143,6 +1274,90 @@ export default async function SucessoDetalhesPage({
 
         .policyNotice strong {
           color: #ffedd5;
+        }
+
+
+        .promoNotice {
+          margin-top: 16px;
+          border-radius: 22px;
+          padding: 18px;
+          background:
+            radial-gradient(circle at top left, rgba(168, 85, 247, 0.22), transparent 42%),
+            rgba(88, 28, 135, 0.16);
+          border: 1px solid rgba(196, 181, 253, 0.22);
+          color: var(--marcae-text);
+        }
+
+        .promoNoticeHeader {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          align-items: flex-start;
+          flex-wrap: wrap;
+        }
+
+        .promoNoticeHeader span {
+          color: var(--marcae-text);
+          font-size: 12px;
+          font-weight: 950;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+
+        .promoNoticeHeader strong {
+          color: #fff;
+          font-size: 16px;
+          font-weight: 950;
+          text-align: right;
+        }
+
+        .promoNotice p {
+          margin: 10px 0 0;
+          color: var(--marcae-secondary);
+          line-height: 1.6;
+          font-weight: 700;
+        }
+
+        .promoNoticeGrid {
+          margin-top: 14px;
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+        }
+
+        .promoNoticeGrid div {
+          border-radius: 16px;
+          padding: 12px;
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+        }
+
+        .promoNoticeGrid small {
+          color: var(--marcae-secondary);
+          font-size: 11px;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+
+        .promoNoticeGrid strong {
+          color: #fff;
+          font-size: 13px;
+          font-weight: 950;
+        }
+
+        .promoUsoUnico {
+          margin-top: 12px;
+          border-radius: 14px;
+          padding: 11px 12px;
+          background: rgba(34, 197, 94, 0.10);
+          border: 1px solid rgba(34, 197, 94, 0.18);
+          color: #bbf7d0;
+          font-size: 13px;
+          font-weight: 900;
         }
 
         .infoGrid {
@@ -1169,6 +1384,31 @@ export default async function SucessoDetalhesPage({
           font-size: 14px;
           line-height: 1.45;
         }
+
+.mapsButton {
+  margin-top: 12px;
+  min-height: 42px;
+  border-radius: 14px;
+  background: linear-gradient(
+    135deg,
+    var(--marcae-primary),
+    var(--marcae-secondary)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  transition: all 0.2s ease;
+  box-shadow: 0 14px 28px var(--marcae-primary-soft);
+}
+
+.mapsButton:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+}
 
         .actions {
           display: grid;
@@ -1203,8 +1443,8 @@ export default async function SucessoDetalhesPage({
         }
 
         .actionButton.calendar {
-          background: linear-gradient(135deg, #7b3aed, #b76bff);
-          box-shadow: 0 18px 36px rgba(123, 58, 237, 0.22);
+          background: linear-gradient(135deg, var(--marcae-primary), var(--marcae-secondary));
+          box-shadow: 0 18px 36px var(--marcae-primary-soft);
         }
 
         .socialCard {
@@ -1215,9 +1455,9 @@ export default async function SucessoDetalhesPage({
           justify-content: space-between;
           gap: 16px;
           background:
-            radial-gradient(circle at right, rgba(183, 107, 255, 0.16), transparent 34%),
+            radial-gradient(circle at right, var(--marcae-secondary-soft), transparent 34%),
             rgba(237, 233, 255, 0.06);
-          border: 1px solid rgba(183, 107, 255, 0.18);
+          border: 1px solid var(--marcae-secondary-soft);
         }
 
         .socialCard strong {
@@ -1228,7 +1468,7 @@ export default async function SucessoDetalhesPage({
         }
 
         .socialCard p {
-          color: #a7b0c5;
+          color: var(--marcae-muted);
           margin: 7px 0 0;
           font-size: 14px;
           line-height: 1.5;
@@ -1253,7 +1493,7 @@ export default async function SucessoDetalhesPage({
           align-items: center;
           justify-content: center;
           gap: 8px;
-          color: #a7b0c5;
+          color: var(--marcae-muted);
           font-size: 13px;
         }
 
@@ -1278,11 +1518,11 @@ export default async function SucessoDetalhesPage({
           height: 70px;
           margin: 0 auto 18px;
           border-radius: 24px;
-          background: rgba(183, 107, 255, 0.14);
+          background: var(--marcae-secondary-soft);
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #b76bff;
+          color: var(--marcae-secondary);
           font-size: 28px;
           font-weight: 950;
         }
@@ -1294,7 +1534,7 @@ export default async function SucessoDetalhesPage({
         }
 
         .emptyState p {
-          color: #a7b0c5;
+          color: var(--marcae-muted);
           margin: 0 0 20px;
           line-height: 1.5;
         }
@@ -1305,7 +1545,7 @@ export default async function SucessoDetalhesPage({
         }
 
         .emptyState strong span {
-          color: #b76bff;
+          color: var(--marcae-secondary);
         }
 
                 @media (min-width: 981px) {
@@ -1378,7 +1618,8 @@ export default async function SucessoDetalhesPage({
           .heroStats,
           .summaryRibbon,
           .infoGrid,
-          .actions {
+          .actions,
+          .promoNoticeGrid {
             grid-template-columns: 1fr;
           }
 

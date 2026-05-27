@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 
+function normalizarWhatsapp(valor: unknown) {
+  return String(valor || '').replace(/\D/g, '');
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ empresaId: string }> }
@@ -21,6 +25,7 @@ export async function GET(
         id: true,
         nome: true,
         email: true,
+        whatsapp: true,
         perfil: true,
         ativo: true,
         permissoes: true,
@@ -52,7 +57,7 @@ export async function POST(
 ) {
   try {
     const { empresaId } = await params;
-    const { nome, email, senha, perfil, permissoes } = await req.json();
+    const { nome, email, whatsapp, senha, perfil, permissoes } = await req.json();
 
     if (!empresaId) {
       return NextResponse.json(
@@ -61,14 +66,22 @@ export async function POST(
       );
     }
 
-    if (!nome || !email || !senha) {
+    const loginUsuario = String(email || '').trim();
+    const whatsappLimpo = normalizarWhatsapp(whatsapp);
+
+    if (!nome || !loginUsuario || !senha || !whatsappLimpo) {
       return NextResponse.json(
-        { success: false, error: 'Nome, usuário e senha são obrigatórios.' },
+        { success: false, error: 'Nome, usuário, WhatsApp e senha são obrigatórios.' },
         { status: 400 }
       );
     }
 
-    const loginUsuario = String(email).trim();
+    if (whatsappLimpo.length < 10 || whatsappLimpo.length > 13) {
+      return NextResponse.json(
+        { success: false, error: 'Informe um WhatsApp válido para o usuário.' },
+        { status: 400 }
+      );
+    }
 
     const empresa = await prisma.empresa.findUnique({
       where: { id: empresaId },
@@ -101,6 +114,7 @@ export async function POST(
         empresaId,
         nome,
         email: loginUsuario,
+        whatsapp: whatsappLimpo,
         senhaHash: senha,
         perfil: perfilFinal,
         ativo: true,
@@ -110,6 +124,7 @@ export async function POST(
         id: true,
         nome: true,
         email: true,
+        whatsapp: true,
         perfil: true,
         ativo: true,
         permissoes: true,
@@ -138,7 +153,7 @@ export async function PUT(
 ) {
   try {
     const { empresaId } = await params;
-    const { id, nome, email, senha, perfil, permissoes, ativo } = await req.json();
+    const { id, nome, email, whatsapp, senha, perfil, permissoes, ativo } = await req.json();
 
     if (!empresaId) {
       return NextResponse.json(
@@ -147,14 +162,22 @@ export async function PUT(
       );
     }
 
-    if (!id || !nome || !email) {
+    const loginUsuario = String(email || '').trim();
+    const whatsappLimpo = normalizarWhatsapp(whatsapp);
+
+    if (!id || !nome || !loginUsuario || !whatsappLimpo) {
       return NextResponse.json(
-        { success: false, error: 'ID, nome e usuário são obrigatórios.' },
+        { success: false, error: 'ID, nome, usuário e WhatsApp são obrigatórios.' },
         { status: 400 }
       );
     }
 
-    const loginUsuario = String(email).trim();
+    if (whatsappLimpo.length < 10 || whatsappLimpo.length > 13) {
+      return NextResponse.json(
+        { success: false, error: 'Informe um WhatsApp válido para o usuário.' },
+        { status: 400 }
+      );
+    }
 
     const usuarioAtual = await prisma.usuarioEmpresa.findFirst({
       where: {
@@ -195,6 +218,7 @@ export async function PUT(
       data: {
         nome,
         email: loginUsuario,
+        whatsapp: whatsappLimpo,
         perfil: perfilFinal,
         ativo: ativo === false ? false : true,
         permissoes: perfilFinal === 'admin' ? null : permissoes || {},
@@ -204,6 +228,7 @@ export async function PUT(
         id: true,
         nome: true,
         email: true,
+        whatsapp: true,
         perfil: true,
         ativo: true,
         permissoes: true,

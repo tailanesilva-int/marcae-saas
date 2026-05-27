@@ -3,6 +3,11 @@ import { prisma } from '@/lib/prisma';
 
 const TIMEZONE_OFFSET_BRASIL = '-03:00';
 
+function limparCpf(cpf?: string | null) {
+  return String(cpf || '').replace(/\D/g, '');
+}
+
+
 function criarDataBrasil(data: string, horario: string) {
   return new Date(`${data}T${horario}:00${TIMEZONE_OFFSET_BRASIL}`);
 }
@@ -27,13 +32,30 @@ function formatarHorario(date: Date) {
   }).format(date);
 }
 
+function formatarDataParaCampoBrasil(data: string) {
+  return data;
+}
+
+function inteiroPositivo(valor: any, padrao = 1) {
+  const convertido = Number(valor);
+
+  if (!Number.isFinite(convertido) || convertido < 1) {
+    return padrao;
+  }
+
+  return Math.max(Math.floor(convertido), 1);
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
 
+    const empresaId = searchParams.get('empresaId');
     const profissionalId = searchParams.get('profissionalId');
     const servicoId = searchParams.get('servicoId');
     const data = searchParams.get('data');
+    const clienteId = searchParams.get('clienteId');
+    const cpfCliente = limparCpf(searchParams.get('cpf'));
 
     if (!profissionalId || !servicoId || !data) {
       return NextResponse.json(
@@ -56,82 +78,139 @@ export async function GET(req: Request) {
       );
     }
 
-    const disponibilidade = await prisma.disponibilidade.findFirst({
+    const disponibilidades = await prisma.disponibilidade.findMany({
       where: {
         profissionalId,
         diaSemana,
         ativo: true,
+        OR: [
+          {
+            disponibilidadeServicos: {
+              none: {},
+            },
+          },
+          {
+            disponibilidadeServicos: {
+              some: {
+                servicoId,
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        disponibilidadeServicos: true,
+      },
+      orderBy: {
+        horaInicio: 'asc',
       },
     });
 
-    if (!disponibilidade) {
+    if (!disponibilidades.length) {
       return NextResponse.json({ horarios: [] });
     }
 
     const inicioDia = criarDataBrasil(data, '00:00');
     const fimDia = criarDataBrasil(data, '23:59');
+    const dataCampo = formatarDataParaCampoBrasil(data);
+    const capacidadeSimultanea = inteiroPositivo(
+      (servico as any).capacidadeSimultanea,
+      1
+    );
 
     const agendamentos = await prisma.agendamento.findMany({
       where: {
+        ...(empresaId ? { empresaId } : {}),
         profissionalId,
+        servicoId,
+        data: dataCampo,
         status: {
           not: 'cancelado',
         },
-        dataHoraInicio: {
-          gte: inicioDia,
-          lte: fimDia,
-        },
+      },
+      select: {
+        id: true,
+        servicoId: true,
+        data: true,
+        horaInicio: true,
+        clienteId: true,
+        clienteCpf: true,
       },
     });
 
     const horarios: string[] = [];
 
-    const [horaIni, minIni] = disponibilidade.horaInicio
-      .split(':')
-      .map(Number);
-
-    const [horaFim, minFim] = disponibilidade.horaFim
-      .split(':')
-      .map(Number);
-
-    let atual = criarDataBrasil(
-      data,
-      `${String(horaIni).padStart(2, '0')}:${String(minIni).padStart(2, '0')}`
-    );
-
-    const fim = criarDataBrasil(
-      data,
-      `${String(horaFim).padStart(2, '0')}:${String(minFim).padStart(2, '0')}`
-    );
-
     const agora = new Date();
     const hojeBrasil = hojeBrasilFormatoInput();
     const mesmaData = data === hojeBrasil;
 
-    while (true) {
-      const proximo = new Date(atual);
-      proximo.setMinutes(proximo.getMinutes() + servico.duracaoMin);
+    for (const disponibilidade of disponibilidades) {
+      const [horaIni, minIni] = disponibilidade.horaInicio
+        .split(':')
+        .map(Number);
 
-      if (proximo > fim) break;
+      const [horaFim, minFim] = disponibilidade.horaFim
+        .split(':')
+        .map(Number);
 
-      const horarioPassado = mesmaData && atual <= agora;
+      let atual = criarDataBrasil(
+        data,
+        `${String(horaIni).padStart(2, '0')}:${String(minIni).padStart(2, '0')}`
+      );
 
-      const ocupado = agendamentos.some((ag) => {
-        if (!ag.dataHoraInicio || !ag.dataHoraFim) {
-          return false;
+      const fim = criarDataBrasil(
+        data,
+        `${String(horaFim).padStart(2, '0')}:${String(minFim).padStart(2, '0')}`
+      );
+
+      while (true) {
+        const proximo = new Date(atual);
+
+        proximo.setMinutes(
+          proximo.getMinutes() + Number(servico.duracaoMin || 30)
+        );
+
+        if (proximo > fim) break;
+
+        const horarioPassado =
+          mesmaData && atual <= agora;
+
+        const horarioFormatado = formatarHorario(atual);
+
+        const agendamentosMesmoHorario = agendamentos.filter(
+          (agendamento) =>
+            agendamento.data === dataCampo &&
+            agendamento.horaInicio === horarioFormatado
+        );
+
+        const clienteJaTemEsseHorario = agendamentosMesmoHorario.some((agendamento) => {
+          const mesmoClienteId =
+            Boolean(clienteId) && agendamento.clienteId === clienteId;
+
+          const mesmoCpf =
+            Boolean(cpfCliente) &&
+            limparCpf(agendamento.clienteCpf) === cpfCliente;
+
+          return mesmoClienteId || mesmoCpf;
+        });
+
+        const quantidadeMesmoServicoNoHorario = agendamentosMesmoHorario.length;
+
+        const ocupado =
+          clienteJaTemEsseHorario ||
+          quantidadeMesmoServicoNoHorario >= capacidadeSimultanea;
+
+        if (!ocupado && !horarioPassado) {
+          if (!horarios.includes(horarioFormatado)) {
+            horarios.push(horarioFormatado);
+          }
         }
 
-        return (
-          atual < new Date(ag.dataHoraFim) &&
-          proximo > new Date(ag.dataHoraInicio)
+        atual = new Date(
+          atual.getTime() +
+            Number(disponibilidade.intervaloMin || servico.duracaoMin || 30) * 60000
         );
-      });
-
-      if (!ocupado && !horarioPassado) {
-        horarios.push(formatarHorario(atual));
       }
-
-      atual = proximo;
     }
 
     return NextResponse.json({ horarios });

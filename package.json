@@ -15,12 +15,15 @@
     "@supabase/supabase-js": "^2.105.0",
     "date-fns": "^4.1.0",
     "dotenv-cli": "^11.0.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "mercadopago": "^2.12.0",
     "next": "latest",
     "react": "latest",
     "react-big-calendar": "^1.19.4",
     "react-dom": "latest",
     "recharts": "^3.8.1",
+    "xlsx": "^0.18.5",
     "zod": "latest"
   },
   "devDependencies": {

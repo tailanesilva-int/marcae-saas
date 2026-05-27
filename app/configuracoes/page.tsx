@@ -1,7 +1,11 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import PremiumLayout from "@/components/layout/PremiumLayout";
+import { aplicarTemaNoDocumento, TEMA_PADRAO_MARCAE } from "@/app/lib/theme";
+import { montarMensagemConviteAgendamento } from "@/lib/templatesWhatsapp";
+import { montarLinkAgendamento } from "@/lib/links";
 
 type PermissoesUsuario = {
   dashboard: boolean;
@@ -12,16 +16,36 @@ type PermissoesUsuario = {
   configuracoes: boolean;
   comissoes: boolean;
   visualizarFinanceiro: boolean;
+  financeiro: boolean;
+  operarCaixa: boolean;
+  abrirCaixa: boolean;
+  registrarMovimentacaoCaixa: boolean;
+  fecharCaixa: boolean;
+  verCreditosDebitosClientes: boolean;
+  clientes: boolean;
+  lancarCreditoCliente: boolean;
+  lancarDebitoCliente: boolean;
+  abaterDebitoCliente: boolean;
   finalizarAtendimento: boolean;
+  registrarPagamentoAtendimento: boolean;
+  lancarDebitoNoFechamento: boolean;
+  lancarCreditoNoFechamento: boolean;
   reagendarAtendimento: boolean;
   cancelarAtendimento: boolean;
   fecharComissao: boolean;
+  relatorios: boolean;
+  exportarRelatorios: boolean;
+  gerenciarUsuarios: boolean;
+  alterarPermissoes: boolean;
+  alterarDadosEmpresa: boolean;
+  alterarTemaWhiteLabel: boolean;
 };
 
 type UsuarioSistema = {
   id: string;
   nome: string;
   email: string;
+  whatsapp: string | null;
   perfil: string | null;
   ativo: boolean | null;
   permissoes: any;
@@ -36,113 +60,313 @@ const permissoesPadrao: PermissoesUsuario = {
   configuracoes: false,
   comissoes: false,
   visualizarFinanceiro: false,
+  financeiro: false,
+  operarCaixa: false,
+  abrirCaixa: false,
+  registrarMovimentacaoCaixa: false,
+  fecharCaixa: false,
+  verCreditosDebitosClientes: false,
+  clientes: false,
+  lancarCreditoCliente: false,
+  lancarDebitoCliente: false,
+  abaterDebitoCliente: false,
   finalizarAtendimento: false,
+  registrarPagamentoAtendimento: false,
+  lancarDebitoNoFechamento: false,
+  lancarCreditoNoFechamento: false,
   reagendarAtendimento: false,
   cancelarAtendimento: false,
   fecharComissao: false,
+  relatorios: false,
+  exportarRelatorios: false,
+  gerenciarUsuarios: false,
+  alterarPermissoes: false,
+  alterarDadosEmpresa: false,
+  alterarTemaWhiteLabel: false,
 };
+
+const TEMA_MARCAE = {
+  corPrimaria: TEMA_PADRAO_MARCAE.primary,
+  corSecundaria: TEMA_PADRAO_MARCAE.secondary,
+  corSidebar: TEMA_PADRAO_MARCAE.sidebar,
+};
+
+const permissoesLista: {
+  chave: keyof PermissoesUsuario;
+  titulo: string;
+  descricao: string;
+  grupo: string;
+}[] = [
+  {
+    chave: "dashboard",
+    titulo: "Dashboard",
+    descricao: "Acessar indicadores e visão geral.",
+    grupo: "Módulos",
+  },
+  {
+    chave: "agenda",
+    titulo: "Agenda",
+    descricao: "Visualizar e gerenciar agenda.",
+    grupo: "Módulos",
+  },
+  {
+    chave: "servicos",
+    titulo: "Serviços",
+    descricao: "Cadastrar e editar serviços.",
+    grupo: "Módulos",
+  },
+  {
+    chave: "profissionais",
+    titulo: "Profissionais",
+    descricao: "Gerenciar equipe e horários.",
+    grupo: "Módulos",
+  },
+  {
+    chave: "promocoes",
+    titulo: "Promoções",
+    descricao: "Criar campanhas e ações.",
+    grupo: "Módulos",
+  },
+  {
+    chave: "clientes",
+    titulo: "Clientes",
+    descricao: "Acessar cadastro e histórico dos clientes.",
+    grupo: "Módulos",
+  },
+  {
+    chave: "configuracoes",
+    titulo: "Configurações",
+    descricao: "Acessar tela de configurações.",
+    grupo: "Módulos",
+  },
+  {
+    chave: "financeiro",
+    titulo: "Acessar financeiro",
+    descricao: "Abrir o menu financeiro e visualizar o módulo.",
+    grupo: "Financeiro",
+  },
+  {
+    chave: "visualizarFinanceiro",
+    titulo: "Visualizar valores",
+    descricao: "Ver faturamento, pagamentos, caixa e repasses.",
+    grupo: "Financeiro",
+  },
+  {
+    chave: "comissoes",
+    titulo: "Comissões",
+    descricao: "Acessar módulo de comissões.",
+    grupo: "Financeiro",
+  },
+  {
+    chave: "fecharComissao",
+    titulo: "Fechar comissão",
+    descricao: "Realizar fechamento de comissões.",
+    grupo: "Financeiro",
+  },
+  {
+    chave: "operarCaixa",
+    titulo: "Operar caixa",
+    descricao: "Executar ações operacionais no caixa diário.",
+    grupo: "Caixa",
+  },
+  {
+    chave: "abrirCaixa",
+    titulo: "Abrir caixa",
+    descricao: "Abrir caixa diário e informar saldo inicial.",
+    grupo: "Caixa",
+  },
+  {
+    chave: "registrarMovimentacaoCaixa",
+    titulo: "Registrar movimentações",
+    descricao: "Registrar reforços, sangrias, saídas e entradas manuais.",
+    grupo: "Caixa",
+  },
+  {
+    chave: "fecharCaixa",
+    titulo: "Fechar caixa",
+    descricao: "Fechar caixa diário por modalidade e registrar divergências.",
+    grupo: "Caixa",
+  },
+  {
+    chave: "verCreditosDebitosClientes",
+    titulo: "Ver créditos/débitos",
+    descricao: "Visualizar conta financeira dos clientes.",
+    grupo: "Clientes",
+  },
+  {
+    chave: "lancarCreditoCliente",
+    titulo: "Lançar crédito",
+    descricao: "Registrar crédito manual para cliente.",
+    grupo: "Clientes",
+  },
+  {
+    chave: "lancarDebitoCliente",
+    titulo: "Lançar débito",
+    descricao: "Registrar débito manual para cliente.",
+    grupo: "Clientes",
+  },
+  {
+    chave: "abaterDebitoCliente",
+    titulo: "Abater débito",
+    descricao: "Usar pagamentos ou créditos para baixar débitos do cliente.",
+    grupo: "Clientes",
+  },
+  {
+    chave: "finalizarAtendimento",
+    titulo: "Finalizar atendimento",
+    descricao: "Confirmar presença e concluir atendimento.",
+    grupo: "Atendimentos",
+  },
+  {
+    chave: "registrarPagamentoAtendimento",
+    titulo: "Registrar pagamento",
+    descricao: "Informar pagamentos no fechamento do atendimento.",
+    grupo: "Atendimentos",
+  },
+  {
+    chave: "lancarDebitoNoFechamento",
+    titulo: "Débito no fechamento",
+    descricao: "Transformar saldo pendente em débito do cliente.",
+    grupo: "Atendimentos",
+  },
+  {
+    chave: "lancarCreditoNoFechamento",
+    titulo: "Crédito no fechamento",
+    descricao: "Gerar crédito para o cliente no fechamento do atendimento.",
+    grupo: "Atendimentos",
+  },
+  {
+    chave: "reagendarAtendimento",
+    titulo: "Reagendar atendimento",
+    descricao: "Alterar data e horário.",
+    grupo: "Atendimentos",
+  },
+  {
+    chave: "cancelarAtendimento",
+    titulo: "Cancelar atendimento",
+    descricao: "Cancelar com motivo registrado.",
+    grupo: "Atendimentos",
+  },
+  {
+    chave: "relatorios",
+    titulo: "Acessar relatórios",
+    descricao: "Abrir relatórios gerenciais e financeiros.",
+    grupo: "Relatórios",
+  },
+  {
+    chave: "exportarRelatorios",
+    titulo: "Exportar relatórios",
+    descricao: "Baixar relatórios em PDF, Excel ou formatos futuros.",
+    grupo: "Relatórios",
+  },
+  {
+    chave: "gerenciarUsuarios",
+    titulo: "Gerenciar usuários",
+    descricao: "Criar, editar e inativar usuários.",
+    grupo: "Configurações",
+  },
+  {
+    chave: "alterarPermissoes",
+    titulo: "Alterar permissões",
+    descricao: "Editar permissões de outros usuários.",
+    grupo: "Configurações",
+  },
+  {
+    chave: "alterarDadosEmpresa",
+    titulo: "Alterar dados da empresa",
+    descricao: "Editar nome, contato, endereço e identidade pública.",
+    grupo: "Configurações",
+  },
+  {
+    chave: "alterarTemaWhiteLabel",
+    titulo: "Alterar tema white-label",
+    descricao: "Editar cores, logo e aparência da empresa.",
+    grupo: "Configurações",
+  },
+];
 
 export default function ConfiguracoesPage() {
   const router = useRouter();
 
-  const [empresaId, setEmpresaId] = useState('');
-  const [recorrente, setRecorrente] = useState(false);
-  const [tipoCobranca, setTipoCobranca] = useState('cartao');
-  const [salvando, setSalvando] = useState(false);
+  const [empresaId, setEmpresaId] = useState("");
   const [mostrarUsuarios, setMostrarUsuarios] = useState(false);
+  const [modalPermissoesAberto, setModalPermissoesAberto] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mostrarDadosEmpresa, setMostrarDadosEmpresa] = useState(false);
 
   const [dadosEmpresa, setDadosEmpresa] = useState({
-  nome: '',
-
-  endereco: {
-    rua: '',
-    numero: '',
-    cidade: '',
-    estado: '',
-    complemento: '',
-  },
-  telefone: '',
-  responsavel: '',
-  logoUrl: '',
-  instagramUrl: '',
-  /*
-  =========================================
-  MERCADO PAGO
-  =========================================
-  */
-
-  mercadoPagoAtivo: false,
-  mercadoPagoAccessToken: '',
-  mercadoPagoPublicKey: '',
-  mercadoPagoModo: 'sandbox',
-});
+    nome: "",
+    slug: "",
+    endereco: {
+      rua: "",
+      numero: "",
+      bairro: "",
+      cidade: "",
+      estado: "",
+      cep: "",
+      complemento: "",
+    },
+    telefone: "",
+    responsavel: "",
+    logoUrl: "",
+    instagramUrl: "",
+    corPrimaria: TEMA_MARCAE.corPrimaria,
+    corSecundaria: TEMA_MARCAE.corSecundaria,
+    corSidebar: TEMA_MARCAE.corSidebar,
+    mercadoPagoAtivo: false,
+    mercadoPagoAccessToken: "",
+    mercadoPagoPublicKey: "",
+    mercadoPagoModo: "sandbox",
+    solicitouIntegracaoMp: false,
+  });
 
   const [salvandoEmpresa, setSalvandoEmpresa] = useState(false);
-
   const [usuarios, setUsuarios] = useState<UsuarioSistema[]>([]);
-  const [usuarioEditandoId, setUsuarioEditandoId] = useState('');
-
-  const [nomeUsuario, setNomeUsuario] = useState('');
-  const [loginUsuario, setLoginUsuario] = useState('');
-  const [senhaUsuario, setSenhaUsuario] = useState('');
-  const [perfilUsuario, setPerfilUsuario] = useState('usuario');
+  const [usuarioEditandoId, setUsuarioEditandoId] = useState("");
+  const [nomeUsuario, setNomeUsuario] = useState("");
+  const [loginUsuario, setLoginUsuario] = useState("");
+  const [whatsappUsuario, setWhatsappUsuario] = useState("");
+  const [senhaUsuario, setSenhaUsuario] = useState("");
+  const [perfilUsuario, setPerfilUsuario] = useState("usuario");
   const [ativoUsuario, setAtivoUsuario] = useState(true);
-  const [permissoes, setPermissoes] = useState<PermissoesUsuario>(permissoesPadrao);
+  const [permissoes, setPermissoes] =
+    useState<PermissoesUsuario>(permissoesPadrao);
   const [salvandoUsuario, setSalvandoUsuario] = useState(false);
 
+  const totalPermissoesAtivas = useMemo(() => {
+    return Object.values(permissoes).filter(Boolean).length;
+  }, [permissoes]);
+
   useEffect(() => {
-  const empresaIdLocal = localStorage.getItem('empresaId');
-  const empresaLogadaRaw = localStorage.getItem('empresaLogada');
-  const empresaLogada = empresaLogadaRaw ? JSON.parse(empresaLogadaRaw) : null;
+    function atualizarMobile() {
+      setIsMobile(window.innerWidth <= 760);
+    }
 
-  const id = empresaIdLocal || empresaLogada?.id || '';
+    atualizarMobile();
+    window.addEventListener("resize", atualizarMobile);
 
-  setEmpresaId(id);
+    return () => window.removeEventListener("resize", atualizarMobile);
+  }, []);
 
-  if (empresaLogada) {
-    setDadosEmpresa({
-      nome: empresaLogada.nome || '',
-      endereco:
-  typeof empresaLogada.endereco === 'string'
-    ? (() => {
-        try {
-          return JSON.parse(empresaLogada.endereco);
-        } catch {
-          return {
-            rua: '',
-            numero: '',
-            cidade: '',
-            estado: '',
-            complemento: '',
-          };
-        }
-      })()
-    : empresaLogada.endereco || {
-        rua: '',
-        numero: '',
-        cidade: '',
-        estado: '',
-        complemento: '',
-      },
-      telefone: empresaLogada.telefone || empresaLogada.whatsapp || '',
-      responsavel: empresaLogada.responsavel || '',
-      logoUrl: empresaLogada.logoUrl || '',
-      instagramUrl: empresaLogada.instagramUrl || '',
+  useEffect(() => {
+    const empresaIdLocal = localStorage.getItem("empresaId");
+    const empresaLogadaRaw = localStorage.getItem("empresaLogada");
 
-      mercadoPagoAtivo:
-        empresaLogada.mercadoPagoAtivo || false,
+    let empresaLogada = null;
 
-      mercadoPagoAccessToken:
-        empresaLogada.mercadoPagoAccessToken || '',
+    try {
+      empresaLogada = empresaLogadaRaw ? JSON.parse(empresaLogadaRaw) : null;
+    } catch {
+      empresaLogada = null;
+    }
 
-      mercadoPagoPublicKey:
-        empresaLogada.mercadoPagoPublicKey || '',
+    const id = empresaIdLocal || empresaLogada?.id || "";
+    setEmpresaId(id);
 
-      mercadoPagoModo:
-        empresaLogada.mercadoPagoModo || 'sandbox',
-    });
-  }
-}, []);
+    if (empresaLogada) {
+      preencherEmpresa(empresaLogada);
+    }
+  }, []);
 
   useEffect(() => {
     if (empresaId) {
@@ -151,53 +375,106 @@ export default function ConfiguracoesPage() {
     }
   }, [empresaId]);
 
+  useEffect(() => {
+    aplicarTemaNoDocumento({
+      corPrimaria: dadosEmpresa.corPrimaria,
+      corSecundaria: dadosEmpresa.corSecundaria,
+      corSidebar: dadosEmpresa.corSidebar,
+    });
+  }, [
+    dadosEmpresa.corPrimaria,
+    dadosEmpresa.corSecundaria,
+    dadosEmpresa.corSidebar,
+  ]);
+
+  function normalizarEndereco(endereco: any) {
+    if (typeof endereco === "string") {
+      try {
+        return JSON.parse(endereco);
+      } catch {
+        return {
+          rua: "",
+          numero: "",
+          cidade: "",
+          estado: "",
+          complemento: "",
+        };
+      }
+    }
+
+    const linkAgendamento = dadosEmpresa.slug
+      ? montarLinkAgendamento(dadosEmpresa.slug)
+      : "";
+
+    const qrCodeUrl = linkAgendamento
+      ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
+          linkAgendamento,
+        )}`
+      : "";
+
+    return (
+      endereco || {
+        rua: "",
+        numero: "",
+        cidade: "",
+        estado: "",
+        complemento: "",
+      }
+    );
+  }
+
+  function preencherEmpresa(empresa: any) {
+    setDadosEmpresa({
+      nome: empresa.nome || "",
+      slug: empresa.slug || "",
+      endereco: normalizarEndereco(empresa.endereco),
+      telefone: empresa.telefone || empresa.whatsapp || "",
+      responsavel: empresa.responsavel || "",
+      logoUrl: empresa.logoUrl || "",
+      instagramUrl: empresa.instagramUrl || "",
+      corPrimaria: empresa.corPrimaria || TEMA_MARCAE.corPrimaria,
+      corSecundaria: empresa.corSecundaria || TEMA_MARCAE.corSecundaria,
+      corSidebar: empresa.corSidebar || TEMA_MARCAE.corSidebar,
+      mercadoPagoAtivo: empresa.mercadoPagoAtivo || false,
+      mercadoPagoAccessToken: empresa.mercadoPagoAccessToken || "",
+      mercadoPagoPublicKey: empresa.mercadoPagoPublicKey || "",
+      mercadoPagoModo: empresa.mercadoPagoModo || "sandbox",
+      solicitouIntegracaoMp: empresa.solicitouIntegracaoMp || false,
+    });
+  }
+
   async function carregarEmpresa() {
     try {
       const res = await fetch(`/api/admin/empresas/${empresaId}`, {
-        cache: 'no-store',
+        cache: "no-store",
       });
 
       const data = await res.json();
 
       if (data.success && data.empresa) {
-        setDadosEmpresa({
-  nome: data.empresa.nome || '',
-  endereco: data.empresa.endereco || '',
-  telefone: data.empresa.telefone || data.empresa.whatsapp || '',
-  responsavel: data.empresa.responsavel || '',
-  logoUrl: data.empresa.logoUrl || '',
-  instagramUrl: data.empresa.instagramUrl || '',
+        preencherEmpresa(data.empresa);
 
-  mercadoPagoAtivo:
-    data.empresa.mercadoPagoAtivo || false,
-
-  mercadoPagoAccessToken:
-    data.empresa.mercadoPagoAccessToken || '',
-
-  mercadoPagoPublicKey:
-    data.empresa.mercadoPagoPublicKey || '',
-
-  mercadoPagoModo:
-    data.empresa.mercadoPagoModo || 'sandbox',
-});
-
-        localStorage.setItem('empresaLogada', JSON.stringify(data.empresa));
+        localStorage.setItem("empresaLogada", JSON.stringify(data.empresa));
+        aplicarTemaNoDocumento(data.empresa);
       }
     } catch (error) {
-      console.error('Erro ao carregar dados da empresa:', error);
+      console.error(error);
     }
   }
 
   async function carregarUsuarios() {
     try {
-      const res = await fetch(`/api/admin/empresas/${empresaId}/usuarios`);
+      const res = await fetch(`/api/admin/empresas/${empresaId}/usuarios`, {
+        cache: "no-store",
+      });
+
       const data = await res.json();
 
       if (data.success) {
-        setUsuarios(data.usuarios);
+        setUsuarios(data.usuarios || []);
       }
     } catch (error) {
-      console.error('Erro ao carregar usuários:', error);
+      console.error(error);
     }
   }
 
@@ -209,45 +486,69 @@ export default function ConfiguracoesPage() {
   }
 
   function limparFormularioUsuario() {
-    setUsuarioEditandoId('');
-    setNomeUsuario('');
-    setLoginUsuario('');
-    setSenhaUsuario('');
-    setPerfilUsuario('usuario');
+    setUsuarioEditandoId("");
+    setNomeUsuario("");
+    setLoginUsuario("");
+    setWhatsappUsuario("");
+    setSenhaUsuario("");
+    setPerfilUsuario("usuario");
     setAtivoUsuario(true);
     setPermissoes(permissoesPadrao);
+    setModalPermissoesAberto(false);
   }
 
   function editarUsuario(usuario: UsuarioSistema) {
     setMostrarUsuarios(true);
+    setModalPermissoesAberto(true);
     setUsuarioEditandoId(usuario.id);
-    setNomeUsuario(usuario.nome || '');
-    setLoginUsuario(usuario.email || '');
-    setSenhaUsuario('');
-    setPerfilUsuario(usuario.perfil || 'usuario');
+    setNomeUsuario(usuario.nome || "");
+    setLoginUsuario(usuario.email || "");
+    setWhatsappUsuario(usuario.whatsapp || "");
+    setSenhaUsuario("");
+    setPerfilUsuario(usuario.perfil || "usuario");
     setAtivoUsuario(usuario.ativo !== false);
+
     setPermissoes({
       ...permissoesPadrao,
       ...(usuario.permissoes || {}),
     });
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
+
+  function restaurarTemaMarcae() {
+    const confirmar = window.confirm(
+      "Deseja restaurar o tema padrão Marcaê? As cores personalizadas serão substituídas pelo padrão lilás premium.",
+    );
+
+    if (!confirmar) return;
+
+    const novoTema = {
+      corPrimaria: TEMA_MARCAE.corPrimaria,
+      corSecundaria: TEMA_MARCAE.corSecundaria,
+      corSidebar: TEMA_MARCAE.corSidebar,
+    };
+
+    setDadosEmpresa((atual) => ({
+      ...atual,
+      ...novoTema,
+    }));
+
+    aplicarTemaNoDocumento(novoTema);
   }
 
   function selecionarLogo(arquivo?: File | null) {
     if (!arquivo) return;
-
-    if (!arquivo.type.startsWith('image/')) {
-      alert('Selecione um arquivo de imagem.');
-      return;
-    }
 
     const reader = new FileReader();
 
     reader.onload = () => {
       setDadosEmpresa((atual) => ({
         ...atual,
-        logoUrl: String(reader.result || ''),
+        logoUrl: String(reader.result || ""),
       }));
     };
 
@@ -255,935 +556,2302 @@ export default function ConfiguracoesPage() {
   }
 
   async function salvarDadosEmpresa() {
-    if (!empresaId) {
-      alert('Empresa não encontrada. Faça login novamente.');
-      return;
-    }
-
-    if (!dadosEmpresa.nome) {
-      alert('Informe o nome da empresa.');
-      return;
-    }
-
     try {
       setSalvandoEmpresa(true);
 
       const res = await fetch(`/api/admin/empresas/${empresaId}/dados`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dadosEmpresa),
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nome: dadosEmpresa.nome,
+          endereco: dadosEmpresa.endereco,
+          telefone: dadosEmpresa.telefone,
+          responsavel: dadosEmpresa.responsavel,
+          logoUrl: dadosEmpresa.logoUrl,
+          instagramUrl: dadosEmpresa.instagramUrl,
+          corPrimaria: dadosEmpresa.corPrimaria,
+          corSecundaria: dadosEmpresa.corSecundaria,
+          corSidebar: dadosEmpresa.corSidebar,
+        }),
       });
 
       const data = await res.json();
 
       if (!data.success) {
-        alert(data.error || 'Erro ao salvar dados da empresa.');
+        alert(data.error || "Erro ao salvar.");
         return;
       }
 
-      localStorage.setItem('empresaLogada', JSON.stringify(data.empresa));
+      localStorage.setItem("empresaLogada", JSON.stringify(data.empresa));
+      aplicarTemaNoDocumento(data.empresa);
 
-      alert('Dados da empresa atualizados com sucesso!');
+      alert("Dados atualizados com sucesso!");
     } catch (error) {
-      console.error('Erro ao salvar dados da empresa:', error);
-      alert('Erro ao salvar dados da empresa.');
+      alert("Erro ao salvar.");
     } finally {
       setSalvandoEmpresa(false);
     }
   }
 
-  async function salvarConfigPagamento() {
-    if (!empresaId) {
-      alert('Empresa não encontrada. Faça login novamente.');
-      return;
-    }
-
-    try {
-      setSalvando(true);
-
-      const res = await fetch(`/api/admin/empresas/${empresaId}/config-pagamento`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recorrente, tipoCobranca }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        alert('Configuração salva!');
-      } else {
-        alert(data.error || 'Erro ao salvar configuração.');
-      }
-    } catch (error) {
-      console.error('Erro ao salvar configuração:', error);
-      alert('Erro ao salvar configuração.');
-    } finally {
-      setSalvando(false);
-    }
-  }
-
   async function salvarUsuario() {
-    if (!empresaId) {
-      alert('Empresa não encontrada. Faça login novamente.');
-      return;
-    }
-
-    if (!nomeUsuario || !loginUsuario) {
-      alert('Preencha nome e usuário.');
-      return;
-    }
-
-    if (!usuarioEditandoId && !senhaUsuario) {
-      alert('Preencha a senha.');
+    if (!whatsappUsuario.trim()) {
+      alert(
+        "Informe o WhatsApp do usuário. Ele será usado para recuperação de senha.",
+      );
       return;
     }
 
     try {
       setSalvandoUsuario(true);
 
+      const payload: any = {
+        id: usuarioEditandoId,
+        nome: nomeUsuario,
+        email: loginUsuario,
+        whatsapp: whatsappUsuario,
+        perfil: perfilUsuario,
+        ativo: ativoUsuario,
+        permissoes: perfilUsuario === "admin" ? null : permissoes,
+      };
+
+      if (senhaUsuario) {
+        payload.senha = senhaUsuario;
+      }
+
       const res = await fetch(`/api/admin/empresas/${empresaId}/usuarios`, {
-        method: usuarioEditandoId ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: usuarioEditandoId,
-          nome: nomeUsuario,
-          email: loginUsuario,
-          senha: senhaUsuario,
-          perfil: perfilUsuario,
-          ativo: ativoUsuario,
-          permissoes: perfilUsuario === 'admin' ? null : permissoes,
-        }),
+        method: usuarioEditandoId ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        alert(data.error || 'Erro ao salvar usuário.');
+        alert(data.error || "Erro ao salvar usuário.");
         return;
       }
 
-      alert(usuarioEditandoId ? 'Usuário atualizado com sucesso!' : 'Usuário salvo com sucesso!');
+      alert(usuarioEditandoId ? "Usuário atualizado!" : "Usuário criado!");
 
       limparFormularioUsuario();
-      await carregarUsuarios();
+      carregarUsuarios();
     } catch (error) {
-      console.error('Erro ao salvar usuário:', error);
-      alert('Erro ao salvar usuário.');
+      alert("Erro ao salvar.");
     } finally {
       setSalvandoUsuario(false);
     }
   }
 
+  const linkAgendamento = dadosEmpresa.slug
+    ? montarLinkAgendamento(dadosEmpresa.slug)
+    : "";
+
+  const qrCodeUrl = linkAgendamento
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
+        linkAgendamento,
+      )}`
+    : "";
+
   return (
-    <div style={page}>
-      <div style={header}>
-        <div style={headerTop}>
-          <div>
-            <p style={eyebrow}>Painel administrativo</p>
-            <h1 style={title}>Configurações</h1>
-            <p style={subtitle}>
-              Gerencie dados da empresa, logo, cobranças, usuários e permissões de acesso do Marcaê.
-            </p>
-          </div>
+    <PremiumLayout
+      empresa={dadosEmpresa}
+      usuario={{
+        nome: "Administrador",
+      }}
+    >
+      <div className="marcae-config-mobile-ajuste-usuarios" style={page}>
+        <style>{`
+          @keyframes marcaeFadeUp {
+            from {
+              opacity: 0;
+              transform: translateY(14px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
 
-          <button
-            type="button"
-            onClick={() => router.push('/admin')}
-            style={backButton}
-          >
-            ← Voltar para o painel
-          </button>
-        </div>
-      </div>
+          .marcae-premium-card {
+            animation: marcaeFadeUp .35s ease both;
+          }
 
-      <section style={cardWideSemMargem}>
-        <div style={cardHeader}>
-          <div>
-            <h2 style={cardTitle}>Dados da empresa</h2>
-            <p style={cardDescription}>
-              Esses dados aparecem no agendador público, QR Code e mensagens enviadas pelo WhatsApp.
-            </p>
-          </div>
+          .marcae-premium-input::placeholder {
+            color: rgba(203, 213, 225, .55);
+          }
 
-          <span style={badge}>Empresa</span>
-        </div>
+          .marcae-premium-input:focus {
+            border-color: ${dadosEmpresa.corPrimaria};
+            box-shadow: 0 0 0 4px ${dadosEmpresa.corPrimaria}26;
+          }
 
-        <div style={empresaGrid}>
-          <div style={field}>
-            <label style={label}>Nome</label>
-            <input
-              value={dadosEmpresa.nome}
-              onChange={(e) => setDadosEmpresa({ ...dadosEmpresa, nome: e.target.value })}
-              placeholder="Nome da empresa"
-              style={input}
-            />
-          </div>
+          .marcae-premium-button:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.06);
+          }
 
-          <div style={field}>
-            <label style={label}>Telefone/WhatsApp</label>
-            <input
-              value={dadosEmpresa.telefone}
-              onChange={(e) => setDadosEmpresa({ ...dadosEmpresa, telefone: e.target.value })}
-              placeholder="Telefone da empresa"
-              style={input}
-            />
-          </div>
+          .marcae-ghost-button:hover {
+            background: rgba(255,255,255,.12);
+          }
 
-          <div style={field}>
-            <label style={label}>Responsável</label>
-<div style={field}>
-  <label style={label}>Instagram da empresa</label>
 
-  <input
-    value={dadosEmpresa.instagramUrl}
-    onChange={(e) =>
-      setDadosEmpresa({
-        ...dadosEmpresa,
-        instagramUrl: e.target.value,
-      })
-    }
-    placeholder="@meuestudio ou link do Instagram"
-    style={input}
-  />
-</div>
-            <input
-              value={dadosEmpresa.responsavel}
-              onChange={(e) => setDadosEmpresa({ ...dadosEmpresa, responsavel: e.target.value })}
-              placeholder="Responsável pela empresa"
-              style={input}
-            />
-          </div>
+          @media (max-width: 760px) {
+            .marcae-config-mobile-ajuste-usuarios {
+              gap: 12px !important;
+              padding-bottom: 118px !important;
+              overflow-x: hidden !important;
+            }
 
-          <div style={field}>
-            <label style={label}>Logo da empresa</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => selecionarLogo(e.target.files?.[0])}
-              style={input}
-            />
-          </div>
+            .marcae-config-mobile-ajuste-usuarios button,
+            .marcae-config-mobile-ajuste-usuarios input,
+            .marcae-config-mobile-ajuste-usuarios select,
+            .marcae-config-mobile-ajuste-usuarios textarea {
+              max-width: 100% !important;
+            }
 
-            <div style={{ ...field, gridColumn: '1 / -1' }}>
-  <label style={label}>Rua</label>
+            .marcae-config-mobile-ajuste-usuarios section,
+            .marcae-config-mobile-ajuste-usuarios .marcae-premium-card {
+              max-width: 100% !important;
+              overflow: hidden !important;
+            }
+          }
 
-  <input
-    value={dadosEmpresa.endereco?.rua || ''}
-    onChange={(e) =>
-      setDadosEmpresa({
-        ...dadosEmpresa,
-        endereco: {
-          ...dadosEmpresa.endereco,
-          rua: e.target.value,
-        },
-      })
-    }
-    placeholder="Rua da empresa"
-    style={input}
-  />
-</div>
+          @media (max-width: 900px) {
+            .marcae-config-mobile-ajuste-usuarios {
+              width: 100%;
+            }
+          }
 
-<div style={field}>
-  <label style={label}>Número</label>
+          @media (max-width: 760px) {
+            .config-hero-preview-mobile {
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              height: 58px !important;
+              padding: 8px !important;
+            }
 
-  <input
-    value={dadosEmpresa.endereco?.numero || ''}
-    onChange={(e) =>
-      setDadosEmpresa({
-        ...dadosEmpresa,
-        endereco: {
-          ...dadosEmpresa.endereco,
-          numero: e.target.value,
-        },
-      })
-    }
-    placeholder="Número"
-    style={input}
-  />
-</div>
+            .config-hero-preview-mobile > div:first-child {
+              display: none !important;
+            }
 
-<div style={field}>
-  <label style={label}>Cidade</label>
+            .config-hero-preview-mobile > div:nth-child(2) {
+              width: 100% !important;
+              padding: 0 !important;
+              justify-content: center !important;
+            }
 
-  <input
-    value={dadosEmpresa.endereco?.cidade || ''}
-    onChange={(e) =>
-      setDadosEmpresa({
-        ...dadosEmpresa,
-        endereco: {
-          ...dadosEmpresa.endereco,
-          cidade: e.target.value,
-        },
-      })
-    }
-    placeholder="Cidade"
-    style={input}
-  />
-</div>
+            .config-hero-preview-mobile .config-preview-lines-mobile {
+              display: none !important;
+            }
+          }
+        `}</style>
 
-<div style={field}>
-  <label style={label}>Estado</label>
-
-  <input
-    value={dadosEmpresa.endereco?.estado || ''}
-    onChange={(e) =>
-      setDadosEmpresa({
-        ...dadosEmpresa,
-        endereco: {
-          ...dadosEmpresa.endereco,
-          estado: e.target.value,
-        },
-      })
-    }
-    placeholder="Estado"
-    style={input}
-  />
-</div>
-
-<div style={field}>
-  <label style={label}>Complemento</label>
-
-  <input
-    value={dadosEmpresa.endereco?.complemento || ''}
-    onChange={(e) =>
-      setDadosEmpresa({
-        ...dadosEmpresa,
-        endereco: {
-          ...dadosEmpresa.endereco,
-          complemento: e.target.value,
-        },
-      })
-    }
-    placeholder="Complemento"
-    style={input}
-  />
-</div>
-              
-        <div style={logoPreviewBox}>
-          {dadosEmpresa.logoUrl ? (
-            <img src={dadosEmpresa.logoUrl} alt="Logo da empresa" style={logoPreview} />
-          ) : (
-            <div style={logoVazio}>Sem logo cadastrada</div>
-          )}
-
-          <div>
-            <strong>Logo no agendador</strong>
-            <p style={cardDescription}>
-              Essa imagem será usada como identidade visual da empresa no link público de agendamento.
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={salvarDadosEmpresa}
-          disabled={salvandoEmpresa}
+        <div
+          className="config-hero-mobile"
           style={{
-            ...primaryButton,
-            opacity: salvandoEmpresa ? 0.7 : 1,
-            cursor: salvandoEmpresa ? 'not-allowed' : 'pointer',
+            ...hero,
+            ...(isMobile ? heroMobile : {}),
+            background: `
+              radial-gradient(circle at top left, ${dadosEmpresa.corPrimaria}99, transparent 34%),
+              radial-gradient(circle at top right, ${dadosEmpresa.corSecundaria}66, transparent 34%),
+              linear-gradient(135deg, rgba(15,23,42,.96), rgba(2,6,23,.98) 72%)
+            `,
           }}
         >
-          {salvandoEmpresa ? 'Salvando dados...' : 'Salvar dados da empresa'}
-        </button>
-</div>
-</section>
-
-<div style={grid}>
-        <section style={card}>
-  <div style={cardHeader}>
-    <div>
-      <section style={card}>
-  <div style={cardHeader}>
-    <div>
-      <h2 style={cardTitle}>
-        Recebimento online
-      </h2>
-
-      <p style={cardDescription}>
-        Integração financeira via
-        Mercado Pago.
-      </p>
-    </div>
-
-    <span style={badge}>
-      Mercado Pago
-    </span>
-  </div>
-
-  {dadosEmpresa.mercadoPagoAtivo ? (
-    <div
-      style={{
-        background: '#ecfdf5',
-        border: '1px solid #10b981',
-        borderRadius: 16,
-        padding: 20,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 18,
-          fontWeight: 700,
-          color: '#065f46',
-          marginBottom: 10,
-        }}
-      >
-        Mercado Pago configurado
-      </div>
-
-      <div
-        style={{
-          color: '#065f46',
-          fontSize: 14,
-        }}
-      >
-        Sua empresa já pode receber
-        pagamentos online dos clientes.
-      </div>
-    </div>
-  ) : (
-    <div
-      style={{
-        background: '#fff7ed',
-        border: '1px solid #fb923c',
-        borderRadius: 16,
-        padding: 20,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 18,
-          fontWeight: 700,
-          color: '#9a3412',
-          marginBottom: 10,
-        }}
-      >
-        Integração Mercado Pago pendente
-      </div>
-
-      <div
-        style={{
-          color: '#9a3412',
-          fontSize: 14,
-          marginBottom: 18,
-        }}
-      >
-        O recebimento online ainda
-        não foi configurado pelo
-        Marcaê.
-      </div>
-
-      <button
-        style={primaryButton}
-        onClick={async () => {
-          try {
-            await fetch(
-              `/api/admin/empresas/${empresaId}/dados`,
-              {
-                method: 'PATCH',
-                headers: {
-                  'Content-Type':
-                    'application/json',
-                },
-                body: JSON.stringify({
-                  solicitouIntegracaoMp: true,
-                }),
-              }
-            );
-
-            alert(
-              'Solicitação enviada ao Marcaê.'
-            );
-
-            carregarEmpresa();
-          } catch (error) {
-            alert(
-              'Erro ao solicitar integração.'
-            );
-          }
-        }}
-      >
-        Solicitar integração Mercado Pago
-      </button>
-    </div>
-  )}
-</section>
-
-      <p style={cardDescription}>
-        Configure como sua empresa receberá os pagamentos online dos clientes via Mercado Pago.
-      </p>
-    </div>
-
-    <span style={badge}>Mercado Pago</span>
-  </div>
-
-</section>
-
-        <section style={card}>
-          <div style={cardHeader}>
-            <div>
-              <h2 style={cardTitle}>Usuários e permissões</h2>
-              <p style={cardDescription}>
-                Cadastre usuários e controle o acesso aos módulos e ações sensíveis.
-              </p>
-            </div>
-
-            <span style={badge}>Admin</span>
-          </div>
-
-          <div style={permissionGrid}>
-            <div style={permissionItem}>
-              <strong>Administrador</strong>
-              <span>Acesso total ao sistema.</span>
-            </div>
-
-            <div style={permissionItem}>
-              <strong>Usuário comum</strong>
-              <span>Acesso limitado por permissões.</span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setMostrarUsuarios(!mostrarUsuarios)}
-            style={primaryButton}
+          <div
+            className="config-hero-content-mobile"
+            style={{ ...heroContent, ...(isMobile ? heroContentMobile : {}) }}
           >
-            {mostrarUsuarios ? 'Ocultar cadastro' : 'Gerenciar usuários'}
-          </button>
-        </section>
-      </div>
+            <div style={eyebrow}>Painel administrativo</div>
 
-      {mostrarUsuarios && (
-        <section style={cardWide}>
-          <div style={cardHeader}>
-            <div>
-              <h2 style={cardTitle}>
-                {usuarioEditandoId ? 'Editar usuário' : 'Novo usuário'}
-              </h2>
-              <p style={cardDescription}>
-                Cadastre ou edite o acesso de um usuário da empresa.
-              </p>
-            </div>
+            <h1 style={{ ...title, ...(isMobile ? titleMobile : {}) }}>
+              Configurações
+            </h1>
 
-            {usuarioEditandoId && (
-              <button type="button" onClick={limparFormularioUsuario} style={smallButton}>
-                Novo usuário
-              </button>
-            )}
-          </div>
+            <p style={{ ...subtitle, ...(isMobile ? subtitleMobile : {}) }}>
+              Ajuste identidade visual, dados da empresa, recebimento online,
+              usuários e permissões em uma tela única.
+            </p>
 
-          <div style={formGrid}>
-            <div style={field}>
-              <label style={label}>Nome</label>
-              <input
-                value={nomeUsuario}
-                onChange={(e) => setNomeUsuario(e.target.value)}
-                placeholder="Nome do usuário"
-                style={input}
-              />
-            </div>
-
-            <div style={field}>
-              <label style={label}>Usuário/Login</label>
-              <input
-                value={loginUsuario}
-                onChange={(e) => setLoginUsuario(e.target.value)}
-                placeholder="Ex: nane, recepcao01, admin"
-                style={input}
-              />
-            </div>
-
-            <div style={field}>
-              <label style={label}>
-                Senha {usuarioEditandoId ? '(preencha somente se quiser alterar)' : ''}
-              </label>
-              <input
-                type="password"
-                value={senhaUsuario}
-                onChange={(e) => setSenhaUsuario(e.target.value)}
-                placeholder="Senha de acesso"
-                style={input}
-              />
-            </div>
-
-            <div style={field}>
-              <label style={label}>Perfil</label>
-              <select
-                value={perfilUsuario}
-                onChange={(e) => setPerfilUsuario(e.target.value)}
-                style={select}
-              >
-                <option value="admin">Administrador</option>
-                <option value="usuario">Usuário comum</option>
-              </select>
+            <div style={{ ...heroChips, ...(isMobile ? heroChipsMobile : {}) }}>
+              <span style={heroChip}>White label ativo</span>
+              <span style={heroChip}>Multiempresa</span>
+              <span style={heroChip}>Permissões granulares</span>
             </div>
           </div>
 
-          <label style={checkboxRow}>
-            <input
-              type="checkbox"
-              checked={ativoUsuario}
-              onChange={(e) => setAtivoUsuario(e.target.checked)}
+          <div
+            className="config-hero-preview-mobile"
+            style={{ ...heroPreview, ...(isMobile ? heroPreviewMobile : {}) }}
+          >
+            <div
+              style={{
+                ...previewSidebar,
+                background: dadosEmpresa.corSidebar,
+              }}
             />
-            <span>Usuário ativo</span>
-          </label>
 
-          {perfilUsuario === 'usuario' && (
-            <div style={permissionsBox}>
-              <PermissaoCheck label="Dashboard" checked={permissoes.dashboard} onChange={() => alterarPermissao('dashboard')} />
-              <PermissaoCheck label="Agenda" checked={permissoes.agenda} onChange={() => alterarPermissao('agenda')} />
-              <PermissaoCheck label="Serviços" checked={permissoes.servicos} onChange={() => alterarPermissao('servicos')} />
-              <PermissaoCheck label="Profissionais" checked={permissoes.profissionais} onChange={() => alterarPermissao('profissionais')} />
-              <PermissaoCheck label="Promoções" checked={permissoes.promocoes} onChange={() => alterarPermissao('promocoes')} />
-              <PermissaoCheck label="Configurações" checked={permissoes.configuracoes} onChange={() => alterarPermissao('configuracoes')} />
-              <PermissaoCheck label="Comissões" checked={permissoes.comissoes} onChange={() => alterarPermissao('comissoes')} />
-              <PermissaoCheck label="Visualizar valores financeiros" checked={permissoes.visualizarFinanceiro} onChange={() => alterarPermissao('visualizarFinanceiro')} />
-              <PermissaoCheck label="Finalizar atendimento/venda" checked={permissoes.finalizarAtendimento} onChange={() => alterarPermissao('finalizarAtendimento')} />
-              <PermissaoCheck label="Reagendar atendimento" checked={permissoes.reagendarAtendimento} onChange={() => alterarPermissao('reagendarAtendimento')} />
-              <PermissaoCheck label="Cancelar atendimento" checked={permissoes.cancelarAtendimento} onChange={() => alterarPermissao('cancelarAtendimento')} />
-              <PermissaoCheck label="Fechar comissão" checked={permissoes.fecharComissao} onChange={() => alterarPermissao('fecharComissao')} />
+            <div style={previewMain}>
+              <div
+                style={{
+                  ...previewLogo,
+                  background: `linear-gradient(135deg, ${dadosEmpresa.corPrimaria}, ${dadosEmpresa.corSecundaria})`,
+                }}
+              >
+                {dadosEmpresa.logoUrl ? (
+                  <img
+                    src={dadosEmpresa.logoUrl}
+                    alt="Logo"
+                    style={previewLogoImg}
+                  />
+                ) : (
+                  dadosEmpresa.nome?.charAt(0)?.toUpperCase() || "M"
+                )}
+              </div>
+
+              <div className="config-preview-lines-mobile" style={previewLines}>
+                <div style={previewLineLarge} />
+                <div style={previewLineSmall} />
+              </div>
             </div>
+          </div>
+
+          {!isMobile && (
+            <button
+              onClick={() => router.push("/admin")}
+              style={backButton}
+              className="marcae-ghost-button config-hero-back-mobile"
+            >
+              ← Voltar para o painel
+            </button>
           )}
+        </div>
 
-          <button
-            type="button"
-            onClick={salvarUsuario}
-            disabled={salvandoUsuario}
-            style={{
-              ...primaryButton,
-              opacity: salvandoUsuario ? 0.7 : 1,
-              cursor: salvandoUsuario ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {salvandoUsuario
-              ? 'Salvando usuário...'
-              : usuarioEditandoId
-                ? 'Atualizar usuário'
-                : 'Salvar usuário'}
-          </button>
+        <div style={topStatsGrid}>
+          <InfoStat
+            titulo="Empresa"
+            valor={dadosEmpresa.nome || "Não informado"}
+            detalhe="Dados públicos do agendador"
+          />
+          <InfoStat
+            titulo="Recebimento"
+            valor={dadosEmpresa.mercadoPagoAtivo ? "Ativo" : "Pendente"}
+            detalhe="Mercado Pago"
+          />
+          <InfoStat
+            titulo="Usuários"
+            valor={`${usuarios.length}`}
+            detalhe="Cadastrados no sistema"
+          />
+        </div>
+
+        <section style={card} className="marcae-premium-card">
+          <div style={sectionHeaderRow}>
+            <div>
+              <span style={badge}>White Label</span>
+              <h2 style={cardTitle}>Aparência da empresa</h2>
+              <p style={cardDescription}>
+                Personalize as cores que aparecem no menu lateral, dashboard,
+                agendador público e identidade visual da empresa.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={restaurarTemaMarcae}
+              style={secondaryButton}
+              className="marcae-ghost-button"
+            >
+              Restaurar tema Marcaê
+            </button>
+          </div>
+
+          <div style={colorGrid}>
+            <ColorField
+              label="Cor principal"
+              description="Usada em botões, destaques e ações."
+              value={dadosEmpresa.corPrimaria}
+              onChange={(value: string) =>
+                setDadosEmpresa({
+                  ...dadosEmpresa,
+                  corPrimaria: value,
+                })
+              }
+            />
+
+            <ColorField
+              label="Cor secundária"
+              description="Usada em gradientes e detalhes visuais."
+              value={dadosEmpresa.corSecundaria}
+              onChange={(value: string) =>
+                setDadosEmpresa({
+                  ...dadosEmpresa,
+                  corSecundaria: value,
+                })
+              }
+            />
+
+            <ColorField
+              label="Cor menu lateral"
+              description="Base visual do painel administrativo."
+              value={dadosEmpresa.corSidebar}
+              onChange={(value: string) =>
+                setDadosEmpresa({
+                  ...dadosEmpresa,
+                  corSidebar: value,
+                })
+              }
+            />
+          </div>
         </section>
-      )}
 
-      <section style={cardWide}>
-        <h2 style={cardTitle}>Usuários cadastrados</h2>
-        <p style={cardDescription}>Gerencie login, senha, status e permissões.</p>
+        <section style={card} className="marcae-premium-card">
+          <div style={sectionHeaderRow}>
+            <div>
+              <span style={badge}>Empresa</span>
+              <h2 style={cardTitle}>Dados da empresa</h2>
+              <p style={cardDescription}>
+                Essas informações ficam recolhidas para reduzir o scroll no mobile. Abra apenas quando precisar consultar ou editar.
+              </p>
+            </div>
 
-        <div style={usersList}>
-          {usuarios.length === 0 ? (
-            <div style={emptyBox}>Nenhum usuário cadastrado ainda.</div>
+            <div style={sectionActionsRow}>
+              <button
+                type="button"
+                onClick={() => setMostrarDadosEmpresa(!mostrarDadosEmpresa)}
+                style={secondaryButton}
+                className="marcae-ghost-button"
+              >
+                {mostrarDadosEmpresa ? "Ocultar informações" : "Visualizar informações"}
+              </button>
+
+              {mostrarDadosEmpresa && (
+                <button
+                  onClick={salvarDadosEmpresa}
+                  style={primaryButtonInline}
+                  className="marcae-premium-button"
+                >
+                  {salvandoEmpresa ? "Salvando..." : "Salvar empresa"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {!mostrarDadosEmpresa ? (
+            <div style={empresaResumoCompacto}>
+              <div style={empresaResumoLogoBox}>
+                {dadosEmpresa.logoUrl ? (
+                  <img src={dadosEmpresa.logoUrl} alt="Logo" style={empresaResumoLogo} />
+                ) : (
+                  <div
+                    style={{
+                      ...empresaResumoLogoVazio,
+                      background: `linear-gradient(135deg, ${dadosEmpresa.corPrimaria}, ${dadosEmpresa.corSecundaria})`,
+                    }}
+                  >
+                    {dadosEmpresa.nome?.charAt(0)?.toUpperCase() || "M"}
+                  </div>
+                )}
+              </div>
+
+              <div style={empresaResumoInfo}>
+                <strong style={empresaResumoNome}>
+                  {dadosEmpresa.nome || "Empresa não informada"}
+                </strong>
+                <span style={empresaResumoLinha}>
+                  WhatsApp: {dadosEmpresa.telefone || "Não informado"}
+                </span>
+                <span style={empresaResumoLinha}>
+                  {[
+                    dadosEmpresa.endereco?.rua,
+                    dadosEmpresa.endereco?.numero,
+                    dadosEmpresa.endereco?.bairro,
+                    dadosEmpresa.endereco?.cidade,
+                    dadosEmpresa.endereco?.estado,
+                  ]
+                    .filter(Boolean)
+                    .join(", ") || "Endereço não informado"}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setMostrarDadosEmpresa(true)}
+                style={empresaResumoButton}
+                className="marcae-ghost-button"
+              >
+                Ver e editar
+              </button>
+            </div>
           ) : (
-            usuarios.map((usuario) => (
-              <div key={usuario.id} style={userRow}>
+            <>
+              <div style={empresaGrid}>
+                <TextField
+                  label="Nome da empresa"
+                  value={dadosEmpresa.nome}
+                  placeholder="Ex: Studio Bella"
+                  onChange={(value: string) =>
+                    setDadosEmpresa({
+                      ...dadosEmpresa,
+                      nome: value,
+                    })
+                  }
+                />
+
+                <TextField
+                  label="WhatsApp"
+                  value={dadosEmpresa.telefone}
+                  placeholder="Ex: 75999999999"
+                  onChange={(value: string) =>
+                    setDadosEmpresa({
+                      ...dadosEmpresa,
+                      telefone: value,
+                    })
+                  }
+                />
+
+                <TextField
+                  label="Instagram"
+                  value={dadosEmpresa.instagramUrl}
+                  placeholder="https://instagram.com/suaempresa"
+                  onChange={(value: string) =>
+                    setDadosEmpresa({
+                      ...dadosEmpresa,
+                      instagramUrl: value,
+                    })
+                  }
+                />
+
+                <TextField
+                  label="Responsável"
+                  value={dadosEmpresa.responsavel}
+                  placeholder="Nome do responsável"
+                  onChange={(value: string) =>
+                    setDadosEmpresa({
+                      ...dadosEmpresa,
+                      responsavel: value,
+                    })
+                  }
+                />
+
+                <TextField
+                  label="Rua"
+                  value={dadosEmpresa.endereco?.rua || ""}
+                  placeholder="Rua / Avenida"
+                  wide
+                  onChange={(value: string) =>
+                    setDadosEmpresa({
+                      ...dadosEmpresa,
+                      endereco: {
+                        ...dadosEmpresa.endereco,
+                        rua: value,
+                      },
+                    })
+                  }
+                />
+
+                <TextField
+                  label="Número"
+                  value={dadosEmpresa.endereco?.numero || ""}
+                  placeholder="123"
+                  onChange={(value: string) =>
+                    setDadosEmpresa({
+                      ...dadosEmpresa,
+                      endereco: {
+                        ...dadosEmpresa.endereco,
+                        numero: value,
+                      },
+                    })
+                  }
+                />
+
+                <TextField
+                  label="Bairro"
+                  value={dadosEmpresa.endereco?.bairro || ""}
+                  placeholder="Bairro"
+                  onChange={(value: string) =>
+                    setDadosEmpresa({
+                      ...dadosEmpresa,
+                      endereco: {
+                        ...dadosEmpresa.endereco,
+                        bairro: value,
+                      },
+                    })
+                  }
+                />
+
+                <TextField
+                  label="Cidade"
+                  value={dadosEmpresa.endereco?.cidade || ""}
+                  placeholder="Cidade"
+                  onChange={(value: string) =>
+                    setDadosEmpresa({
+                      ...dadosEmpresa,
+                      endereco: {
+                        ...dadosEmpresa.endereco,
+                        cidade: value,
+                      },
+                    })
+                  }
+                />
+
+                <TextField
+                  label="Estado"
+                  value={dadosEmpresa.endereco?.estado || ""}
+                  placeholder="UF"
+                  onChange={(value: string) =>
+                    setDadosEmpresa({
+                      ...dadosEmpresa,
+                      endereco: {
+                        ...dadosEmpresa.endereco,
+                        estado: value,
+                      },
+                    })
+                  }
+                />
+
+                <TextField
+                  label="CEP"
+                  value={dadosEmpresa.endereco?.cep || ""}
+                  placeholder="00000-000"
+                  onChange={(value: string) =>
+                    setDadosEmpresa({
+                      ...dadosEmpresa,
+                      endereco: {
+                        ...dadosEmpresa.endereco,
+                        cep: value,
+                      },
+                    })
+                  }
+                />
+
+                <TextField
+                  label="Complemento"
+                  value={dadosEmpresa.endereco?.complemento || ""}
+                  placeholder="Sala, ponto de referência, bairro..."
+                  wide
+                  onChange={(value: string) =>
+                    setDadosEmpresa({
+                      ...dadosEmpresa,
+                      endereco: {
+                        ...dadosEmpresa.endereco,
+                        complemento: value,
+                      },
+                    })
+                  }
+                />
+
+                <div style={{ ...field, gridColumn: "1 / -1" }}>
+                  <label style={labelStyle}>Logo da empresa</label>
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => selecionarLogo(e.target.files?.[0])}
+                    style={input}
+                    className="marcae-premium-input"
+                  />
+                </div>
+              </div>
+
+              <div style={logoPreviewBox}>
+                {dadosEmpresa.logoUrl ? (
+                  <img src={dadosEmpresa.logoUrl} alt="logo" style={logoPreview} />
+                ) : (
+                  <div
+                    style={{
+                      ...logoVazio,
+                      background: `linear-gradient(135deg, ${dadosEmpresa.corPrimaria}, ${dadosEmpresa.corSecundaria})`,
+                    }}
+                  >
+                    {dadosEmpresa.nome?.charAt(0)?.toUpperCase() || "M"}
+                  </div>
+                )}
+
                 <div>
-                  <strong>{usuario.nome}</strong>
-                  <p style={userText}>Login: {usuario.email}</p>
-                  <p style={userText}>
-                    Perfil: {usuario.perfil || 'usuario'} •{' '}
-                    {usuario.ativo === false ? 'Inativo' : 'Ativo'}
+                  <strong style={strongText}>Preview da identidade</strong>
+                  <p style={cardDescription}>
+                    Essa logo será usada no agendador público, comprovantes e pontos
+                    visuais do sistema.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={salvarDadosEmpresa}
+                style={primaryButton}
+                className="marcae-premium-button"
+              >
+                {salvandoEmpresa ? "Salvando..." : "Salvar alterações da empresa"}
+              </button>
+            </>
+          )}
+        </section>
+
+        <section style={card} className="marcae-premium-card">
+            <div style={sectionHeaderRow}>
+              <div>
+                <span style={badge}>Mercado Pago</span>
+
+                <h2 style={cardTitle}>Recebimento online</h2>
+
+                <p style={cardDescription}>
+                  Configuração do recebimento online da empresa via Mercado
+                  Pago. Isso será utilizado para pré-pagamentos, assinaturas e
+                  automações financeiras.
+                </p>
+              </div>
+            </div>
+            <div style={integracaoStatusCard}>
+              <div
+                style={{
+                  ...statusDot,
+                  background: dadosEmpresa.mercadoPagoAtivo
+                    ? "#10b981"
+                    : "#f59e0b",
+                }}
+              />
+
+              <div>
+                <strong style={strongText}>
+                  {dadosEmpresa.mercadoPagoAtivo
+                    ? "Integração ativa"
+                    : "Integração pendente"}
+                </strong>
+
+                <p style={cardDescription}>
+                  {dadosEmpresa.mercadoPagoAtivo
+                    ? "Seu sistema já está pronto para receber pagamentos online."
+                    : (dadosEmpresa as any).solicitouIntegracaoMp
+                      ? "Solicitação enviada. Aguarde a configuração pela equipe Marcaê."
+                      : "Solicite sua integração Mercado Pago para liberar pagamentos automáticos."}
+                </p>
+              </div>
+            </div>
+
+            <div style={mercadoPagoGrid}>
+              {!dadosEmpresa.mercadoPagoAtivo &&
+                !(dadosEmpresa as any).solicitouIntegracaoMp && (
+                  <div style={solicitacaoMpCard}>
+                    <div>
+                      <strong style={strongText}>
+                        Solicitar integração Mercado Pago
+                      </strong>
+
+                      <p style={cardDescription}>
+                        A integração será configurada pela equipe Marcaê para
+                        garantir segurança e funcionamento correto dos
+                        pagamentos online.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(
+                            `/api/admin/empresas/${empresaId}/dados`,
+                            {
+                              method: "PATCH",
+                              headers: {
+                                "Content-Type": "application/json",
+                              },
+                              body: JSON.stringify({
+                                nome: dadosEmpresa.nome,
+                                endereco: dadosEmpresa.endereco,
+                                telefone: dadosEmpresa.telefone,
+                                responsavel: dadosEmpresa.responsavel,
+                                logoUrl: dadosEmpresa.logoUrl,
+                                instagramUrl: dadosEmpresa.instagramUrl,
+                                corPrimaria: dadosEmpresa.corPrimaria,
+                                corSecundaria: dadosEmpresa.corSecundaria,
+                                corSidebar: dadosEmpresa.corSidebar,
+                                solicitouIntegracaoMp: true,
+                              }),
+                            },
+                          );
+
+                          const data = await res.json();
+
+                          if (!data.success) {
+                            alert("Erro ao solicitar integração.");
+                            return;
+                          }
+
+                          setDadosEmpresa((atual: any) => ({
+                            ...atual,
+                            solicitouIntegracaoMp: true,
+                          }));
+
+                          alert("Solicitação enviada com sucesso!");
+                        } catch (error) {
+                          alert("Erro ao solicitar integração.");
+                        }
+                      }}
+                      style={primaryButton}
+                      className="marcae-premium-button"
+                    >
+                      Solicitar integração
+                    </button>
+                  </div>
+                )}
+
+              {!dadosEmpresa.mercadoPagoAtivo &&
+                (dadosEmpresa as any).solicitouIntegracaoMp && (
+                  <div style={integracaoSolicitadaCard}>
+                    <strong style={strongText}>Solicitação enviada</strong>
+
+                    <p style={cardDescription}>
+                      A equipe Marcaê já recebeu a solicitação de integração.
+                      Aguarde a configuração do Mercado Pago no painel master.
+                    </p>
+                  </div>
+                )}
+
+              {dadosEmpresa.mercadoPagoAtivo && (
+                <>
+                  <div style={integracaoAtivaCard}>
+                    <strong style={strongText}>
+                      ✅ Recebimento online disponível
+                    </strong>
+
+                    <p style={cardDescription}>
+                      Sua integração Mercado Pago já foi configurada. Agora você
+                      já pode receber pré-pagamentos pelo agendador público.
+                    </p>
+
+                    <p style={{ ...cardDescription, marginTop: 10 }}>
+                      Configure agora quais serviços terão pré-pagamento
+                      obrigatório no menu Serviços.
+                    </p>
+
+                    <div
+                      style={{
+                        marginTop: 14,
+                        display: "inline-flex",
+                        padding: "8px 12px",
+                        borderRadius: 999,
+                        background:
+                          dadosEmpresa.mercadoPagoModo === "producao"
+                            ? "rgba(16,185,129,.16)"
+                            : "rgba(245,158,11,.16)",
+                        color:
+                          dadosEmpresa.mercadoPagoModo === "producao"
+                            ? "#6ee7b7"
+                            : "#fcd34d",
+                        fontWeight: 800,
+                        fontSize: 12,
+                      }}
+                    >
+                      Ambiente:{" "}
+                      {dadosEmpresa.mercadoPagoModo === "producao"
+                        ? "Produção"
+                        : "Sandbox"}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+
+          <section style={card} className="marcae-premium-card">
+            <div style={sectionHeaderRow}>
+              <div>
+                <span style={badge}>Usuários</span>
+
+                <h2 style={cardTitle}>Usuários e permissões</h2>
+
+                <p style={cardDescription}>
+                  Controle completo de acessos, permissões e segurança do
+                  sistema.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setMostrarUsuarios(!mostrarUsuarios)}
+                style={primaryButtonInline}
+                className="marcae-premium-button"
+              >
+                {mostrarUsuarios
+                  ? "Fechar gerenciamento"
+                  : "Gerenciar usuários"}
+              </button>
+            </div>
+
+            {!mostrarUsuarios ? (
+              <div style={usuariosResumoBox}>
+                <div style={usuariosResumoItem}>
+                  <strong style={usuariosResumoNumero}>
+                    {usuarios.length}
+                  </strong>
+                  <span style={usuariosResumoTexto}>usuários cadastrados</span>
+                </div>
+
+                <div style={usuariosResumoDivider} />
+
+                <div style={usuariosResumoItem}>
+                  <strong style={usuariosResumoNumero}>
+                    {usuarios.filter((u) => u.ativo !== false).length}
+                  </strong>
+                  <span style={usuariosResumoTexto}>usuários ativos</span>
+                </div>
+
+                <div style={usuariosResumoDivider} />
+
+                <div style={usuariosResumoItem}>
+                  <strong style={usuariosResumoNumero}>
+                    {usuarios.filter((u) => u.perfil === "admin").length}
+                  </strong>
+                  <span style={usuariosResumoTexto}>administradores</span>
+                </div>
+              </div>
+            ) : (
+              <div style={usuarioLayoutGrid}>
+                <div style={usuarioFormCard}>
+                  <div style={usuarioFormHeader}>
+                    <div>
+                      <h3 style={usuarioFormTitle}>
+                        {usuarioEditandoId ? "Editar usuário" : "Novo usuário"}
+                      </h3>
+
+                      <p style={cardDescription}>
+                        Configure acessos individuais para cada colaborador.
+                      </p>
+                    </div>
+
+                    {usuarioEditandoId && (
+                      <button
+                        onClick={limparFormularioUsuario}
+                        style={ghostButton}
+                        className="marcae-ghost-button"
+                      >
+                        Cancelar edição
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={usuarioFormGrid}>
+                    <TextField
+                      label="Nome"
+                      value={nomeUsuario}
+                      placeholder="Nome do usuário"
+                      onChange={(value: string) => setNomeUsuario(value)}
+                    />
+
+                    <TextField
+                      label="Login / E-mail"
+                      value={loginUsuario}
+                      placeholder="email@empresa.com"
+                      onChange={(value: string) => setLoginUsuario(value)}
+                    />
+
+                    <TextField
+                      label="WhatsApp para recuperação"
+                      value={whatsappUsuario}
+                      placeholder="Ex: 75999999999"
+                      onChange={(value: string) => setWhatsappUsuario(value)}
+                    />
+
+                    <TextField
+                      label="Senha"
+                      value={senhaUsuario}
+                      placeholder={
+                        usuarioEditandoId
+                          ? "Preencha apenas se desejar alterar"
+                          : "Senha de acesso"
+                      }
+                      type="password"
+                      onChange={(value: string) => setSenhaUsuario(value)}
+                    />
+
+                    <div style={field}>
+                      <label style={labelStyle}>Perfil</label>
+
+                      <select
+                        value={perfilUsuario}
+                        onChange={(e) => setPerfilUsuario(e.target.value)}
+                        style={input}
+                      >
+                        <option value="usuario">Usuário comum</option>
+                        <option value="admin">Administrador</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={toggleCard}>
+                    <div>
+                      <strong style={strongText}>Usuário ativo</strong>
+
+                      <p style={toggleDescription}>
+                        Usuários inativos não conseguem acessar o sistema.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setAtivoUsuario(!ativoUsuario)}
+                      style={{
+                        ...toggleButton,
+                        justifyContent: ativoUsuario
+                          ? "flex-end"
+                          : "flex-start",
+                        background: ativoUsuario
+                          ? dadosEmpresa.corPrimaria
+                          : "rgba(255,255,255,.12)",
+                      }}
+                    >
+                      <div style={toggleCircle} />
+                    </button>
+                  </div>
+
+                  {perfilUsuario !== "admin" && (
+                    <div style={permissaoCompactCard}>
+                      <div>
+                        <strong style={strongText}>
+                          Permissões do usuário
+                        </strong>
+
+                        <p style={cardDescription}>
+                          {totalPermissoesAtivas} permissões ativas. Clique para
+                          configurar em uma tela flutuante.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setModalPermissoesAberto(true)}
+                        style={secondaryButton}
+                        className="marcae-ghost-button"
+                      >
+                        Configurar permissões
+                      </button>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={salvarUsuario}
+                    style={primaryButton}
+                    className="marcae-premium-button"
+                  >
+                    {salvandoUsuario
+                      ? "Salvando usuário..."
+                      : usuarioEditandoId
+                        ? "Atualizar usuário"
+                        : "Criar usuário"}
+                  </button>
+                </div>
+
+                <div style={usuariosListCard}>
+                  <div style={usuariosListHeader}>
+                    <div>
+                      <h3 style={usuarioFormTitle}>Usuários cadastrados</h3>
+
+                      <p style={cardDescription}>
+                        Visualize rapidamente quem possui acesso ao sistema.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={usuariosList}>
+                    {usuarios.length === 0 ? (
+                      <div style={emptyUsers}>Nenhum usuário cadastrado.</div>
+                    ) : (
+                      usuarios.map((usuario) => (
+                        <div key={usuario.id} style={usuarioItem}>
+                          <div style={usuarioAvatar}>
+                            {usuario.nome?.charAt(0)?.toUpperCase() || "U"}
+                          </div>
+
+                          <div style={usuarioInfo}>
+                            <div style={usuarioTextoColuna}>
+                              <strong style={usuarioNome}>
+                                {usuario.nome || "Usuário"}
+                              </strong>
+
+                              <span style={usuarioEmail}>{usuario.email}</span>
+
+                              {usuario.whatsapp && (
+                                <span style={usuarioWhatsapp}>
+                                  WhatsApp: {usuario.whatsapp}
+                                </span>
+                              )}
+
+                              <div style={usuarioBadges}>
+                                <span
+                                  style={{
+                                    ...usuarioBadge,
+                                    background:
+                                      usuario.perfil === "admin"
+                                        ? "rgba(124,58,237,.20)"
+                                        : "rgba(59,130,246,.20)",
+                                    color:
+                                      usuario.perfil === "admin"
+                                        ? "#c4b5fd"
+                                        : "#93c5fd",
+                                  }}
+                                >
+                                  {usuario.perfil === "admin"
+                                    ? "Administrador"
+                                    : "Usuário"}
+                                </span>
+
+                                <span
+                                  style={{
+                                    ...usuarioBadge,
+                                    background:
+                                      usuario.ativo !== false
+                                        ? "rgba(16,185,129,.18)"
+                                        : "rgba(239,68,68,.18)",
+                                    color:
+                                      usuario.ativo !== false
+                                        ? "#6ee7b7"
+                                        : "#fca5a5",
+                                  }}
+                                >
+                                  {usuario.ativo !== false
+                                    ? "Ativo"
+                                    : "Inativo"}
+                                </span>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => editarUsuario(usuario)}
+                              style={editButton}
+                              className="marcae-ghost-button"
+                            >
+                              ✏️ Editar
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+
+        {modalPermissoesAberto && perfilUsuario !== "admin" && (
+          <div style={modalOverlay}>
+            <div style={modalPermissoesCard}>
+              <div style={modalHeader}>
+                <div>
+                  <span style={badge}>Permissões</span>
+
+                  <h2 style={cardTitle}>
+                    {usuarioEditandoId
+                      ? "Permissões do usuário"
+                      : "Permissões do novo usuário"}
+                  </h2>
+
+                  <p style={cardDescription}>
+                    Configure acessos por módulo. As alterações serão aplicadas
+                    quando você salvar o usuário.
                   </p>
                 </div>
 
-                <button type="button" onClick={() => editarUsuario(usuario)} style={editButton}>
-                  Editar
+                <button
+                  type="button"
+                  onClick={() => setModalPermissoesAberto(false)}
+                  style={modalCloseButton}
+                  className="marcae-ghost-button"
+                >
+                  Fechar
                 </button>
               </div>
-            ))
-          )}
-        </div>
-      </section>
+
+              <div style={modalResumoPermissoes}>
+                <strong>{totalPermissoesAtivas}</strong>
+                <span>permissões ativas</span>
+              </div>
+
+              <div style={modalPermissoesScroll}>
+                {[
+                  "Módulos",
+                  "Financeiro",
+                  "Caixa",
+                  "Clientes",
+                  "Atendimentos",
+                  "Relatórios",
+                  "Configurações",
+                ].map((grupo) => (
+                  <div key={grupo} style={permissionGroup}>
+                    <div style={permissionGroupHeader}>
+                      <h4 style={permissionGroupTitle}>{grupo}</h4>
+                    </div>
+
+                    <div style={permissionsGrid}>
+                      {permissoesLista
+                        .filter((item) => item.grupo === grupo)
+                        .map((item) => (
+                          <button
+                            key={item.chave}
+                            type="button"
+                            onClick={() => alterarPermissao(item.chave)}
+                            style={{
+                              ...permissionCard,
+                              borderColor: permissoes[item.chave]
+                                ? dadosEmpresa.corPrimaria
+                                : "rgba(255,255,255,.08)",
+                              background: permissoes[item.chave]
+                                ? `${dadosEmpresa.corPrimaria}18`
+                                : "rgba(255,255,255,.03)",
+                            }}
+                          >
+                            <div
+                              style={{
+                                ...permissionCheck,
+                                background: permissoes[item.chave]
+                                  ? dadosEmpresa.corPrimaria
+                                  : "rgba(255,255,255,.08)",
+                              }}
+                            >
+                              {permissoes[item.chave] ? "✓" : ""}
+                            </div>
+
+                            <div>
+                              <strong style={permissionTitle}>
+                                {item.titulo}
+                              </strong>
+
+                              <p style={permissionDescription}>
+                                {item.descricao}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={modalFooter}>
+                <button
+                  type="button"
+                  onClick={() => setPermissoes(permissoesPadrao)}
+                  style={secondaryButton}
+                  className="marcae-ghost-button"
+                >
+                  Limpar permissões
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setModalPermissoesAberto(false)}
+                  style={primaryButtonInline}
+                  className="marcae-premium-button"
+                >
+                  Concluir permissões
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+    </PremiumLayout>
+  );
+}
+
+function TextField({
+  label,
+  value,
+  placeholder,
+  onChange,
+  type = "text",
+  wide = false,
+}: any) {
+  return (
+    <div style={{ ...field, gridColumn: wide ? "1 / -1" : undefined }}>
+      <label style={labelStyle}>{label}</label>
+
+      <input
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        style={input}
+        className="marcae-premium-input"
+      />
     </div>
   );
 }
 
-function PermissaoCheck({ label, checked, onChange }: any) {
+function ColorField({ label, description, value, onChange }: any) {
   return (
-    <label style={checkboxRow}>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onChange}
-      />
-      {label}
-    </label>
+    <div style={colorFieldCard}>
+      <div>
+        <label style={labelStyle}>{label}</label>
+        <p style={miniDescription}>{description}</p>
+      </div>
+
+      <div style={colorInputRow}>
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          style={colorInput}
+        />
+
+        <span style={colorValue}>{value}</span>
+      </div>
+    </div>
+  );
+}
+
+function InfoStat({ titulo, valor, detalhe }: any) {
+  return (
+    <div style={infoStatCard}>
+      <span style={infoStatTitle}>{titulo}</span>
+      <strong style={infoStatValue}>{valor}</strong>
+      <p style={infoStatDetail}>{detalhe}</p>
+    </div>
   );
 }
 
 const page = {
-  minHeight: '100vh',
-  background: '#f4f6fb',
-  padding: '32px',
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 16,
+  width: "100%",
+  paddingBottom: 24,
 };
 
-const header = {
-  background: 'linear-gradient(135deg, #111827, #312e81)',
-  color: '#fff',
-  padding: '32px',
-  borderRadius: '24px',
-  marginBottom: '28px',
+const hero = {
+  position: "relative" as const,
+  overflow: "hidden",
+  borderRadius: 24,
+  padding: 20,
+  color: "#fff",
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) auto auto",
+  alignItems: "center",
+  gap: 16,
+  border: "1px solid rgba(255,255,255,0.10)",
+  boxShadow: "0 16px 45px rgba(0,0,0,0.24)",
 };
 
-const headerTop = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'flex-start',
-  gap: '20px',
+const heroContent = {
+  minWidth: 0,
 };
 
-const backButton = {
-  padding: '11px 16px',
-  borderRadius: '12px',
-  border: '1px solid rgba(255,255,255,0.25)',
-  background: 'rgba(255,255,255,0.12)',
-  color: '#fff',
-  fontWeight: 800,
-  cursor: 'pointer',
+const heroMobile = {
+  display: "flex",
+  flexDirection: "column" as const,
+  alignItems: "stretch",
+  gap: 10,
+  padding: 13,
+  borderRadius: 20,
+  overflow: "hidden",
+  width: "100%",
+};
+
+const heroContentMobile = {
+  width: "100%",
+  maxWidth: "100%",
+  minWidth: 0,
+};
+
+const titleMobile = {
+  fontSize: 24,
+  lineHeight: 1.05,
+  maxWidth: "100%",
+  wordBreak: "normal" as const,
+};
+
+const subtitleMobile = {
+  fontSize: 12,
+  lineHeight: 1.45,
+  maxWidth: "100%",
+  width: "100%",
+};
+
+const heroChipsMobile = {
+  gap: 8,
+};
+
+const heroPreviewMobile = {
+  width: "100%",
+  maxWidth: "100%",
+  height: 58,
+  flexShrink: 0,
+  borderRadius: 16,
+};
+
+const backButtonMobile = {
+  width: "100%",
+  textAlign: "center" as const,
+  minHeight: 36,
+  padding: "9px 12px",
 };
 
 const eyebrow = {
-  fontSize: '13px',
-  opacity: 0.75,
-  marginBottom: '8px',
+  opacity: 0.82,
+  fontSize: 11,
+  marginBottom: 6,
+  fontWeight: 900,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase" as const,
 };
 
 const title = {
-  fontSize: '34px',
-  fontWeight: 800,
   margin: 0,
+  fontSize: 32,
+  lineHeight: 1.05,
+  fontWeight: 950,
+  letterSpacing: "-0.04em",
 };
 
 const subtitle = {
-  fontSize: '15px',
-  opacity: 0.85,
-  marginTop: '10px',
+  opacity: 0.86,
+  marginTop: 8,
+  marginBottom: 0,
+  lineHeight: 1.5,
+  maxWidth: 680,
+  fontSize: 13,
 };
 
-const grid = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-  gap: '24px',
+const heroChips = {
+  display: "flex",
+  flexWrap: "wrap" as const,
+  gap: 8,
+  marginTop: 12,
+};
+
+const heroChip = {
+  display: "inline-flex",
+  alignItems: "center",
+  padding: "6px 10px",
+  borderRadius: 999,
+  background: "rgba(255,255,255,0.09)",
+  border: "1px solid rgba(255,255,255,0.11)",
+  color: "#fff",
+  fontSize: 11,
+  fontWeight: 850,
+};
+
+const heroPreview = {
+  display: "flex",
+  alignItems: "stretch",
+  width: 170,
+  height: 82,
+  borderRadius: 20,
+  background: "rgba(15,23,42,0.62)",
+  border: "1px solid rgba(255,255,255,0.12)",
+  overflow: "hidden",
+  boxShadow: "0 12px 28px rgba(0,0,0,0.20)",
+};
+
+const previewSidebar = {
+  width: 38,
+};
+
+const previewMain = {
+  flex: 1,
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  padding: 12,
+};
+
+const previewLogo = {
+  width: 42,
+  height: 42,
+  borderRadius: 14,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: "#fff",
+  fontSize: 18,
+  fontWeight: 950,
+  overflow: "hidden",
+};
+
+const previewLogoImg = {
+  width: "100%",
+  height: "100%",
+  objectFit: "cover" as const,
+};
+
+const previewLines = {
+  flex: 1,
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 10,
+};
+
+const previewLineLarge = {
+  height: 12,
+  width: "100%",
+  borderRadius: 999,
+  background: "rgba(255,255,255,0.22)",
+};
+
+const previewLineSmall = {
+  height: 10,
+  width: "68%",
+  borderRadius: 999,
+  background: "rgba(255,255,255,0.14)",
+};
+
+const backButton = {
+  border: "1px solid rgba(255,255,255,0.12)",
+  borderRadius: 14,
+  padding: "11px 14px",
+  background: "rgba(255,255,255,0.07)",
+  color: "#fff",
+  fontWeight: 900,
+  cursor: "pointer",
+  transition: "all .18s ease",
+  whiteSpace: "nowrap" as const,
+};
+
+const topStatsGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
+  gap: 8,
+};
+
+const infoStatCard = {
+  padding: 12,
+  borderRadius: 18,
+  background: "rgba(15,23,42,0.74)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  boxShadow: "0 12px 30px rgba(0,0,0,0.18)",
+};
+
+const infoStatTitle = {
+  display: "block",
+  color: "#94a3b8",
+  fontSize: 10,
+  fontWeight: 900,
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.08em",
+  marginBottom: 6,
+};
+
+const infoStatValue = {
+  display: "block",
+  color: "#f8fafc",
+  fontSize: 17,
+  fontWeight: 950,
+  lineHeight: 1.2,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap" as const,
+};
+
+const infoStatDetail = {
+  color: "#94a3b8",
+  fontSize: 11,
+  margin: "6px 0 0",
+  lineHeight: 1.35,
 };
 
 const card = {
-  background: '#fff',
-  padding: '26px',
-  borderRadius: '22px',
-  boxShadow: '0 12px 35px rgba(15, 23, 42, 0.08)',
-  border: '1px solid #eef2ff',
+  background: "rgba(15,23,42,0.80)",
+  borderRadius: 22,
+  padding: 18,
+  border: "1px solid rgba(255,255,255,0.08)",
+  backdropFilter: "blur(16px)",
+  boxShadow: "0 16px 45px rgba(0,0,0,0.20)",
 };
 
-const cardWide = {
-  ...card,
-  marginTop: '24px',
-};
-
-const cardWideSemMargem = {
-  ...card,
-  marginBottom: '24px',
-};
-
-const cardHeader = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  gap: '16px',
-  marginBottom: '22px',
-};
-
-const cardTitle = {
-  fontSize: '21px',
-  fontWeight: 800,
-  margin: 0,
-};
-
-const cardDescription = {
-  fontSize: '14px',
-  color: '#64748b',
-  marginTop: '6px',
+const sectionHeaderRow = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: 14,
+  marginBottom: 16,
+  flexWrap: "wrap" as const,
 };
 
 const badge = {
-  height: 'fit-content',
-  background: '#eef2ff',
-  color: '#4f46e5',
-  padding: '7px 12px',
-  borderRadius: '999px',
-  fontSize: '12px',
-  fontWeight: 700,
+  display: "inline-flex",
+  padding: "5px 9px",
+  borderRadius: 999,
+  background: "rgba(255,255,255,0.07)",
+  color: "#fff",
+  fontSize: 10,
+  fontWeight: 900,
+  marginBottom: 8,
+  border: "1px solid rgba(255,255,255,0.09)",
 };
 
-const checkboxRow = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-  fontSize: '14px',
-  color: '#334155',
-  marginBottom: '12px',
+const cardTitle = {
+  margin: 0,
+  fontSize: 21,
+  fontWeight: 950,
+  color: "#fff",
+  letterSpacing: "-0.03em",
 };
 
-const field = {
-  marginBottom: '18px',
+const cardDescription = {
+  color: "#94a3b8",
+  fontSize: 12,
+  lineHeight: 1.45,
+  margin: "6px 0 0",
 };
 
-const label = {
-  display: 'block',
-  fontSize: '13px',
-  fontWeight: 700,
-  color: '#475569',
-  marginBottom: '8px',
+const colorGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
+  gap: 10,
 };
 
-const input = {
-  width: '100%',
-  padding: '12px',
-  borderRadius: '12px',
-  border: '1px solid #cbd5e1',
-  fontSize: '14px',
-  boxSizing: 'border-box' as const,
+const colorFieldCard = {
+  padding: 13,
+  borderRadius: 17,
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.08)",
 };
 
-const select = {
-  width: '100%',
-  padding: '12px',
-  borderRadius: '12px',
-  border: '1px solid #cbd5e1',
-  fontSize: '14px',
-  background: '#fff',
+const miniDescription = {
+  color: "#94a3b8",
+  fontSize: 11,
+  lineHeight: 1.35,
+  margin: "4px 0 10px",
 };
 
-const primaryButton = {
-  width: '100%',
-  padding: '13px',
-  borderRadius: '14px',
-  border: 'none',
-  background: 'linear-gradient(90deg, #4f46e5, #7c3aed)',
-  color: '#fff',
+const colorInputRow = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+};
+
+const colorInput = {
+  width: 62,
+  height: 48,
+  border: "none",
+  borderRadius: 16,
+  background: "transparent",
+  cursor: "pointer",
+};
+
+const colorValue = {
+  color: "#e2e8f0",
+  fontSize: 13,
   fontWeight: 800,
-  cursor: 'pointer',
-};
-
-const smallButton = {
-  padding: '10px 14px',
-  borderRadius: '12px',
-  border: '1px solid #cbd5e1',
-  background: '#fff',
-  color: '#334155',
-  fontWeight: 800,
-  cursor: 'pointer',
-};
-
-const permissionGrid = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-  gap: '16px',
-  marginBottom: '22px',
-};
-
-const permissionItem = {
-  background: '#f8fafc',
-  border: '1px solid #e2e8f0',
-  borderRadius: '16px',
-  padding: '18px',
-  display: 'flex',
-  flexDirection: 'column' as const,
-  gap: '8px',
-  color: '#475569',
-  fontSize: '14px',
-};
-
-const formGrid = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-  gap: '18px',
+  fontFamily: "monospace",
 };
 
 const empresaGrid = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-  gap: '18px',
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))",
+  gap: 12,
 };
 
-const permissionsBox = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-  gap: '10px',
-  background: '#f8fafc',
-  border: '1px solid #e2e8f0',
-  borderRadius: '16px',
-  padding: '18px',
-  marginBottom: '20px',
+const field = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 6,
+  minWidth: 0,
 };
 
-const usersList = {
-  marginTop: '18px',
-  display: 'flex',
-  flexDirection: 'column' as const,
-  gap: '12px',
+const labelStyle = {
+  color: "#cbd5e1",
+  fontSize: 12,
+  fontWeight: 850,
 };
 
-const emptyBox = {
-  padding: '18px',
-  borderRadius: '14px',
-  background: '#f8fafc',
-  border: '1px dashed #cbd5e1',
-  color: '#64748b',
-};
-
-const userRow = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: '16px',
-  padding: '16px',
-  borderRadius: '14px',
-  background: '#f8fafc',
-  border: '1px solid #e2e8f0',
-};
-
-const userText = {
-  fontSize: '13px',
-  color: '#64748b',
-  margin: '4px 0 0 0',
-};
-
-const editButton = {
-  padding: '10px 14px',
-  borderRadius: '10px',
-  border: 'none',
-  background: '#4f46e5',
-  color: '#fff',
-  fontWeight: 700,
-  cursor: 'pointer',
+const input = {
+  width: "100%",
+  padding: "12px 13px",
+  borderRadius: 13,
+  border: "1px solid rgba(255,255,255,0.12)",
+  background: "rgba(2,6,23,0.52)",
+  color: "#fff",
+  outline: "none",
+  fontSize: 13,
+  boxSizing: "border-box" as const,
+  transition: "all .18s ease",
 };
 
 const logoPreviewBox = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 16,
-  background: '#f8fafc',
-  border: '1px solid #e2e8f0',
-  borderRadius: 16,
-  padding: 16,
-  marginBottom: 18,
+  display: "flex",
+  alignItems: "center",
+  gap: 13,
+  padding: 13,
+  borderRadius: 17,
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  marginTop: 14,
 };
 
 const logoPreview = {
-  width: 72,
-  height: 72,
-  borderRadius: 18,
-  objectFit: 'cover' as const,
-  background: '#fff',
-  border: '1px solid #e2e8f0',
+  width: 58,
+  height: 58,
+  borderRadius: 16,
+  objectFit: "cover" as const,
+  border: "1px solid rgba(255,255,255,0.12)",
 };
 
 const logoVazio = {
-  width: 72,
-  height: 72,
+  width: 58,
+  height: 58,
+  borderRadius: 16,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: "#fff",
+  fontSize: 20,
+  fontWeight: 950,
+  flexShrink: 0,
+};
+
+const strongText = {
+  color: "#f8fafc",
+  fontWeight: 950,
+};
+
+const primaryButton = {
+  width: "100%",
+  border: "none",
+  borderRadius: 14,
+  padding: "13px 15px",
+  background: "var(--marcae-gradient)",
+  color: "#fff",
+  fontWeight: 950,
+  cursor: "pointer",
+  marginTop: 14,
+  transition: "all .18s ease",
+};
+
+const primaryButtonInline = {
+  border: "none",
+  borderRadius: 14,
+  padding: "11px 14px",
+  background: "var(--marcae-gradient)",
+  color: "#fff",
+  fontWeight: 950,
+  cursor: "pointer",
+  transition: "all .18s ease",
+  whiteSpace: "nowrap" as const,
+};
+
+const sectionActionsRow = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  flexWrap: "wrap" as const,
+};
+
+const empresaResumoCompacto = {
+  display: "grid",
+  gridTemplateColumns: "52px minmax(0, 1fr) auto",
+  alignItems: "center",
+  gap: 12,
+  padding: 12,
   borderRadius: 18,
-  background: '#eef2ff',
-  color: '#4f46e5',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  textAlign: 'center' as const,
+  background: "rgba(255,255,255,0.045)",
+  border: "1px solid rgba(255,255,255,0.08)",
+};
+
+const empresaResumoLogoBox = {
+  width: 52,
+  height: 52,
+  borderRadius: 16,
+  overflow: "hidden",
+};
+
+const empresaResumoLogo = {
+  width: "100%",
+  height: "100%",
+  objectFit: "cover" as const,
+};
+
+const empresaResumoLogoVazio = {
+  width: "100%",
+  height: "100%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: "#fff",
+  fontSize: 18,
+  fontWeight: 950,
+};
+
+const empresaResumoInfo = {
+  minWidth: 0,
+  display: "grid",
+  gap: 3,
+};
+
+const empresaResumoNome = {
+  color: "#fff",
+  fontSize: 14,
+  fontWeight: 950,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap" as const,
+};
+
+const empresaResumoLinha = {
+  color: "#94a3b8",
   fontSize: 11,
+  fontWeight: 700,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap" as const,
+};
+
+const empresaResumoButton = {
+  border: "1px solid rgba(255,255,255,0.12)",
+  borderRadius: 13,
+  padding: "10px 12px",
+  background: "rgba(255,255,255,0.06)",
+  color: "#fff",
+  fontSize: 12,
+  fontWeight: 950,
+  cursor: "pointer",
+  whiteSpace: "nowrap" as const,
+};
+
+const grid2 = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+  gap: 16,
+  alignItems: "start",
+};
+
+const integracaoStatusCard = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 12,
+  padding: 13,
+  borderRadius: 17,
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  marginBottom: 12,
+};
+
+const statusDot = {
+  width: 12,
+  height: 12,
+  borderRadius: 999,
+  marginTop: 6,
+  boxShadow: "0 0 0 6px rgba(255,255,255,0.06)",
+};
+
+const mercadoPagoGrid = {
+  display: "grid",
+  gridTemplateColumns: "1fr",
+  gap: 16,
+};
+
+const toggleCard = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  padding: 13,
+  borderRadius: 17,
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.08)",
+};
+
+const toggleDescription = {
+  color: "#94a3b8",
+  fontSize: 13,
+  lineHeight: 1.5,
+  margin: "6px 0 0",
+};
+
+const toggleButton = {
+  width: 58,
+  height: 32,
+  border: "none",
+  borderRadius: 999,
+  padding: 4,
+  display: "flex",
+  alignItems: "center",
+  cursor: "pointer",
+  transition: "all .18s ease",
+  flexShrink: 0,
+};
+
+const toggleCircle = {
+  width: 24,
+  height: 24,
+  borderRadius: 999,
+  background: "#fff",
+  boxShadow: "0 4px 12px rgba(0,0,0,.25)",
+};
+
+const usuariosResumoBox = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
+  gap: 10,
+  padding: 13,
+  borderRadius: 18,
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.08)",
+};
+
+const usuariosResumoItem = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 4,
+};
+
+const usuariosResumoNumero = {
+  color: "#f8fafc",
+  fontSize: 21,
+  fontWeight: 950,
+};
+
+const usuariosResumoTexto = {
+  color: "#94a3b8",
+  fontSize: 11,
+  fontWeight: 700,
+};
+
+const usuariosResumoDivider = {
+  display: "none",
+};
+
+const usuarioLayoutGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))",
+  gap: 14,
+  alignItems: "start",
+};
+
+const usuarioFormCard = {
+  padding: 14,
+  borderRadius: 19,
+  background: "rgba(255,255,255,0.035)",
+  border: "1px solid rgba(255,255,255,0.08)",
+};
+
+const usuarioFormHeader = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: 12,
+  marginBottom: 14,
+  flexWrap: "wrap" as const,
+};
+
+const usuarioFormTitle = {
+  margin: 0,
+  color: "#f8fafc",
+  fontSize: 18,
+  fontWeight: 950,
+  letterSpacing: "-0.02em",
+};
+
+const ghostButton = {
+  border: "1px solid rgba(255,255,255,0.12)",
+  borderRadius: 14,
+  padding: "11px 14px",
+  background: "rgba(255,255,255,0.06)",
+  color: "#fff",
+  fontWeight: 850,
+  cursor: "pointer",
+  transition: "all .18s ease",
+};
+
+const usuarioFormGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
+  gap: 10,
+  marginBottom: 12,
+};
+
+const permissionHeader = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: 16,
+  marginTop: 22,
+  marginBottom: 16,
+};
+
+const permissionCounter = {
+  padding: "9px 12px",
+  borderRadius: 999,
+  background: "var(--marcae-primary-soft)",
+  color: "#fff",
+  fontSize: 12,
+  fontWeight: 900,
+  whiteSpace: "nowrap" as const,
+};
+
+const permissionGroup = {
+  marginTop: 18,
+};
+
+const permissionGroupHeader = {
+  marginBottom: 10,
+};
+
+const permissionGroupTitle = {
+  color: "#e2e8f0",
+  margin: 0,
+  fontSize: 14,
+  fontWeight: 950,
+};
+
+const permissionsGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: 12,
+};
+
+const permissionCard = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 12,
+  width: "100%",
+  padding: 14,
+  borderRadius: 18,
+  border: "1px solid rgba(255,255,255,0.08)",
+  color: "#fff",
+  textAlign: "left" as const,
+  cursor: "pointer",
+  transition: "all .18s ease",
+};
+
+const permissionCheck = {
+  width: 24,
+  height: 24,
+  borderRadius: 8,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: "#fff",
+  fontSize: 13,
+  fontWeight: 950,
+  flexShrink: 0,
+};
+
+const permissionTitle = {
+  display: "block",
+  color: "#f8fafc",
+  fontSize: 13,
+  fontWeight: 950,
+};
+
+const permissionDescription = {
+  color: "#94a3b8",
+  fontSize: 12,
+  lineHeight: 1.45,
+  margin: "4px 0 0",
+};
+
+const usuariosListCard = {
+  padding: 14,
+  borderRadius: 19,
+  background: "rgba(255,255,255,0.035)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  overflow: "hidden",
+};
+
+const usuariosListHeader = {
+  marginBottom: 16,
+};
+
+const usuariosList = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 10,
+  width: "100%",
+};
+
+const emptyUsers = {
+  padding: 20,
+  borderRadius: 18,
+  background: "rgba(255,255,255,0.04)",
+  color: "#94a3b8",
   fontWeight: 800,
-  border: '1px solid #c7d2fe',
+  textAlign: "center" as const,
+};
+
+const usuarioItem = {
+  display: "grid",
+  gridTemplateColumns: "42px minmax(0, 1fr)",
+  alignItems: "center",
+  gap: 10,
+  width: "100%",
+  padding: 12,
+  borderRadius: 17,
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  overflow: "hidden",
+};
+
+const usuarioAvatar = {
+  width: 40,
+  height: 40,
+  borderRadius: 14,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "var(--marcae-gradient)",
+  color: "#fff",
+  fontWeight: 950,
+  fontSize: 16,
+  flexShrink: 0,
+};
+
+const usuarioInfo = {
+  minWidth: 0,
+  width: "100%",
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr)",
+  gap: 12,
+};
+
+const usuarioTextoColuna = {
+  minWidth: 0,
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 4,
+};
+
+const usuarioNome = {
+  display: "block",
+  color: "#f8fafc",
+  fontSize: 15,
+  fontWeight: 950,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap" as const,
+};
+
+const usuarioEmail = {
+  display: "block",
+  color: "#94a3b8",
+  fontSize: 12,
+  marginTop: 2,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap" as const,
+  maxWidth: "100%",
+};
+
+const usuarioWhatsapp = {
+  display: "block",
+  color: "#c4b5fd",
+  fontSize: 12,
+  marginTop: 2,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap" as const,
+  maxWidth: "100%",
+};
+
+const usuarioBadges = {
+  display: "flex",
+  flexWrap: "wrap" as const,
+  gap: 6,
+  marginTop: 6,
+};
+
+const usuarioBadge = {
+  display: "inline-flex",
+  alignItems: "center",
+  padding: "5px 8px",
+  borderRadius: 999,
+  fontSize: 11,
+  fontWeight: 900,
+};
+
+const editButton = {
+  border: "1px solid rgba(255,255,255,0.11)",
+  borderRadius: 12,
+  padding: "9px 12px",
+  background: "rgba(255,255,255,0.055)",
+  color: "#fff",
+  fontWeight: 900,
+  cursor: "pointer",
+  width: "100%",
+  textAlign: "center" as const,
+};
+
+const permissaoCompactCard = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  padding: 13,
+  borderRadius: 17,
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  marginTop: 12,
+  marginBottom: 12,
+  flexWrap: "wrap" as const,
+};
+
+const modalOverlay = {
+  position: "fixed" as const,
+  inset: 0,
+  zIndex: 9999,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: 24,
+  background: "rgba(2,6,23,0.78)",
+  backdropFilter: "blur(14px)",
+};
+
+const modalPermissoesCard = {
+  width: "min(1120px, 100%)",
+  maxHeight: "88vh",
+  overflow: "hidden",
+  borderRadius: 30,
+  background: "linear-gradient(180deg, rgba(15,23,42,0.98), rgba(2,6,23,0.98))",
+  border: "1px solid rgba(255,255,255,0.12)",
+  boxShadow: "0 30px 110px rgba(0,0,0,0.55)",
+  padding: 24,
+  display: "flex",
+  flexDirection: "column" as const,
+};
+
+const modalHeader = {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 18,
+  paddingBottom: 18,
+  borderBottom: "1px solid rgba(255,255,255,0.08)",
+};
+
+const modalCloseButton = {
+  border: "1px solid rgba(255,255,255,0.12)",
+  borderRadius: 14,
+  padding: "12px 14px",
+  background: "rgba(255,255,255,0.06)",
+  color: "#fff",
+  fontWeight: 900,
+  cursor: "pointer",
+  whiteSpace: "nowrap" as const,
+};
+
+const modalResumoPermissoes = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  width: "fit-content",
+  marginTop: 16,
+  padding: "10px 14px",
+  borderRadius: 999,
+  background: "var(--marcae-primary-soft)",
+  color: "#fff",
+  fontWeight: 900,
+};
+
+const modalPermissoesScroll = {
+  overflowY: "auto" as const,
+  paddingRight: 6,
+  marginTop: 18,
+};
+
+const modalFooter = {
+  display: "flex",
+  justifyContent: "flex-end",
+  gap: 12,
+  paddingTop: 18,
+  marginTop: 18,
+  borderTop: "1px solid rgba(255,255,255,0.08)",
+  flexWrap: "wrap" as const,
+};
+
+const linkAgendamentoBox = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) 260px",
+  gap: 22,
+  alignItems: "stretch",
+};
+
+const linkAgendamentoInfo = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 16,
+};
+
+const linkAgendamentoLine = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) auto",
+  gap: 12,
+};
+
+const linkAgendamentoAcoes = {
+  display: "flex",
+  flexWrap: "wrap" as const,
+  gap: 12,
+};
+
+const secondaryButton = {
+  border: "1px solid rgba(255,255,255,0.12)",
+  borderRadius: 16,
+  padding: "14px 16px",
+  background: "rgba(255,255,255,0.06)",
+  color: "#fff",
+  fontWeight: 950,
+  cursor: "pointer",
+  transition: "all .18s ease",
+};
+
+const whatsappButton = {
+  border: "none",
+  borderRadius: 16,
+  padding: "14px 16px",
+  background:
+    "linear-gradient(135deg, var(--marcae-primary), var(--marcae-secondary))",
+  color: "#fff",
+  fontWeight: 950,
+  cursor: "pointer",
+  transition: "all .18s ease",
+};
+
+const qrCard = {
+  padding: 20,
+  borderRadius: 24,
+  background: "rgba(255,255,255,0.045)",
+  border: "1px solid rgba(255,255,255,0.09)",
+  display: "flex",
+  flexDirection: "column" as const,
+  alignItems: "center",
+  justifyContent: "center",
+  textAlign: "center" as const,
+  gap: 12,
+};
+
+const qrImage = {
+  width: 160,
+  height: 160,
+  borderRadius: 20,
+  background: "#fff",
+  padding: 10,
+};
+
+const solicitacaoMpCard = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: 18,
+  padding: 24,
+  borderRadius: 22,
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.10)",
+};
+
+const integracaoSolicitadaCard = {
+  padding: 24,
+  borderRadius: 22,
+  background: "rgba(245,158,11,.12)",
+  border: "1px solid rgba(245,158,11,.25)",
+};
+
+const integracaoAtivaCard = {
+  padding: 24,
+  borderRadius: 22,
+  background: "rgba(16,185,129,.12)",
+  border: "1px solid rgba(16,185,129,.25)",
 };

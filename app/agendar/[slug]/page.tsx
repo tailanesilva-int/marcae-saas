@@ -1,16 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
+import { gerarTemaEmpresa } from '@/app/lib/theme';
 
 export default function AgendarPage() {
   const { slug } = useParams();
   const searchParams = useSearchParams();
   const clienteIdUrl = searchParams.get('clienteId');
+  const origemUrl = searchParams.get('origem');
+  const veioDoPainel = origemUrl === 'painel';
 
   const [empresa, setEmpresa] = useState<any>(null);
   const [servicos, setServicos] = useState<any[]>([]);
   const [profissionais, setProfissionais] = useState<any[]>([]);
+  const [promocoes, setPromocoes] = useState<any[]>([]);
 
   const [servicoId, setServicoId] = useState('');
   const [profissionalId, setProfissionalId] = useState('');
@@ -33,12 +37,14 @@ export default function AgendarPage() {
   const [novosHorariosReagendamento, setNovosHorariosReagendamento] = useState<string[]>([]);
   const [novoHorarioReagendamento, setNovoHorarioReagendamento] = useState('');
   const [reagendando, setReagendando] = useState(false);
+  const [reagendamentoDireto, setReagendamentoDireto] = useState(false);
 
   const [cliente, setCliente] = useState({
-    nome: '',
-    whatsapp: '',
-    dataNascimento: '',
-  });
+  nome: '',
+  whatsapp: '',
+  dataNascimento: '',
+  cpf: '',
+});
 
   const [etapaAtual, setEtapaAtual] = useState<
     'identificacao' | 'servico' | 'profissional' | 'data' | 'horario' | 'confirmacao'
@@ -154,6 +160,8 @@ function clienteTemIdadeMinima(
   }
 
   function limparFluxoAgendamento() {
+    setReagendamentoDireto(false);
+    setAgendamentoSelecionado(null);
     setServicoId('');
     setProfissionalId('');
     setData('');
@@ -222,12 +230,15 @@ function clienteTemIdadeMinima(
       setModoReagendamento(false);
 
       setCliente({
-        nome: data.cliente.nome || '',
-        whatsapp: data.cliente.whatsapp || '',
-        dataNascimento: data.cliente.dataNascimento
-          ? String(data.cliente.dataNascimento).slice(0, 10)
-          : '',
-      });
+  nome: data.cliente.nome || '',
+  whatsapp: data.cliente.whatsapp || '',
+  dataNascimento: data.cliente.dataNascimento
+    ? String(data.cliente.dataNascimento).slice(0, 10)
+    : '',
+  cpf: data.cliente.cpf || '',
+});
+
+      await carregarPromocoesComCpf(empresaId, data.cliente.cpf || cpf);
 
       setEtapaAtual('servico');
     } catch (error) {
@@ -236,13 +247,32 @@ function clienteTemIdadeMinima(
   }
 
   async function carregarDados(empresaId: string) {
-    const [s, p] = await Promise.all([
-      fetch(`/api/servicos?empresaId=${empresaId}`).then((r) => r.json()),
-      fetch(`/api/profissionais?empresaId=${empresaId}`).then((r) => r.json()),
+    const [s, p, promocoesRes] = await Promise.all([
+      fetch(`/api/servicos?empresaId=${empresaId}`, { cache: 'no-store' }).then((r) => r.json()),
+      fetch(`/api/profissionais?empresaId=${empresaId}`, { cache: 'no-store' }).then((r) => r.json()),
+      fetch(`/api/promocoes?empresaId=${empresaId}`, { cache: 'no-store' }).then((r) => r.json()),
     ]);
 
-    setServicos(s.servicos || []);
-    setProfissionais(p.profissionais || []);
+    setServicos(
+  (s.servicos || []).filter((servico: any) => servico.ativo !== false)
+);
+
+setProfissionais(
+  (p.profissionais || []).filter((profissional: any) => profissional.ativo !== false)
+);
+    setPromocoes(promocoesRes.promocoes || []);
+  }
+
+  async function carregarPromocoesComCpf(empresaId: string, cpfCliente?: string | null) {
+    const cpfLimpo = somenteNumeros(cpfCliente || '');
+    const queryCpf = cpfLimpo ? `&cpf=${cpfLimpo}` : '';
+
+    const res = await fetch(`/api/promocoes?empresaId=${empresaId}${queryCpf}`, {
+      cache: 'no-store',
+    });
+
+    const data = await res.json();
+    setPromocoes(data.promocoes || []);
   }
 
   async function buscarClientePorCpf() {
@@ -272,22 +302,27 @@ function clienteTemIdadeMinima(
         setClienteEncontrado(data.cliente);
 
         setCliente({
-          nome: data.cliente.nome || '',
-          whatsapp: data.cliente.whatsapp || '',
-          dataNascimento: data.cliente.dataNascimento
-            ? String(data.cliente.dataNascimento).slice(0, 10)
-            : '',
-        });
+  nome: data.cliente.nome || '',
+  whatsapp: data.cliente.whatsapp || '',
+  dataNascimento: data.cliente.dataNascimento
+    ? String(data.cliente.dataNascimento).slice(0, 10)
+    : '',
+  cpf: data.cliente.cpf || '',
+});
+
+        await carregarPromocoesComCpf(empresa.id, data.cliente.cpf || cpfLimpo);
 
         setMostrarCamposExtras(false);
         setEtapaAtual('servico');
       } else {
         setClienteEncontrado(null);
         setCliente({
-          nome: '',
-          whatsapp: '',
-          dataNascimento: '',
+  nome: '',
+  whatsapp: '',
+  dataNascimento: '',
+  cpf: '',
         });
+        await carregarPromocoesComCpf(empresa.id, cpfLimpo);
         setMostrarCamposExtras(true);
         setEtapaAtual('identificacao');
       }
@@ -352,8 +387,33 @@ function clienteTemIdadeMinima(
       return false;
     }
 
+    const params = new URLSearchParams({
+      empresaId: empresa.id,
+      profissionalId,
+      servicoId,
+      data,
+    });
+
+    const clienteIdAtual = clienteEncontrado?.id || clienteIdUrl || '';
+    const cpfAtual = somenteNumeros(
+      clienteEncontrado?.cpf ||
+        clienteEncontrado?.clienteCpf ||
+        cpf ||
+        cliente?.cpf ||
+        ''
+    );
+
+    if (clienteIdAtual) {
+      params.set('clienteId', clienteIdAtual);
+    }
+
+    if (cpfAtual) {
+      params.set('cpf', cpfAtual);
+    }
+
     const res = await fetch(
-      `/api/horarios-disponiveis?profissionalId=${profissionalId}&servicoId=${servicoId}&data=${data}`
+      `/api/horarios-disponiveis?${params.toString()}`,
+      { cache: 'no-store' }
     );
 
     const dataRes = await res.json();
@@ -389,8 +449,42 @@ function clienteTemIdadeMinima(
       return;
     }
 
+    const params = new URLSearchParams({
+      empresaId: empresa.id,
+      profissionalId: profissionalAtualId,
+      servicoId: servicoAtualId,
+      data: novaDataReagendamento,
+    });
+
+    const clienteIdAtual =
+      agendamentoSelecionado.clienteId ||
+      agendamentoSelecionado.cliente?.id ||
+      agendamentoSelecionado.Cliente?.id ||
+      clienteEncontrado?.id ||
+      clienteIdUrl ||
+      '';
+
+    const cpfAtual = somenteNumeros(
+      agendamentoSelecionado.clienteCpf ||
+        agendamentoSelecionado.cpf ||
+        agendamentoSelecionado.cliente?.cpf ||
+        agendamentoSelecionado.Cliente?.cpf ||
+        clienteEncontrado?.cpf ||
+        cpf ||
+        ''
+    );
+
+    if (clienteIdAtual) {
+      params.set('clienteId', clienteIdAtual);
+    }
+
+    if (cpfAtual) {
+      params.set('cpf', cpfAtual);
+    }
+
     const res = await fetch(
-      `/api/horarios-disponiveis?profissionalId=${profissionalAtualId}&servicoId=${servicoAtualId}&data=${novaDataReagendamento}`
+      `/api/horarios-disponiveis?${params.toString()}`,
+      { cache: 'no-store' }
     );
 
     const dataRes = await res.json();
@@ -425,6 +519,7 @@ function clienteTemIdadeMinima(
           servicoId: agendamentoSelecionado.servicoId,
           profissionalId: agendamentoSelecionado.profissionalId,
           permitirMenosDe24h: false,
+          permitirReagendamentoAberto: true,
         }),
       });
 
@@ -487,6 +582,39 @@ function clienteTemIdadeMinima(
 
     const dataHora = new Date(`${data}T${horarioSelecionado}`);
 
+    if (reagendamentoDireto && agendamentoSelecionado?.id) {
+      const confirmar = confirm(
+        `Confirma o reagendamento do atendimento aberto para ${new Date(`${data}T00:00:00`).toLocaleDateString('pt-BR')} às ${horarioSelecionado}?`
+      );
+
+      if (!confirmar) {
+        return;
+      }
+
+      const reagendamentoRes = await fetch('/api/agendamentos/reagendar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agendamentoId: agendamentoSelecionado.id,
+          dataHoraInicio: dataHora,
+          servicoId,
+          profissionalId,
+          permitirMenosDe24h: false,
+          permitirReagendamentoAberto: true,
+        }),
+      });
+
+      const reagendamentoData = await reagendamentoRes.json();
+
+      if (!reagendamentoData.success) {
+        alert(reagendamentoData.error || 'Erro ao reagendar atendimento.');
+        return;
+      }
+
+      window.location.href = `/sucesso/${reagendamentoData.agendamento.id}`;
+      return;
+    }
+
     const res = await fetch('/api/agendamentos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -512,6 +640,41 @@ function clienteTemIdadeMinima(
     const dataRes = await res.json();
 
     if (!dataRes.success) {
+      if (dataRes.reagendamentoDisponivel && dataRes.agendamentoExistente) {
+        const desejaReagendar = confirm(
+          `${dataRes.error || 'Você já possui um atendimento em aberto para este serviço.'}\n\nDeseja reagendar esse atendimento para ${data ? new Date(`${data}T00:00:00`).toLocaleDateString('pt-BR') : 'a nova data'} às ${horarioSelecionado}?`
+        );
+
+        if (!desejaReagendar) {
+          return;
+        }
+
+        const agendamentoAberto = dataRes.agendamentoExistente;
+
+        const reagendamentoRes = await fetch('/api/agendamentos/reagendar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agendamentoId: agendamentoAberto.id,
+            dataHoraInicio: dataHora,
+            servicoId: agendamentoAberto.servicoId || servicoId,
+            profissionalId: profissionalId || agendamentoAberto.profissionalId,
+            permitirMenosDe24h: false,
+            permitirReagendamentoAberto: true,
+          }),
+        });
+
+        const reagendamentoData = await reagendamentoRes.json();
+
+        if (!reagendamentoData.success) {
+          alert(reagendamentoData.error || 'Erro ao reagendar atendimento.');
+          return;
+        }
+
+        window.location.href = `/sucesso/${reagendamentoData.agendamento.id}`;
+        return;
+      }
+
       alert(dataRes.error || 'Erro ao agendar');
       return;
     }
@@ -605,12 +768,79 @@ if (!clienteTemIdadeMinima(cliente.dataNascimento)) {
     setEtapaAtual('servico');
   }
 
-  function selecionarServicoPublico(servicoIdSelecionado: string) {
+  async function verificarAgendamentoAbertoParaServico(servicoIdBusca: string) {
+    if (!empresa?.id) return null;
+
+    const cpfAtual = somenteNumeros(
+      clienteEncontrado?.cpf ||
+        clienteEncontrado?.clienteCpf ||
+        cpf ||
+        ''
+    );
+
+    if (!cpfAtual) return null;
+
+    try {
+      const params = new URLSearchParams({
+        empresaId: empresa.id,
+        cpf: cpfAtual,
+        servicoId: servicoIdBusca,
+        modo: 'aberto_servico',
+      });
+
+      const res = await fetch(`/api/agendamentos/reagendar?${params.toString()}`, {
+        cache: 'no-store',
+      });
+
+      const dataRes = await res.json();
+
+      if (!dataRes.success) {
+        return null;
+      }
+
+      return dataRes.agendamentoAberto || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async function selecionarServicoPublico(servicoIdSelecionado: string) {
+    setServicoId('');
+    setProfissionalId('');
+    setData('');
+    setHorarios([]);
+    setHorarioSelecionado('');
+    setReagendamentoDireto(false);
+    setAgendamentoSelecionado(null);
+
+    const agendamentoAberto = await verificarAgendamentoAbertoParaServico(servicoIdSelecionado);
+
+    if (agendamentoAberto) {
+      const desejaReagendar = confirm(
+        `Já existe um atendimento aberto para esse serviço.\n\nServiço: ${agendamentoAberto.servico?.nome || 'Serviço selecionado'}\nAgendamento atual: ${formatarDataHora(agendamentoAberto.dataHoraInicio)}\n\nDeseja reagendar esse atendimento?`
+      );
+
+      if (!desejaReagendar) {
+        alert('Para evitar duplicidade, não será criado outro agendamento para esse serviço enquanto houver um atendimento em aberto.');
+        return;
+      }
+
+      setServicoId(servicoIdSelecionado);
+      setAgendamentoSelecionado(agendamentoAberto);
+      setReagendamentoDireto(true);
+      setModoReagendamento(false);
+      setEtapaAtual('profissional');
+      return;
+    }
+
     setServicoId(servicoIdSelecionado);
     setProfissionalId('');
     setData('');
     setHorarios([]);
     setHorarioSelecionado('');
+    setReagendamentoDireto(false);
+    setAgendamentoSelecionado(null);
+    setModoReagendamento(false);
   }
 
   function avancarParaProfissional() {
@@ -672,12 +902,132 @@ function removerServicoDoCarrinho(itemId: string) {
   setServicosCarrinho((atual) => atual.filter((item) => item.id !== itemId));
 }
 
-function obterValorServico(servico: any) {
-  return Number(servico?.valor ?? servico?.preco ?? servico?.valorTotal ?? 0);
+function numeroValor(valor: any) {
+  if (valor === null || valor === undefined || valor === '') return 0;
+
+  const convertido = Number(String(valor).replace(',', '.'));
+
+  return Number.isNaN(convertido) ? 0 : convertido;
 }
 
-function obterValorPrePagamentoServico(servico: any) {
-  return Number(
+function obterValorOriginalServico(servico: any) {
+  return numeroValor(servico?.valor ?? servico?.preco ?? servico?.valorTotal ?? 0);
+}
+
+function promocaoEstaAtiva(promocao: any) {
+  if (!promocao) return false;
+  if (promocao.status !== 'ativa') return false;
+
+  const agora = new Date();
+  const inicio = promocao.dataInicio ? new Date(promocao.dataInicio) : null;
+  const fim = promocao.dataFim ? new Date(promocao.dataFim) : null;
+
+  if (inicio) {
+    inicio.setHours(0, 0, 0, 0);
+  }
+
+  if (fim) {
+    fim.setHours(23, 59, 59, 999);
+  }
+
+  if (inicio && agora < inicio) return false;
+  if (fim && agora > fim) return false;
+
+  return true;
+}
+
+function clienteFazAniversarioNoMesAtual() {
+  const dataNascimento =
+    clienteEncontrado?.dataNascimento ||
+    clienteEncontrado?.clienteNascimento ||
+    cliente.dataNascimento;
+
+  if (!dataNascimento) return false;
+
+  const nascimento = new Date(`${String(dataNascimento).slice(0, 10)}T00:00:00`);
+
+  if (Number.isNaN(nascimento.getTime())) return false;
+
+  return nascimento.getMonth() === new Date().getMonth();
+}
+
+function promocaoBloqueadaPorCpf(promocao: any) {
+  return Boolean(promocao?.usoUnicoCpf && promocao?.usoCpfBloqueado);
+}
+
+function promocaoAtivaDoServico(servicoIdBusca?: string | null) {
+  if (!servicoIdBusca) return null;
+
+  const promocoesAtivas = promocoes.filter((promocao) => promocaoEstaAtiva(promocao));
+
+  const promocaoServico = promocoesAtivas.find((promocao) => {
+    if (promocao.tipo !== 'servico') return false;
+    if (promocaoBloqueadaPorCpf(promocao)) return false;
+
+    return Array.isArray(promocao.servicos) &&
+      promocao.servicos.some(
+        (item: any) => item.servicoId === servicoIdBusca || item.servico?.id === servicoIdBusca
+      );
+  });
+
+  if (promocaoServico) return promocaoServico;
+
+  const promocaoAniversario = promocoesAtivas.find((promocao) => {
+    if (promocao.tipo !== 'aniversariantes') return false;
+    if (promocaoBloqueadaPorCpf(promocao)) return false;
+
+    return clienteFazAniversarioNoMesAtual();
+  });
+
+  if (promocaoAniversario) return promocaoAniversario;
+
+  const promocaoGeral = promocoesAtivas.find((promocao) => {
+    if (promocao.tipo !== 'geral') return false;
+    if (promocaoBloqueadaPorCpf(promocao)) return false;
+
+    return true;
+  });
+
+  return promocaoGeral || null;
+}
+
+function calcularValorComPromocao(valorOriginal: number, promocao: any) {
+  const desconto = numeroValor(promocao?.desconto);
+
+  if (!promocao || desconto <= 0) return valorOriginal;
+
+  if (promocao.tipoDesconto === 'percentual') {
+    const percentual = Math.min(Math.max(desconto, 0), 100);
+    return Math.max(valorOriginal - (valorOriginal * percentual) / 100, 0);
+  }
+
+  return Math.max(valorOriginal - desconto, 0);
+}
+
+function obterValorServico(servico: any) {
+  const valorOriginal = obterValorOriginalServico(servico);
+  const promocao = promocaoAtivaDoServico(servico?.id);
+
+  return calcularValorComPromocao(valorOriginal, promocao);
+}
+
+function obterResumoPromocaoServico(servico: any) {
+  const valorOriginal = obterValorOriginalServico(servico);
+  const promocao = promocaoAtivaDoServico(servico?.id);
+  const valorPromocional = calcularValorComPromocao(valorOriginal, promocao);
+  const possuiPromocao = Boolean(promocao && valorPromocional < valorOriginal);
+
+  return {
+    promocao,
+    possuiPromocao,
+    valorOriginal,
+    valorPromocional,
+    economia: Math.max(valorOriginal - valorPromocional, 0),
+  };
+}
+
+function obterValorPrePagamentoOriginalServico(servico: any) {
+  return numeroValor(
     servico?.valorPrePagamento ??
     servico?.valorPrePago ??
     servico?.precoPrePagamento ??
@@ -685,6 +1035,16 @@ function obterValorPrePagamentoServico(servico: any) {
     servico?.valorSinal ??
     0
   );
+}
+
+function obterValorPrePagamentoServico(servico: any) {
+  const valorPrePagamentoOriginal = obterValorPrePagamentoOriginalServico(servico);
+
+  if (valorPrePagamentoOriginal <= 0) return 0;
+
+  const promocao = promocaoAtivaDoServico(servico?.id);
+
+  return calcularValorComPromocao(valorPrePagamentoOriginal, promocao);
 }
 
 function formatarMoeda(valor: number) {
@@ -696,6 +1056,16 @@ function formatarMoeda(valor: number) {
 
 function itemExigePrePagamento(item: any) {
   return Boolean(item?.servico?.exigePrePagamento || item?.servico?.prePagamentoObrigatorio);
+}
+
+function obterDescricaoServico(servico: any) {
+  const descricao =
+    servico?.descricao ||
+    servico?.descricaoPublica ||
+    servico?.detalhes ||
+    '';
+
+  return String(descricao || '').trim();
 }
 
   const servicoSelecionado = servicos.find((s) => s.id === servicoId);
@@ -728,11 +1098,15 @@ function itemExigePrePagamento(item: any) {
   const existePrePagamentoResumo = itensResumo.some((item) => itemExigePrePagamento(item));
 
   const profissionaisFiltrados = profissionais.filter((p: any) =>
+  p.ativo !== false &&
   Array.isArray(p.servicos) &&
   p.servicos.some(
     (ps: any) =>
-      ps.servicoId === servicoId ||
-      ps.servico?.id === servicoId
+      ps.servico?.ativo !== false &&
+      (
+        ps.servicoId === servicoId ||
+        ps.servico?.id === servicoId
+      )
   )
 );
   const podeMostrarAgenda =
@@ -753,8 +1127,30 @@ function itemExigePrePagamento(item: any) {
     );
   }
 
+  const tema = gerarTemaEmpresa(empresa);
+
   return (
-  <main className="page">
+  <main
+    className="page"
+    style={{
+      '--marcae-primary': tema.primary,
+      '--marcae-secondary': tema.secondary,
+      '--marcae-sidebar': tema.sidebar,
+      '--marcae-primary-soft': tema.primarySoft,
+      '--marcae-secondary-soft': tema.secondarySoft,
+      '--marcae-primary-medium': tema.primaryMedium,
+      '--marcae-secondary-medium': tema.secondaryMedium,
+      '--marcae-gradient': tema.gradient,
+      '--marcae-bg': tema.bg,
+      '--marcae-bg-soft': tema.bgSoft,
+      '--marcae-card': tema.card,
+      '--marcae-card-strong': tema.cardStrong,
+      '--marcae-border': tema.border,
+      '--marcae-text': tema.text,
+      '--marcae-muted': tema.muted,
+      '--marcae-glow': tema.glow,
+    } as CSSProperties}
+  >
     <section className="shell">
       <div className="wizardSteps">
         {[
@@ -800,6 +1196,16 @@ function itemExigePrePagamento(item: any) {
 
       {etapaAtual === 'identificacao' && (
   <header className="topBar">
+{veioDoPainel && (
+  <button
+    className="voltarPainelButton"
+    onClick={() => {
+      window.location.href = '/clientes';
+    }}
+  >
+    ← Voltar ao painel
+  </button>
+)}
     <div className="marca">
       Marc<span>aê</span>
     </div>
@@ -957,6 +1363,8 @@ function itemExigePrePagamento(item: any) {
                     setMostrarCamposExtras(false);
                     setModoReagendamento(false);
                     limparFluxoAgendamento();
+                    setReagendamentoDireto(false);
+                    setAgendamentoSelecionado(null);
                     limparFluxoReagendamento();
                   }}
                 />
@@ -1017,9 +1425,11 @@ function itemExigePrePagamento(item: any) {
       );
 
       setCliente({
-        ...cliente,
-        dataNascimento: '',
-      });
+  nome: '',
+  whatsapp: '',
+  dataNascimento: '',
+  cpf: '',
+});
 
       return;
     }
@@ -1179,16 +1589,11 @@ function itemExigePrePagamento(item: any) {
                 <div className="servicosPublicos">
                   {servicos.map((s) => {
                     const servicoAtivo = servicoId === s.id;
-                    const valorServico =
-                      typeof s.valor === 'number'
-                        ? s.valor
-                        : typeof s.preco === 'number'
-                          ? s.preco
-                          : typeof s.valorTotal === 'number'
-                            ? s.valorTotal
-                            : null;
-
+                    const resumoPromocao = obterResumoPromocaoServico(s);
+                    const valorServico = resumoPromocao.valorPromocional;
+                    const valorPrePagamentoOriginalServico = obterValorPrePagamentoOriginalServico(s);
                     const valorPrePagamentoServico = obterValorPrePagamentoServico(s);
+                    const descricaoServico = obterDescricaoServico(s);
 
                     return (
                       <button
@@ -1197,21 +1602,48 @@ function itemExigePrePagamento(item: any) {
                         className={servicoAtivo ? 'servicoPublicoCard active' : 'servicoPublicoCard'}
                         onClick={() => selecionarServicoPublico(s.id)}
                       >
-                        <div className="servicoPublicoIcon">✨</div>
+                        <div className="servicoPublicoImagemBox">
+  {s.imagemUrl1 ? (
+    <img
+      src={s.imagemUrl1}
+      alt={s.nome}
+      className="servicoPublicoImagem"
+    />
+  ) : (
+    <div className="servicoPublicoIcon">✨</div>
+  )}
+
+  {(s.imagemUrl2 || s.imagemUrl3) && (
+    <div className="servicoGaleriaBadge">
+      +{[s.imagemUrl2, s.imagemUrl3].filter(Boolean).length}
+    </div>
+  )}
+</div>
 
                         <div className="servicoPublicoInfo">
                           <strong>{s.nome}</strong>
-                          {s.descricao && <p>{s.descricao}</p>}
+
+                          {descricaoServico && (
+                            <p className="servicoPublicoDescricao">
+                              {descricaoServico}
+                            </p>
+                          )}
 
                           <div className="servicoPublicoMeta">
                             {s.duracaoMin && <span>⏱ {s.duracaoMin}min</span>}
-                            {valorServico !== null && (
-                              <span>
-                                💰{' '}
-                                {valorServico.toLocaleString('pt-BR', {
-                                  style: 'currency',
-                                  currency: 'BRL',
-                                })}
+                            <span className={resumoPromocao.possuiPromocao ? 'priceTag promoPriceTag' : 'priceTag'}>
+                              💰{' '}
+                              {resumoPromocao.possuiPromocao && (
+                                <small>{formatarMoeda(resumoPromocao.valorOriginal)}</small>
+                              )}
+                              <strong>{formatarMoeda(valorServico)}</strong>
+                            </span>
+
+                            {resumoPromocao.possuiPromocao && (
+                              <span className="promoBadge">
+                                {resumoPromocao.promocao?.tipo === 'aniversariantes'
+                                  ? 'Promoção de aniversário'
+                                  : 'Promoção ativa'}
                               </span>
                             )}
                             {s.exigePrePagamento && (
@@ -1220,9 +1652,19 @@ function itemExigePrePagamento(item: any) {
                                 {valorPrePagamentoServico > 0
                                   ? `: ${formatarMoeda(valorPrePagamentoServico)}`
                                   : ''}
+                                {resumoPromocao.possuiPromocao && valorPrePagamentoOriginalServico > valorPrePagamentoServico
+                                  ? ` (antes ${formatarMoeda(valorPrePagamentoOriginalServico)})`
+                                  : ''}
                               </span>
                             )}
                           </div>
+
+                          {resumoPromocao.possuiPromocao && resumoPromocao.promocao?.descricao && (
+                            <div className="promoDescriptionBox">
+                              <strong>{resumoPromocao.promocao?.titulo || 'Oferta especial'}</strong>
+                              <span>{resumoPromocao.promocao.descricao}</span>
+                            </div>
+                          )}
                         </div>
 
                         <div className="servicoPublicoCheck">{servicoAtivo ? '✓' : ''}</div>
@@ -1234,8 +1676,11 @@ function itemExigePrePagamento(item: any) {
 
               {servicoSelecionado && (
                 <div className="selectedInfo">
-                  <span>Serviço selecionado</span>
+                  <span>{reagendamentoDireto ? 'Serviço em reagendamento' : 'Serviço selecionado'}</span>
                   <strong>{servicoSelecionado.nome} • {servicoSelecionado.duracaoMin}min</strong>
+                  {reagendamentoDireto && (
+                    <small>Você está reagendando um atendimento aberto desse serviço.</small>
+                  )}
                 </div>
               )}
 
@@ -1441,7 +1886,9 @@ function itemExigePrePagamento(item: any) {
 
 <div className="resumoReserva">
   {itensResumo.map((item, index) => {
-    const valorItem = obterValorServico(item.servico);
+    const resumoPromocaoItem = obterResumoPromocaoServico(item.servico);
+    const valorItem = resumoPromocaoItem.valorPromocional;
+    const valorPrePagamentoOriginalItem = obterValorPrePagamentoOriginalServico(item.servico);
     const valorPrePagamentoItem = obterValorPrePagamentoServico(item.servico);
     const exigePrePagamentoItem = itemExigePrePagamento(item);
     const podeRemover = item.id !== 'atual';
@@ -1487,13 +1934,41 @@ function itemExigePrePagamento(item: any) {
 
           <div>
             <span>Valor do serviço</span>
-            <strong>{formatarMoeda(valorItem)}</strong>
+            {resumoPromocaoItem.possuiPromocao ? (
+              <strong className="resumoValorPromocional">
+                <small>{formatarMoeda(resumoPromocaoItem.valorOriginal)}</small>
+                {formatarMoeda(valorItem)}
+              </strong>
+            ) : (
+              <strong>{formatarMoeda(valorItem)}</strong>
+            )}
           </div>
+
+          {resumoPromocaoItem.possuiPromocao && (
+            <div>
+              <span>Promoção</span>
+              <strong>{resumoPromocaoItem.promocao?.titulo || 'Desconto aplicado'}</strong>
+            </div>
+          )}
+
+          {resumoPromocaoItem.possuiPromocao && resumoPromocaoItem.promocao?.descricao && (
+            <div className="resumoPromocaoDescricao">
+              <span>Descrição da promoção</span>
+              <strong>{resumoPromocaoItem.promocao.descricao}</strong>
+            </div>
+          )}
 
           {exigePrePagamentoItem && (
             <div>
               <span>Pagar agora</span>
-              <strong>{formatarMoeda(valorPrePagamentoItem)}</strong>
+              {valorPrePagamentoOriginalItem > valorPrePagamentoItem ? (
+                <strong className="resumoValorPromocional">
+                  <small>{formatarMoeda(valorPrePagamentoOriginalItem)}</small>
+                  {formatarMoeda(valorPrePagamentoItem)}
+                </strong>
+              ) : (
+                <strong>{formatarMoeda(valorPrePagamentoItem)}</strong>
+              )}
             </div>
           )}
         </div>
@@ -1559,9 +2034,11 @@ function itemExigePrePagamento(item: any) {
     className="primaryButton"
     onClick={agendar}
   >
-    {existePrePagamentoResumo
-      ? 'Reservar e seguir para pagamento'
-      : 'Finalizar agendamento'}
+    {reagendamentoDireto
+      ? 'Confirmar reagendamento'
+      : existePrePagamentoResumo
+        ? 'Reservar e seguir para pagamento'
+        : 'Finalizar agendamento'}
   </button>
 </div>
 
@@ -1611,18 +2088,18 @@ const styles = `
   :global(html),
   :global(body) {
     margin: 0;
-    background: #080B0F;
+    background: var(--marcae-bg);
   }
 
   .page {
     width: 100%;
     min-height: 100vh;
     background:
-      radial-gradient(circle at 12% 0%, rgba(123, 58, 237, 0.34), transparent 32%),
-      radial-gradient(circle at 88% 10%, rgba(183, 107, 255, 0.23), transparent 30%),
-      radial-gradient(circle at 50% 100%, rgba(123, 58, 237, 0.18), transparent 34%),
-      linear-gradient(180deg, #080B0F 0%, #0B0F19 46%, #111425 100%);
-    color: #F8FAFC;
+      radial-gradient(circle at 12% 0%, var(--marcae-primary-soft), transparent 32%),
+      radial-gradient(circle at 88% 10%, var(--marcae-secondary-soft), transparent 30%),
+      radial-gradient(circle at 50% 100%, var(--marcae-primary-soft), transparent 34%),
+      linear-gradient(180deg, var(--marcae-bg) 0%, var(--marcae-bg-soft) 46%, var(--marcae-sidebar) 100%);
+    color: var(--marcae-text);
     overflow-x: hidden;
     display: flex;
     justify-content: center;
@@ -1677,7 +2154,7 @@ padding: 24px 20px 40px;
 
   .marca {
     padding: 10px 16px;
-    color: #F8FAFC;
+    color: var(--marcae-text);
     font-size: 18px;
     font-weight: 950;
     letter-spacing: -0.06em;
@@ -1685,13 +2162,13 @@ padding: 24px 20px 40px;
 
   .marca span,
   .footerBrand strong span {
-    color: #B76BFF;
-    text-shadow: 0 0 22px rgba(183, 107, 255, 0.42);
+    color: var(--marcae-secondary);
+    text-shadow: 0 0 22px var(--marcae-secondary-soft);
   }
 
   .secureBadge {
     padding: 10px 14px;
-    color: #C4B5FD;
+    color: var(--marcae-secondary);
     font-size: 12px;
     font-weight: 850;
   }
@@ -1706,7 +2183,7 @@ padding: 24px 20px 40px;
   .heroBackgroundGlow {
     position: absolute;
     inset: -50px 20%;
-    background: radial-gradient(circle, rgba(123, 58, 237, 0.26), transparent 64%);
+    background: radial-gradient(circle, var(--marcae-primary-soft), transparent 64%);
     filter: blur(10px);
     pointer-events: none;
   }
@@ -1729,7 +2206,7 @@ margin-right: auto;
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(120deg, rgba(255,255,255,0.12), transparent 28%, transparent 72%, rgba(183,107,255,0.1));
+    background: linear-gradient(120deg, rgba(255,255,255,0.12), transparent 28%, transparent 72%, var(--marcae-secondary-soft));
     pointer-events: none;
   }
 
@@ -1746,9 +2223,9 @@ margin-right: auto;
     margin: 0 auto 18px;
     padding: 8px 12px;
     border-radius: 999px;
-    color: #EDE9FF;
-    background: rgba(123, 58, 237, 0.16);
-    border: 1px solid rgba(183, 107, 255, 0.28);
+    color: var(--marcae-text);
+    background: var(--marcae-primary-soft);
+    border: 1px solid var(--marcae-secondary-soft);
     font-size: 12px;
     font-weight: 900;
   }
@@ -1760,7 +2237,7 @@ margin-right: auto;
     width: 18px;
     height: 18px;
     border-radius: 999px;
-    background: #7B3AED;
+    background: var(--marcae-primary);
     color: white;
   }
 
@@ -1782,9 +2259,9 @@ margin-right: auto;
     align-items: center;
     justify-content: center;
     margin-bottom: 16px;
-    background: linear-gradient(145deg, rgba(237, 233, 255, 0.12), rgba(123, 58, 237, 0.12));
+    background: linear-gradient(145deg, rgba(237, 233, 255, 0.12), var(--marcae-primary-soft));
     border: 1px solid rgba(237, 233, 255, 0.2);
-    box-shadow: 0 22px 60px rgba(123, 58, 237, 0.26);
+    box-shadow: 0 22px 60px var(--marcae-primary-soft);
   }
 
   .empresaLogo {
@@ -1794,7 +2271,7 @@ margin-right: auto;
   }
 
   .empresaLogoFallback {
-    color: #EDE9FF;
+    color: var(--marcae-text);
     font-size: 34px;
     font-weight: 950;
   }
@@ -1805,13 +2282,13 @@ margin-right: auto;
     font-size: clamp(32px, 4vw, 48px);
     line-height: 0.95;
     letter-spacing: -0.075em;
-    color: #F8FAFC;
+    color: var(--marcae-text);
   }
 
   .subtitle {
     max-width: 520px;
     margin: 14px 0 0;
-    color: #A7B0C5;
+    color: var(--marcae-muted);
     font-size: 15px;
     line-height: 1.6;
   }
@@ -1852,7 +2329,7 @@ margin-right: auto;
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 88% 0%, rgba(183, 107, 255, 0.16), transparent 28%);
+    background: radial-gradient(circle at 88% 0%, var(--marcae-secondary-soft), transparent 28%);
     pointer-events: none;
   }
 
@@ -1870,7 +2347,7 @@ margin-right: auto;
 
   .cardHeader h2 {
     margin: 0;
-    color: #F8FAFC;
+    color: var(--marcae-text);
     font-size: clamp(25px, 4vw, 34px);
     line-height: 1.02;
     letter-spacing: -0.06em;
@@ -1878,7 +2355,7 @@ margin-right: auto;
 
   .cardHeader p {
     margin: 8px 0 0;
-    color: #A7B0C5;
+    color: var(--marcae-muted);
     font-size: 13px;
     line-height: 1.5;
   }
@@ -1892,8 +2369,8 @@ margin-right: auto;
     justify-content: center;
     color: white;
     font-weight: 950;
-    background: linear-gradient(135deg, #7B3AED, #B76BFF);
-    box-shadow: 0 18px 42px rgba(123, 58, 237, 0.44);
+    background: linear-gradient(135deg, var(--marcae-primary), var(--marcae-secondary));
+    box-shadow: 0 18px 42px var(--marcae-primary-soft);
   }
 
   .progressSteps.wizardSteps {
@@ -1928,7 +2405,7 @@ margin-right: auto;
     align-items: center;
     justify-content: center;
     background: rgba(237, 233, 255, 0.1);
-    color: #A7B0C5;
+    color: var(--marcae-muted);
     font-size: 11px;
     font-weight: 950;
   }
@@ -1943,16 +2420,16 @@ margin-right: auto;
   }
 
   .progressStep.active {
-    color: #EDE9FF;
-    background: rgba(123, 58, 237, 0.18);
-    box-shadow: inset 0 0 0 1px rgba(183, 107, 255, 0.16);
+    color: var(--marcae-text);
+    background: var(--marcae-primary-soft);
+    box-shadow: inset 0 0 0 1px var(--marcae-secondary-soft);
   }
 
   .progressStep.active span,
   .wizardStep.active .wizardBall,
   .wizardStep.done .wizardBall {
     color: #fff;
-    background: linear-gradient(135deg, #7B3AED, #B76BFF);
+    background: linear-gradient(135deg, var(--marcae-primary), var(--marcae-secondary));
   }
 
   .cpfBox,
@@ -1980,20 +2457,20 @@ margin-right: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(123, 58, 237, 0.18);
-    border: 1px solid rgba(183, 107, 255, 0.24);
+    background: var(--marcae-primary-soft);
+    border: 1px solid var(--marcae-secondary-soft);
   }
 
   .etapaIntro strong {
     display: block;
-    color: #F8FAFC;
+    color: var(--marcae-text);
     font-size: 17px;
     letter-spacing: -0.02em;
   }
 
   .etapaIntro p {
     margin: 4px 0 0;
-    color: #A7B0C5;
+    color: var(--marcae-muted);
     font-size: 13px;
     line-height: 1.45;
   }
@@ -2001,7 +2478,7 @@ margin-right: auto;
   .cpfBox label,
   .sectionTitle,
   .fieldLabel {
-    color: #EDE9FF;
+    color: var(--marcae-text);
     font-size: 12px;
     font-weight: 900;
     letter-spacing: 0.01em;
@@ -2027,7 +2504,7 @@ margin-right: auto;
     border-radius: 18px;
     border: 1px solid rgba(237, 233, 255, 0.13);
     background: rgba(8, 11, 15, 0.62);
-    color: #F8FAFC;
+    color: var(--marcae-text);
     outline: none;
     padding: 0 14px;
     font-size: 15px;
@@ -2041,8 +2518,8 @@ margin-right: auto;
 
   .cpfLine input:focus,
   .field:focus {
-    border-color: rgba(183, 107, 255, 0.62);
-    box-shadow: 0 0 0 4px rgba(123, 58, 237, 0.18), inset 0 1px 0 rgba(255,255,255,0.06);
+    border-color: var(--marcae-secondary-soft);
+    box-shadow: 0 0 0 4px var(--marcae-primary-soft), inset 0 1px 0 rgba(255,255,255,0.06);
   }
 
   .cpfLine button,
@@ -2064,8 +2541,8 @@ margin-right: auto;
   .secondaryButton,
   .miniButton {
     color: white;
-    background: linear-gradient(135deg, #7B3AED 0%, #B76BFF 100%);
-    box-shadow: 0 18px 44px rgba(123, 58, 237, 0.34);
+    background: linear-gradient(135deg, var(--marcae-primary) 0%, var(--marcae-secondary) 100%);
+    box-shadow: 0 18px 44px var(--marcae-primary-soft);
   }
 
   .cpfLine button,
@@ -2087,9 +2564,9 @@ margin-right: auto;
   .outlineButton,
   .trocarClienteButton {
     width: 100%;
-    color: #EDE9FF;
+    color: var(--marcae-text);
     background: rgba(237, 233, 255, 0.06);
-    border: 1px solid rgba(183, 107, 255, 0.24);
+    border: 1px solid var(--marcae-secondary-soft);
   }
 
   .whatsappButton {
@@ -2155,9 +2632,9 @@ margin-right: auto;
 
   .warningBox,
   .policyBox {
-    color: #EDE9FF;
-    background: rgba(123, 58, 237, 0.12);
-    border: 1px solid rgba(183, 107, 255, 0.24);
+    color: var(--marcae-text);
+    background: var(--marcae-primary-soft);
+    border: 1px solid var(--marcae-secondary-soft);
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -2172,7 +2649,7 @@ margin-right: auto;
 
   .readyBox,
   .selectedInfo {
-    color: #A7B0C5;
+    color: var(--marcae-muted);
     background: rgba(8, 11, 15, 0.54);
     border: 1px solid rgba(237, 233, 255, 0.11);
     display: flex;
@@ -2182,7 +2659,7 @@ margin-right: auto;
 
   .readyBox strong,
   .selectedInfo strong {
-    color: #F8FAFC;
+    color: var(--marcae-text);
   }
 
   .sectionTitleRow {
@@ -2193,13 +2670,13 @@ margin-right: auto;
   }
 
   .sectionTitleRow span {
-    color: #A7B0C5;
+    color: var(--marcae-muted);
     font-size: 12px;
     font-weight: 850;
   }
 
   .emptySlots {
-    color: #A7B0C5;
+    color: var(--marcae-muted);
     background: rgba(8, 11, 15, 0.42);
     border: 1px dashed rgba(237, 233, 255, 0.18);
   }
@@ -2242,27 +2719,71 @@ margin-right: auto;
   .servicoPublicoCard.active,
   .profissionalPublicoCard.active,
   .rescheduleCard.selected {
-    border-color: rgba(183, 107, 255, 0.54);
-    background: linear-gradient(135deg, rgba(123, 58, 237, 0.2), rgba(8, 11, 15, 0.62));
-    box-shadow: 0 0 0 4px rgba(123, 58, 237, 0.12), 0 20px 54px rgba(0, 0, 0, 0.28);
+    border-color: var(--marcae-secondary-soft);
+    background: linear-gradient(135deg, var(--marcae-primary-soft), rgba(8, 11, 15, 0.62));
+    box-shadow: 0 0 0 4px var(--marcae-primary-soft), 0 20px 54px rgba(0, 0, 0, 0.28);
   }
 
-  .servicoPublicoIcon,
-  .profissionalFotoFallback,
-  .clienteAvatar,
-  .resumoServicoNumero {
-    width: 46px;
-    height: 46px;
-    border-radius: 17px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: none;
-    color: white;
-    font-weight: 950;
-    background: linear-gradient(135deg, #7B3AED, #B76BFF);
-    box-shadow: 0 16px 35px rgba(123, 58, 237, 0.28);
-  }
+  .servicoPublicoImagemBox {
+  position: relative;
+  width: 78px;
+  min-width: 78px;
+  height: 78px;
+  border-radius: 22px;
+  overflow: hidden;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    linear-gradient(
+      145deg,
+      var(--marcae-primary-soft),
+      rgba(255,255,255,0.04)
+    );
+
+  border: 1px solid rgba(255,255,255,0.10);
+
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.30),
+    0 0 28px var(--marcae-primary-soft);
+}
+
+.servicoPublicoImagem {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.servicoPublicoIcon {
+  font-size: 28px;
+  color: var(--marcae-secondary);
+}
+
+.servicoGaleriaBadge {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+
+  width: 24px;
+  height: 24px;
+
+  border-radius: 999px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0,0,0,0.72);
+  border: 1px solid rgba(255,255,255,0.12);
+
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+
+  backdrop-filter: blur(10px);
+}
 
   .servicoPublicoInfo,
   .profissionalPublicoInfo,
@@ -2279,7 +2800,7 @@ margin-right: auto;
   .rescheduleCard strong,
   .resumoServicoInfo strong,
   .clienteInfo strong {
-    color: #F8FAFC;
+    color: var(--marcae-text);
     font-size: 15px;
     line-height: 1.2;
   }
@@ -2291,10 +2812,28 @@ margin-right: auto;
   .resumoServicoInfo small,
   .clienteInfo span {
     margin: 0;
-    color: #A7B0C5;
+    color: var(--marcae-muted);
     font-size: 12px;
     line-height: 1.4;
     font-weight: 700;
+  }
+
+  .servicoPublicoInfo .servicoPublicoDescricao {
+    margin: 4px 0 2px;
+    color: rgba(226, 232, 240, 0.78);
+    font-size: 12px;
+    line-height: 1.45;
+    font-weight: 700;
+    white-space: pre-line;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .servicoPublicoCard.active .servicoPublicoDescricao {
+    color: rgba(248, 250, 252, 0.92);
   }
 
   .servicoPublicoMeta,
@@ -2321,11 +2860,77 @@ margin-right: auto;
     font-weight: 850;
   }
 
+
+  .priceTag {
+    gap: 5px;
+  }
+
+  .priceTag strong {
+    color: inherit;
+    font-size: 11px;
+    line-height: 1;
+  }
+
+  .priceTag small,
+  .resumoValorPromocional small {
+    color: var(--marcae-muted);
+    text-decoration: line-through;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .promoPriceTag,
+  .promoBadge {
+    color: #BBF7D0 !important;
+    background: rgba(22, 163, 74, 0.14) !important;
+    border-color: rgba(74, 222, 128, 0.28) !important;
+  }
+
+  .promoBadge {
+    font-weight: 950 !important;
+  }
+
+  .resumoValorPromocional {
+    display: flex !important;
+    flex-direction: column;
+    gap: 2px;
+    color: #BBF7D0 !important;
+  }
+
   .prePagamentoTag,
   .resumoPrePagamentoBadge {
-    color: #EDE9FF !important;
-    background: rgba(123, 58, 237, 0.16) !important;
-    border-color: rgba(183, 107, 255, 0.26) !important;
+    color: var(--marcae-text) !important;
+    background: var(--marcae-primary-soft) !important;
+    border-color: var(--marcae-secondary-soft) !important;
+  }
+
+
+  .promoDescriptionBox {
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: #dcfce7;
+  }
+
+  .promoDescriptionBox strong {
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .promoDescriptionBox span {
+    font-size: 12px;
+    line-height: 1.5;
+    color: #bbf7d0;
+    font-weight: 750;
+  }
+
+  .resumoPromocaoDescricao {
+    grid-column: 1 / -1;
   }
 
   .servicoPublicoCheck,
@@ -2345,8 +2950,8 @@ margin-right: auto;
 
   .servicoPublicoCard.active .servicoPublicoCheck,
   .profissionalPublicoCard.active .profissionalCheck {
-    background: #7B3AED;
-    border-color: #B76BFF;
+    background: var(--marcae-primary);
+    border-color: var(--marcae-secondary);
   }
 
   .profissionalFotoBox {
@@ -2382,9 +2987,9 @@ margin-right: auto;
 
   .slot.active {
     color: #fff;
-    border-color: rgba(183, 107, 255, 0.62);
-    background: linear-gradient(135deg, #7B3AED, #B76BFF);
-    box-shadow: 0 16px 34px rgba(123, 58, 237, 0.32);
+    border-color: var(--marcae-secondary-soft);
+    background: linear-gradient(135deg, var(--marcae-primary), var(--marcae-secondary));
+    box-shadow: 0 16px 34px var(--marcae-primary-soft);
   }
 
   .rescheduleCard {
@@ -2491,7 +3096,7 @@ margin-right: auto;
   .resumoServicoDetalhes strong,
   .resumoTotalValores strong {
     display: block;
-    color: #F8FAFC;
+    color: var(--marcae-text);
     font-size: 13px;
     line-height: 1.25;
   }
@@ -2503,14 +3108,14 @@ margin-right: auto;
 
   .resumoTotalCard {
     padding: 14px;
-    background: linear-gradient(135deg, rgba(123, 58, 237, 0.18), rgba(8, 11, 15, 0.68));
-    border-color: rgba(183, 107, 255, 0.28);
+    background: linear-gradient(135deg, var(--marcae-primary-soft), rgba(8, 11, 15, 0.68));
+    border-color: var(--marcae-secondary-soft);
   }
 
   .resumoTotalCard small {
     display: block;
     margin-top: 10px;
-    color: #A7B0C5;
+    color: var(--marcae-muted);
     font-size: 12px;
     line-height: 1.45;
   }
@@ -2548,13 +3153,13 @@ margin-right: auto;
   }
 
   .benefit strong {
-    color: #F8FAFC;
+    color: var(--marcae-text);
     font-size: 13px;
   }
 
   .benefit p {
     margin: 5px 0 0;
-    color: #A7B0C5;
+    color: var(--marcae-muted);
     font-size: 12px;
     line-height: 1.4;
   }
@@ -2574,20 +3179,20 @@ margin-right: auto;
   }
 
   .footerBrand strong {
-    color: #F8FAFC;
+    color: var(--marcae-text);
     letter-spacing: -0.04em;
   }
 
   .loadingPage {
     min-height: 100vh;
     background:
-      radial-gradient(circle at 50% 0%, rgba(123, 58, 237, 0.28), transparent 34%),
-      #080B0F;
+      radial-gradient(circle at 50% 0%, var(--marcae-primary-soft), transparent 34%),
+      var(--marcae-bg);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 24px;
-    color: #F8FAFC;
+    color: var(--marcae-text);
   }
 
   .loadingCard {
@@ -2608,13 +3213,13 @@ margin-right: auto;
 
   .loadingCard h1 {
     margin: 0;
-    color: #F8FAFC;
+    color: var(--marcae-text);
     font-size: 24px;
   }
 
   .loadingCard p {
     margin: 8px 0 0;
-    color: #A7B0C5;
+    color: var(--marcae-muted);
   }
 
     @media (max-width: 760px) {
@@ -2721,5 +3326,36 @@ margin-right: auto;
   .empresaHeroCard {
     padding: 24px 24px;
   }
+
+.voltarPainelButton {
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: .2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.voltarPainelButton:hover {
+  transform: translateY(-2px);
+  background: rgba(255,255,255,0.10);
+}
+
+.servicoPublicoInfo p {
+  margin: 8px 0 0;
+  color: rgba(255,255,255,0.72);
+  font-size: 13px;
+  line-height: 1.5;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 }
 `;

@@ -31,6 +31,8 @@ export async function GET(req: Request) {
 
     const empresaId = searchParams.get('empresaId');
     const cpf = searchParams.get('cpf');
+    const servicoId = searchParams.get('servicoId');
+    const modo = searchParams.get('modo');
 
     if (!empresaId || !cpf) {
       return NextResponse.json(
@@ -58,6 +60,58 @@ export async function GET(req: Request) {
     }
 
     const agora = new Date();
+
+    if (modo === 'aberto_servico' && servicoId) {
+      const agendamentoAberto = await prisma.agendamento.findFirst({
+        where: {
+          empresaId,
+          clienteId: cliente.id,
+          servicoId,
+          status: {
+            in: ['pendente', 'confirmado', 'em_atendimento'],
+          },
+          dataHoraInicio: {
+            gte: agora,
+          },
+        },
+        include: {
+          cliente: true,
+          servico: true,
+          profissional: true,
+          empresa: true,
+        },
+        orderBy: {
+          dataHoraInicio: 'asc',
+        },
+      });
+
+      if (!agendamentoAberto) {
+        return NextResponse.json({
+          success: true,
+          cliente,
+          agendamentoAberto: null,
+          agendamentos: [],
+        });
+      }
+
+      const dataHoraInicio = agendamentoAberto.dataHoraInicio as Date | null;
+      const horasRestantes = dataHoraInicio ? horasAteAtendimento(dataHoraInicio) : null;
+
+      return NextResponse.json({
+        success: true,
+        cliente,
+        agendamentoAberto: {
+          ...agendamentoAberto,
+          podeReagendarPublico: horasRestantes === null ? true : horasRestantes >= 24,
+          horasRestantes,
+          motivoBloqueio:
+            horasRestantes !== null && horasRestantes < 24
+              ? 'O reagendamento pelo link público só é permitido com pelo menos 24h de antecedência.'
+              : null,
+        },
+        agendamentos: [],
+      });
+    }
 
     const agendamentos = await prisma.agendamento.findMany({
       where: {
@@ -130,6 +184,7 @@ export async function POST(req: Request) {
       servicoId,
       profissionalId,
       permitirMenosDe24h,
+      permitirReagendamentoAberto,
     } = body;
 
     if (!agendamentoId) {
@@ -190,7 +245,7 @@ export async function POST(req: Request) {
       agendamento.statusPagamento === 'confirmado' ||
       agendamento.statusPagamento === 'aprovado';
 
-    if (!permitirMenosDe24h && !pagamentoConfirmado) {
+    if (!permitirReagendamentoAberto && !permitirMenosDe24h && !pagamentoConfirmado) {
       return NextResponse.json(
         {
           success: false,
@@ -203,7 +258,7 @@ export async function POST(req: Request) {
 
     const horasRestantes = horasAteAtendimento(agendamento.dataHoraInicio);
 
-    if (!permitirMenosDe24h && horasRestantes < 24) {
+    if (!permitirReagendamentoAberto && !permitirMenosDe24h && horasRestantes < 24) {
       return NextResponse.json(
         {
           success: false,

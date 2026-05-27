@@ -52,8 +52,10 @@ export async function POST(req: Request) {
       fotoUrl,
       ativo,
       servicosIds = [],
+      modoComissao,
       tipoComissao,
       valorComissao,
+      comissoesServicos = [],
     } = body;
 
     if (!empresaId || !nome) {
@@ -70,7 +72,11 @@ export async function POST(req: Request) {
         bio: bio || null,
         fotoUrl: fotoUrl || null,
         ativo: ativo ?? true,
+
+        modoComissao: modoComissao || 'geral',
+
         tipoComissao: tipoComissao || null,
+
         valorComissao:
           valorComissao !== undefined &&
           valorComissao !== null &&
@@ -82,11 +88,28 @@ export async function POST(req: Request) {
 
     if (Array.isArray(servicosIds) && servicosIds.length > 0) {
       await prisma.profissionalServico.createMany({
-        data: servicosIds.map((servicoId: string) => ({
-          empresaId,
-          profissionalId: profissional.id,
-          servicoId,
-        })),
+        data: servicosIds.map((servicoId: string) => {
+          const comissaoServico = comissoesServicos.find(
+            (item: any) => item.servicoId === servicoId
+          );
+
+          return {
+            empresaId,
+            profissionalId: profissional.id,
+            servicoId,
+
+            tipoComissao:
+              comissaoServico?.tipoComissao || null,
+
+            valorComissao:
+              comissaoServico?.valorComissao !== undefined &&
+              comissaoServico?.valorComissao !== null &&
+              comissaoServico?.valorComissao !== ''
+                ? Number(comissaoServico.valorComissao)
+                : null,
+          };
+        }),
+
         skipDuplicates: true,
       });
     }
@@ -128,8 +151,10 @@ export async function PUT(req: Request) {
       fotoUrl,
       ativo,
       servicosIds = [],
+      modoComissao,
       tipoComissao,
       valorComissao,
+      comissoesServicos = [],
     } = body;
 
     if (!id || !empresaId) {
@@ -141,12 +166,17 @@ export async function PUT(req: Request) {
 
     await prisma.profissional.update({
       where: { id },
+
       data: {
         nome,
         bio: bio || null,
         fotoUrl: fotoUrl || null,
         ativo,
+
+        modoComissao: modoComissao || 'geral',
+
         tipoComissao: tipoComissao || null,
+
         valorComissao:
           valorComissao !== undefined &&
           valorComissao !== null &&
@@ -164,17 +194,35 @@ export async function PUT(req: Request) {
 
     if (Array.isArray(servicosIds) && servicosIds.length > 0) {
       await prisma.profissionalServico.createMany({
-        data: servicosIds.map((servicoId: string) => ({
-          empresaId,
-          profissionalId: id,
-          servicoId,
-        })),
+        data: servicosIds.map((servicoId: string) => {
+          const comissaoServico = comissoesServicos.find(
+            (item: any) => item.servicoId === servicoId
+          );
+
+          return {
+            empresaId,
+            profissionalId: id,
+            servicoId,
+
+            tipoComissao:
+              comissaoServico?.tipoComissao || null,
+
+            valorComissao:
+              comissaoServico?.valorComissao !== undefined &&
+              comissaoServico?.valorComissao !== null &&
+              comissaoServico?.valorComissao !== ''
+                ? Number(comissaoServico.valorComissao)
+                : null,
+          };
+        }),
+
         skipDuplicates: true,
       });
     }
 
     const profissionalCompleto = await prisma.profissional.findUnique({
       where: { id },
+
       include: {
         servicos: {
           include: {

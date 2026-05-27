@@ -28,6 +28,24 @@ function pagamentoFoiRealizado(status?: string | null) {
   return status === 'pago' || status === 'aprovado' || status === 'confirmado';
 }
 
+function calcularResumoFinanceiroCliente(movimentacoes: any[]) {
+  const ativas = (movimentacoes || []).filter((item) => item.status === 'ativo');
+
+  const credito = ativas
+    .filter((item) => item.tipo === 'credito')
+    .reduce((total, item) => total + numero(item.valor), 0);
+
+  const debito = ativas
+    .filter((item) => item.tipo === 'debito')
+    .reduce((total, item) => total + numero(item.valor), 0);
+
+  return {
+    credito,
+    debito,
+    saldo: credito - debito,
+  };
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
 
@@ -55,6 +73,18 @@ export async function GET(req: Request) {
         { status: 404 }
       );
     }
+
+    const movimentacoesFinanceiras = await prisma.clienteMovimentacaoFinanceira.findMany({
+      where: {
+        empresaId,
+        clienteId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    const financeiroCliente = calcularResumoFinanceiroCliente(movimentacoesFinanceiras);
 
     const agendamentos = await prisma.agendamento.findMany({
       where: {
@@ -142,7 +172,12 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({
-      cliente,
+      cliente: {
+        ...cliente,
+        financeiro: financeiroCliente,
+      },
+      financeiroCliente,
+      movimentacoesFinanceiras,
       historico,
     });
   }
@@ -152,7 +187,25 @@ export async function GET(req: Request) {
     orderBy: { createdAt: 'desc' },
   });
 
-  return NextResponse.json({ clientes });
+  const movimentacoes = await prisma.clienteMovimentacaoFinanceira.findMany({
+    where: {
+      empresaId,
+      status: 'ativo',
+    },
+  });
+
+  const clientesComFinanceiro = clientes.map((cliente) => {
+    const movimentacoesCliente = movimentacoes.filter(
+      (item) => item.clienteId === cliente.id
+    );
+
+    return {
+      ...cliente,
+      financeiro: calcularResumoFinanceiroCliente(movimentacoesCliente),
+    };
+  });
+
+  return NextResponse.json({ clientes: clientesComFinanceiro });
 }
 
 export async function POST(request: Request) {
@@ -219,6 +272,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json(cliente, { status: 201 });
 }
+
 export async function PATCH(request: Request) {
   const body = await request.json();
   const parsed = updateClientSchema.safeParse(body);
@@ -247,23 +301,23 @@ export async function PATCH(request: Request) {
   }
 
   if (data.whatsapp !== clienteAtual.whatsapp) {
-  const clienteComWhatsapp = await prisma.cliente.findFirst({
-    where: {
-      empresaId: data.empresaId,
-      whatsapp: data.whatsapp,
-      id: {
-        not: data.clienteId,
+    const clienteComWhatsapp = await prisma.cliente.findFirst({
+      where: {
+        empresaId: data.empresaId,
+        whatsapp: data.whatsapp,
+        id: {
+          not: data.clienteId,
+        },
       },
-    },
-  });
+    });
 
-  if (clienteComWhatsapp) {
-    return NextResponse.json(
-      { error: 'Já existe outro cliente com este WhatsApp.' },
-      { status: 400 }
-    );
+    if (clienteComWhatsapp) {
+      return NextResponse.json(
+        { error: 'Já existe outro cliente com este WhatsApp.' },
+        { status: 400 }
+      );
+    }
   }
-}
 
   const cliente = await prisma.cliente.update({
     where: {

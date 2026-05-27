@@ -319,7 +319,11 @@ export async function enviarWhatsapp({
     throw new Error("Instância do WhatsApp não informada.");
   }
 
-  const numeroLimpo = numero.replace(/\D/g, "");
+  let numeroLimpo = numero.replace(/\D/g, "");
+
+if (numeroLimpo.length === 10 || numeroLimpo.length === 11) {
+  numeroLimpo = `55${numeroLimpo}`;
+}
 
   const response = await fetch(
     `${EVOLUTION_API_URL}/message/sendText/${instance}`,
@@ -339,7 +343,7 @@ export async function enviarWhatsapp({
   const data = await response.json();
 
   if (!response.ok) {
-    console.error("Erro Evolution API:", data);
+    console.error("Erro Evolution API:", JSON.stringify(data, null, 2));
     throw new Error("Erro ao enviar WhatsApp.");
   }
 

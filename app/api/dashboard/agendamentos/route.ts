@@ -7,19 +7,59 @@ function numero(valor: any) {
 }
 
 function pagamentoFoiRealizado(status?: string | null) {
-  return (
-    status === 'pago' ||
-    status === 'aprovado' ||
-    status === 'confirmado'
-  );
+  const s = String(status || '').toLowerCase();
+  return s === 'pago' || s === 'aprovado' || s === 'confirmado';
 }
 
-function obterValorPago(agendamento: any) {
-  return Number(
-    agendamento.valorPrePago ||
-      agendamento.valorTotal ||
-      0
-  );
+function chaveUnicaAgendamento(agendamento: any) {
+  if (agendamento.id) return agendamento.id;
+
+  const clienteId = agendamento.clienteId || agendamento.cliente?.id || '';
+  const servicoId = agendamento.servicoId || agendamento.servico?.id || '';
+  const profissionalId = agendamento.profissionalId || agendamento.profissional?.id || '';
+
+  const dataHora = agendamento.dataHoraInicio
+    ? new Date(agendamento.dataHoraInicio).toISOString()
+    : '';
+
+  return `${clienteId}-${servicoId}-${profissionalId}-${dataHora}`;
+}
+  
+function removerAgendamentosDuplicados(lista: any[]) {
+  const mapa = new Map<string, any>();
+
+  lista.forEach((agendamento) => {
+    const chave = chaveUnicaAgendamento(agendamento);
+    const existente = mapa.get(chave);
+
+    if (!existente) {
+      mapa.set(chave, agendamento);
+      return;
+    }
+
+    const dataAtual = new Date(agendamento.dataHoraInicio).getTime();
+    const dataExistente = new Date(existente.dataHoraInicio).getTime();
+
+    if (dataAtual > dataExistente) {
+      mapa.set(chave, agendamento);
+    }
+  });
+
+  return Array.from(mapa.values());
+}
+
+function obterValorRecebido(agendamento: any) {
+  const status = String(agendamento.status || '').toLowerCase();
+
+  if (status !== 'concluido' && status !== 'em_atendimento') {
+    return 0;
+  }
+
+  if (!pagamentoFoiRealizado(agendamento.statusPagamento)) {
+    return 0;
+  }
+
+  return numero(agendamento.valorTotal);
 }
 
 export async function GET(req: NextRequest) {
@@ -46,7 +86,7 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    const agendamentos = await prisma.agendamento.findMany({
+    const agendamentosBrutos = await prisma.agendamento.findMany({
       where,
       include: {
         cliente: true,
@@ -68,6 +108,8 @@ export async function GET(req: NextRequest) {
       orderBy: { dataHoraInicio: 'asc' },
     });
 
+    const agendamentos = removerAgendamentosDuplicados(agendamentosBrutos as any[]);
+
     let faturamentoTotal = 0;
     let totalPagos = 0;
     let custoOperacionalTotal = 0;
@@ -77,37 +119,58 @@ export async function GET(req: NextRequest) {
     const mapaAgendamentos: Record<string, number> = {};
     const mapaStatus: Record<string, number> = {};
 
+    const hoje = new Date();
+    hoje.setHours(23, 59, 59, 999);
+
     agendamentos.forEach((agendamentoBase) => {
       const ag = agendamentoBase as any;
 
       if (!ag.dataHoraInicio) return;
 
-      const data = ag.dataHoraInicio.toISOString().split('T')[0];
-      const valorPago = obterValorPago(ag);
+      const dataAgendamento = new Date(ag.dataHoraInicio);
+      const data = dataAgendamento.toISOString().split('T')[0];
+      const dataFutura = dataAgendamento.getTime() > hoje.getTime();
 
-      const estaPago = pagamentoFoiRealizado(ag.statusPagamento);
+      const cancelado = ag.status === 'cancelado';
 
-      if (estaPago) {
-        faturamentoTotal += valorPago;
+      if (!mapaAgendamentos[data]) mapaAgendamentos[data] = 0;
+      mapaAgendamentos[data]++;
+
+      const status = ag.status || 'indefinido';
+      if (!mapaStatus[status]) mapaStatus[status] = 0;
+      mapaStatus[status]++;
+
+      if (cancelado) return;
+
+      const valorRecebido = obterValorRecebido(ag);
+
+      if (valorRecebido > 0) {
+        faturamentoTotal += valorRecebido;
         totalPagos++;
 
         custoOperacionalTotal += numero((ag.servico as any)?.custo);
 
-        if (!mapaFaturamento[data]) mapaFaturamento[data] = 0;
-        mapaFaturamento[data] += valorPago;
+        if (!dataFutura) {
+          if (!mapaFaturamento[data]) mapaFaturamento[data] = 0;
+          mapaFaturamento[data] += valorRecebido;
+        }
       }
 
       const servicosAdicionais = (ag.servicosAdicionais || []) as any[];
 
       for (const adicional of servicosAdicionais) {
         if (pagamentoFoiRealizado(adicional.statusPagamento)) {
-          faturamentoTotal += numero(adicional.valor);
+          const valorAdicional = numero(adicional.valor);
+
+          faturamentoTotal += valorAdicional;
           custoOperacionalTotal += numero(
             adicional.custo || adicional.servico?.custo
           );
 
-          if (!mapaFaturamento[data]) mapaFaturamento[data] = 0;
-          mapaFaturamento[data] += numero(adicional.valor);
+          if (!dataFutura) {
+            if (!mapaFaturamento[data]) mapaFaturamento[data] = 0;
+            mapaFaturamento[data] += valorAdicional;
+          }
         }
       }
 
@@ -116,20 +179,10 @@ export async function GET(req: NextRequest) {
       for (const comissao of comissoes) {
         totalComissoes += numero(comissao.valorComissao);
       }
-
-      if (!mapaAgendamentos[data]) mapaAgendamentos[data] = 0;
-      mapaAgendamentos[data]++;
-
-      const status = ag.status || 'indefinido';
-      if (!mapaStatus[status]) mapaStatus[status] = 0;
-      mapaStatus[status]++;
     });
 
-    const lucroLiquido =
-      faturamentoTotal - custoOperacionalTotal - totalComissoes;
-
-    const ticketMedio =
-      totalPagos > 0 ? faturamentoTotal / totalPagos : 0;
+    const lucroLiquido = faturamentoTotal - custoOperacionalTotal - totalComissoes;
+    const ticketMedio = totalPagos > 0 ? faturamentoTotal / totalPagos : 0;
 
     const graficoFaturamento = Object.entries(mapaFaturamento).map(
       ([data, total]) => ({ data, total })

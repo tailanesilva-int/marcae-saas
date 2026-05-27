@@ -1,6 +1,32 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 
+function normalizarEndereco(body: any) {
+  let enderecoRecebido: any = {};
+
+  if (body.endereco) {
+    if (typeof body.endereco === 'string') {
+      try {
+        enderecoRecebido = JSON.parse(body.endereco);
+      } catch {
+        enderecoRecebido = {};
+      }
+    } else {
+      enderecoRecebido = body.endereco;
+    }
+  }
+
+  return {
+  rua: enderecoRecebido.rua || body.rua || '',
+  numero: enderecoRecebido.numero || body.numero || '',
+  bairro: enderecoRecebido.bairro || body.bairro || '',
+  cidade: enderecoRecebido.cidade || body.cidade || '',
+  estado: enderecoRecebido.estado || body.estado || '',
+  cep: enderecoRecebido.cep || body.cep || '',
+  complemento: enderecoRecebido.complemento || body.complemento || '',
+};
+}
+
 export async function PATCH(
   req: Request,
   context: { params: Promise<{ empresaId: string }> }
@@ -10,12 +36,15 @@ export async function PATCH(
     const body = await req.json();
 
     const mercadoPagoAtivo = Boolean(body.mercadoPagoAtivo);
+
     const mercadoPagoAccessToken = body.mercadoPagoAccessToken
       ? String(body.mercadoPagoAccessToken).trim()
       : null;
+
     const mercadoPagoPublicKey = body.mercadoPagoPublicKey
       ? String(body.mercadoPagoPublicKey).trim()
       : null;
+
     const mercadoPagoModo =
       body.mercadoPagoModo === 'producao' ? 'producao' : 'sandbox';
 
@@ -30,29 +59,37 @@ export async function PATCH(
       );
     }
 
+    const enderecoNormalizado = normalizarEndereco(body);
+
     const empresa = await prisma.empresa.update({
       where: {
         id: empresaId,
       },
       data: {
-        nome: body.nome,
-        endereco: body.endereco || null,
-        telefone: body.telefone || null,
-        responsavel: body.responsavel || null,
-        logoUrl: body.logoUrl || null,
-        instagramUrl: body.instagramUrl || null,
+        nome: body.nome || '',
+        whatsapp: body.whatsapp || body.telefone || '',
+        telefone: body.whatsapp || body.telefone || '',
+        instagram: body.instagram || '',
+        responsavel: body.responsavel || '',
+        logoUrl: body.logoUrl || '',
+        instagramUrl: body.instagramUrl || '',
 
-        solicitouIntegracaoMp:
-          body.solicitouIntegracaoMp ?? undefined,
+        endereco: JSON.stringify(enderecoNormalizado),
+
+        corPrimaria: body.corPrimaria || '#7c3aed',
+        corSecundaria: body.corSecundaria || '#a855f7',
+        corSidebar: body.corSidebar || '#0f172a',
+
+        solicitouIntegracaoMp: body.solicitouIntegracaoMp ?? undefined,
 
         mercadoPagoAtivo,
         mercadoPagoAccessToken,
         mercadoPagoPublicKey,
         mercadoPagoModo,
-        mercadoPagoStatus: mercadoPagoAtivo
-          ? 'configurado'
-          : 'nao_configurado',
+        mercadoPagoStatus: mercadoPagoAtivo ? 'configurado' : 'nao_configurado',
         mercadoPagoAtualizadoEm: new Date(),
+
+        updatedAt: new Date(),
       },
     });
 

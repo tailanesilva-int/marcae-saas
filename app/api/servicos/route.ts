@@ -7,6 +7,16 @@ function numero(valor: any) {
   return Number.isNaN(convertido) ? 0 : convertido;
 }
 
+function inteiroPositivo(valor: any, padrao = 1) {
+  const convertido = Number(valor);
+
+  if (!Number.isFinite(convertido) || convertido < 1) {
+    return padrao;
+  }
+
+  return Math.floor(convertido);
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const empresaId = searchParams.get('empresaId');
@@ -31,13 +41,16 @@ export async function POST(req: Request) {
     nome,
     descricao,
     duracaoMin,
+    capacidadeSimultanea,
     valor,
     custo,
     exigePrePagamento,
     valorPrePagamento,
+    imagemUrl1,
+    imagemUrl2,
+    imagemUrl3,
   } = body;
 
-  // 🔥 BLOQUEIO POR PLANO
   const empresa = await prisma.empresa.findUnique({
     where: { id: empresaId },
   });
@@ -54,13 +67,15 @@ export async function POST(req: Request) {
       empresaId,
       nome,
       descricao,
-      duracaoMin: Number(duracaoMin),
+      duracaoMin: Math.max(Number(duracaoMin || 30), 5),
+      capacidadeSimultanea: inteiroPositivo(capacidadeSimultanea, 1),
       valor: numero(valor),
       custo: custo ? numero(custo) : null,
       exigePrePagamento: exigePrePagamento || false,
-      valorPrePagamento: valorPrePagamento
-        ? numero(valorPrePagamento)
-        : null,
+      valorPrePagamento: valorPrePagamento ? numero(valorPrePagamento) : null,
+      imagemUrl1: imagemUrl1 || null,
+      imagemUrl2: imagemUrl2 || null,
+      imagemUrl3: imagemUrl3 || null,
     },
   });
 
@@ -77,11 +92,15 @@ export async function PUT(req: Request) {
       nome,
       descricao,
       duracaoMin,
+      capacidadeSimultanea,
       valor,
       custo,
       exigePrePagamento,
       valorPrePagamento,
       ativo,
+      imagemUrl1,
+      imagemUrl2,
+      imagemUrl3,
     } = body;
 
     if (!id) {
@@ -111,15 +130,9 @@ export async function PUT(req: Request) {
       },
     });
 
-    if (
-      exigePrePagamento &&
-      empresa?.plano === 'basico'
-    ) {
+    if (exigePrePagamento && empresa?.plano === 'basico') {
       return NextResponse.json(
-        {
-          error:
-            'Pré-pagamento disponível apenas no plano premium',
-        },
+        { error: 'Pré-pagamento disponível apenas no plano premium' },
         { status: 403 }
       );
     }
@@ -131,19 +144,16 @@ export async function PUT(req: Request) {
       data: {
         nome,
         descricao,
-        duracaoMin: Number(duracaoMin),
+        duracaoMin: Math.max(Number(duracaoMin || 30), 5),
+        capacidadeSimultanea: inteiroPositivo(capacidadeSimultanea, 1),
         valor: numero(valor),
         custo: custo ? numero(custo) : null,
-        exigePrePagamento:
-          exigePrePagamento || false,
-        valorPrePagamento:
-          valorPrePagamento
-            ? numero(valorPrePagamento)
-            : null,
-        ativo:
-          ativo === undefined
-            ? servicoExistente.ativo
-            : ativo,
+        exigePrePagamento: exigePrePagamento || false,
+        valorPrePagamento: valorPrePagamento ? numero(valorPrePagamento) : null,
+        imagemUrl1: imagemUrl1 || null,
+        imagemUrl2: imagemUrl2 || null,
+        imagemUrl3: imagemUrl3 || null,
+        ativo: ativo === undefined ? servicoExistente.ativo : ativo,
       },
     });
 
@@ -152,10 +162,7 @@ export async function PUT(req: Request) {
       servico,
     });
   } catch (error) {
-    console.error(
-      'Erro ao atualizar serviço:',
-      error
-    );
+    console.error('Erro ao atualizar serviço:', error);
 
     return NextResponse.json(
       {
