@@ -10,7 +10,7 @@ export default function ComissoesPage() {
   const [usuario, setUsuario] = useState<any>(null);
   const [carregando, setCarregando] = useState(false);
   const [profissionais, setProfissionais] = useState<any[]>([]);
-  const [mostrarFinanceiro, setMostrarFinanceiro] = useState(false);
+  const [mostrarFinanceiro, setMostrarFinanceiro] = useState(true);
   const [fechandoComissao, setFechandoComissao] = useState(false);
   const [modalFechamento, setModalFechamento] = useState<any>(null);
   const [observacaoFechamento, setObservacaoFechamento] = useState('');

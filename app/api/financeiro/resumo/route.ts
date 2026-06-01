@@ -194,11 +194,15 @@ ultimoCaixaFechado,
         },
       }),
       prisma.comissao.findMany({
-        where: {
-          empresaId,
-          status: 'pendente',
-        },
-      }),
+  where: {
+    empresaId,
+    status: 'pendente',
+    createdAt: {
+      gte: inicio,
+      lte: fim,
+    },
+  },
+}),
       (prisma as any).caixaDiario?.findUnique
         ? (prisma as any).caixaDiario.findFirst({
   where: {

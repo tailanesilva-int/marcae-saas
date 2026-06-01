@@ -839,6 +839,46 @@ export default function ProfissionaisPage() {
               min-width: 0 !important;
             }
 
+            @media (min-width: 761px) {
+              .profissionais-grid-horizontal {
+                display: grid !important;
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                align-items: stretch !important;
+                gap: 14px !important;
+              }
+
+              .profissional-card-horizontal {
+                width: 100% !important;
+                min-width: 0 !important;
+                min-height: 238px !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                justify-content: flex-start !important;
+                gap: 12px !important;
+                overflow: hidden !important;
+              }
+
+              .profissional-card-horizontal .profissional-info-mobile {
+                display: grid !important;
+                grid-template-columns: 58px minmax(0, 1fr) !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+                width: 100% !important;
+                min-width: 0 !important;
+              }
+
+              .profissional-card-horizontal .profissional-info-mobile > div:last-child {
+                min-width: 0 !important;
+              }
+
+              .profissional-card-horizontal .profissional-info-mobile strong,
+              .profissional-card-horizontal .profissional-info-mobile p,
+              .profissional-card-horizontal .profissional-info-mobile span {
+                overflow-wrap: anywhere !important;
+              }
+            }
+
             @media (max-width: 760px) {
               .profissionais-grid-horizontal {
                 display: flex !important;
@@ -870,19 +910,19 @@ export default function ProfissionaisPage() {
 
               .profissional-card-horizontal .profissional-info-mobile {
                 display: grid !important;
-                grid-template-columns: 64px minmax(0, 1fr) !important;
+                grid-template-columns: 54px minmax(0, 1fr) !important;
                 align-items: flex-start !important;
-                gap: 12px !important;
+                gap: 10px !important;
                 width: 100% !important;
               }
 
               .profissional-card-horizontal .profissional-avatar-mobile {
-                width: 64px !important;
-                height: 64px !important;
-                min-width: 64px !important;
-                max-width: 64px !important;
-                flex: 0 0 64px !important;
-                border-radius: 20px !important;
+                width: 54px !important;
+                height: 54px !important;
+                min-width: 54px !important;
+                max-width: 54px !important;
+                flex: 0 0 54px !important;
+                border-radius: 18px !important;
               }
 
               .profissional-card-horizontal .profissional-avatar-img-mobile {
@@ -980,9 +1020,9 @@ export default function ProfissionaisPage() {
 
           @media (max-width: 430px) {
               .profissional-card-horizontal {
-                flex-basis: 84vw !important;
-                width: 84vw !important;
-                min-width: 272px !important;
+                flex-basis: 80vw !important;
+                width: 80vw !important;
+                min-width: 252px !important;
               }
             }
 
@@ -2326,36 +2366,6 @@ export default function ProfissionaisPage() {
                     </div>
                   </div>
 
-                  <div style={analyticsRow}>
-                    <div style={analyticsMiniCard}>
-                      <span style={analyticsLabel}>Serviços</span>
-
-                      <strong style={analyticsValue}>
-                        {p.servicos?.length || 0}
-                      </strong>
-                    </div>
-
-                    <div style={analyticsMiniCard}>
-                      <span style={analyticsLabel}>Comissão</span>
-
-                      <strong style={analyticsValue}>
-                        {formatarComissao(p)}
-                      </strong>
-                    </div>
-
-                    <div style={analyticsMiniCard}>
-                      <span style={analyticsLabel}>Agenda</span>
-
-                      <strong
-                        style={{
-                          ...analyticsValue,
-                          color: p.ativo ? "#4ade80" : "#f87171",
-                        }}
-                      >
-                        {p.ativo ? "Ativa" : "Inativa"}
-                      </strong>
-                    </div>
-                  </div>
 
                   <div style={profissionalActions}>
                     <button
@@ -2380,7 +2390,6 @@ export default function ProfissionaisPage() {
                       disabled={acaoProfissionalEmAndamento}
                       style={{
                         ...botaoEditarPremium,
-                        marginLeft: 10,
                         opacity: acaoProfissionalEmAndamento ? 0.55 : 1,
                         cursor: acaoProfissionalEmAndamento ? "not-allowed" : "pointer",
                         background:
@@ -3201,11 +3210,15 @@ const badgeDiaInativo = {
 
 const cardProfissional = {
   border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 28,
-  padding: 22,
+  borderRadius: 22,
+  padding: 16,
   display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
+  flexDirection: "column" as const,
+  justifyContent: "flex-start",
+  alignItems: "stretch",
+  gap: 12,
+  minWidth: 0,
+  minHeight: 238,
   background: "linear-gradient(180deg, rgba(15,23,42,0.96), rgba(2,6,23,0.96))",
   color: "#fff",
   boxShadow: "0 24px 70px rgba(0,0,0,0.35)",
@@ -3530,30 +3543,34 @@ const metricSub = {
 
 const profissionaisGrid = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+  alignItems: "stretch",
   gap: 16,
 };
 
 const profissionalInfo = {
-  display: "flex",
-  alignItems: "center",
-  gap: 18,
+  display: "grid",
+  gridTemplateColumns: "58px minmax(0, 1fr)",
+  alignItems: "flex-start",
+  gap: 12,
+  minWidth: 0,
+  width: "100%",
 };
 
 const avatarPremium = {
-  width: 72,
-  height: 72,
-  minWidth: 72,
-  maxWidth: 72,
-  flex: "0 0 72px",
-  borderRadius: 22,
+  width: 58,
+  height: 58,
+  minWidth: 58,
+  maxWidth: 58,
+  flex: "0 0 58px",
+  borderRadius: 18,
   background: "linear-gradient(135deg,#d709ab,#7c3aed)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   fontWeight: 950,
   color: "#fff",
-  fontSize: 26,
+  fontSize: 23,
   overflow: "hidden",
   boxShadow: "0 18px 45px rgba(215,9,171,0.22)",
 };
@@ -3561,27 +3578,30 @@ const avatarPremium = {
 const profissionalNomeLinha = {
   display: "flex",
   alignItems: "center",
-  gap: 10,
+  gap: 8,
   flexWrap: "wrap" as const,
+  minWidth: 0,
 };
 
 const profissionalNome = {
   color: "#fff",
-  fontSize: 22,
+  fontSize: 17,
   fontWeight: 950,
+  lineHeight: 1.08,
+  overflowWrap: "anywhere" as const,
 };
 
 const profissionalBio = {
-  margin: "6px 0 0",
+  margin: "5px 0 0",
   color: "#94a3b8",
-  fontSize: 13,
-  lineHeight: 1.5,
+  fontSize: 12,
+  lineHeight: 1.35,
 };
 
 const profissionalTags = {
-  marginTop: 12,
+  marginTop: 10,
   display: "flex",
-  gap: 8,
+  gap: 7,
   flexWrap: "wrap" as const,
 };
 
@@ -3606,27 +3626,27 @@ const badgeProfissionalInativo = {
 };
 
 const badgeServicoPremium = {
-  padding: "6px 10px",
+  padding: "5px 9px",
   borderRadius: 999,
   background: "rgba(59,130,246,0.14)",
   color: "#93c5fd",
   border: "1px solid rgba(59,130,246,0.28)",
-  fontSize: 12,
+  fontSize: 11,
   fontWeight: 850,
 };
 
 const badgeComissaoPremium = {
-  padding: "6px 10px",
+  padding: "5px 9px",
   borderRadius: 999,
   background: "rgba(34,197,94,0.14)",
   color: "#86efac",
   border: "1px solid rgba(34,197,94,0.28)",
-  fontSize: 12,
+  fontSize: 11,
   fontWeight: 850,
 };
 
 const badgeCinzaPremium = {
-  padding: "6px 10px",
+  padding: "5px 9px",
   borderRadius: 999,
   background: "rgba(148,163,184,0.14)",
   color: "#cbd5e1",
@@ -3636,19 +3656,25 @@ const badgeCinzaPremium = {
 };
 
 const profissionalActions = {
-  display: "flex",
-  justifyContent: "flex-end",
-  alignItems: "center",
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+  gap: 8,
+  width: "100%",
+  marginTop: "auto",
 };
 
 const botaoEditarPremium = {
-  padding: "12px 16px",
-  borderRadius: 14,
+  width: "100%",
+  minWidth: 0,
+  padding: "9px 10px",
+  borderRadius: 12,
   border: "1px solid rgba(255,255,255,0.10)",
   background: "rgba(255,255,255,0.06)",
   color: "#fff",
   fontWeight: 900,
   cursor: "pointer",
+  whiteSpace: "normal" as const,
+  lineHeight: 1.15,
 };
 
 const listaHeader = {
@@ -3693,37 +3719,9 @@ const listaBadge = {
   whiteSpace: "nowrap" as const,
 };
 
-const analyticsRow = {
-  display: "flex",
-  gap: 12,
-  marginTop: 14,
-  flexWrap: "wrap" as const,
-};
 
-const analyticsMiniCard = {
-  minWidth: 110,
-  padding: "10px 12px",
-  borderRadius: 16,
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(255,255,255,0.06)",
-  display: "flex",
-  flexDirection: "column" as const,
-  gap: 4,
-};
 
-const analyticsLabel = {
-  fontSize: 11,
-  color: "#64748b",
-  fontWeight: 700,
-  textTransform: "uppercase" as const,
-  letterSpacing: 0.4,
-};
 
-const analyticsValue = {
-  color: "#fff",
-  fontSize: 16,
-  fontWeight: 900,
-};
 
 const filtroBotao = {
   padding: "10px 14px",

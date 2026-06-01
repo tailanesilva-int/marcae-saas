@@ -315,11 +315,6 @@ export default function FinanceiroPage() {
       return;
     }
 
-    if (!financeiro.caixa || financeiro.caixa.status !== "aberto") {
-      alert("Abra o caixa antes de registrar movimentações.");
-      return;
-    }
-
     if (numero(formMovimento.valor) <= 0) {
       alert("Informe o valor da movimentação.");
       return;
@@ -1114,8 +1109,7 @@ Os valores esperados e diferenças ficarão disponíveis somente para conferênc
                   </div>
                 )}
 
-                {financeiro.caixa?.status === "aberto" && (
-                  <>
+                <>
                     <div style={actionBoxDestaque}>
                       <div style={operacaoHeader}>
                         <div>
@@ -1129,7 +1123,7 @@ Os valores esperados e diferenças ficarão disponíveis somente para conferênc
                           </p>
                         </div>
 
-                        <span style={operacaoBadge}>Caixa aberto</span>
+                        <span style={operacaoBadge}>Lançamentos liberados</span>
                       </div>
 
                       <div
@@ -1308,6 +1302,7 @@ Os valores esperados e diferenças ficarão disponíveis somente para conferênc
                       </div>
                     </div>
 
+                    {financeiro.caixa?.status === "aberto" && (
                     <div style={fechamentoModalidadesBox}>
                       <div style={operacaoHeader}>
                         <div>
@@ -1466,8 +1461,8 @@ Os valores esperados e diferenças ficarão disponíveis somente para conferênc
                         </button>
                       </div>
                     </div>
+                    )}
                   </>
-                )}
 
                 {financeiro.caixa?.status === "fechado" && (
                   <div style={closedBox}>
