@@ -748,6 +748,38 @@ export default function ConfiguracoesPage() {
             .config-hero-preview-mobile .config-preview-lines-mobile {
               display: none !important;
             }
+
+
+            .config-link-publico-mobile {
+              grid-template-columns: 1fr !important;
+              gap: 12px !important;
+            }
+
+            .config-link-publico-mobile > div:last-child {
+              width: 100% !important;
+            }
+
+            .config-link-linha-mobile {
+              grid-template-columns: 1fr !important;
+            }
+
+            .config-link-acoes-mobile {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              gap: 8px !important;
+            }
+
+            .config-link-acoes-mobile button,
+            .config-link-acoes-mobile a {
+              width: 100% !important;
+              justify-content: center !important;
+              text-align: center !important;
+            }
+
+            .config-qr-mobile img {
+              width: 132px !important;
+              height: 132px !important;
+            }
           }
         `}</style>
 
@@ -916,7 +948,8 @@ export default function ConfiguracoesPage() {
               <span style={badge}>Empresa</span>
               <h2 style={cardTitle}>Dados da empresa</h2>
               <p style={cardDescription}>
-                Essas informações ficam recolhidas para reduzir o scroll no mobile. Abra apenas quando precisar consultar ou editar.
+                Essas informações ficam recolhidas para reduzir o scroll no
+                mobile. Abra apenas quando precisar consultar ou editar.
               </p>
             </div>
 
@@ -927,7 +960,9 @@ export default function ConfiguracoesPage() {
                 style={secondaryButton}
                 className="marcae-ghost-button"
               >
-                {mostrarDadosEmpresa ? "Ocultar informações" : "Visualizar informações"}
+                {mostrarDadosEmpresa
+                  ? "Ocultar informações"
+                  : "Visualizar informações"}
               </button>
 
               {mostrarDadosEmpresa && (
@@ -946,7 +981,11 @@ export default function ConfiguracoesPage() {
             <div style={empresaResumoCompacto}>
               <div style={empresaResumoLogoBox}>
                 {dadosEmpresa.logoUrl ? (
-                  <img src={dadosEmpresa.logoUrl} alt="Logo" style={empresaResumoLogo} />
+                  <img
+                    src={dadosEmpresa.logoUrl}
+                    alt="Logo"
+                    style={empresaResumoLogo}
+                  />
                 ) : (
                   <div
                     style={{
@@ -1161,7 +1200,11 @@ export default function ConfiguracoesPage() {
 
               <div style={logoPreviewBox}>
                 {dadosEmpresa.logoUrl ? (
-                  <img src={dadosEmpresa.logoUrl} alt="logo" style={logoPreview} />
+                  <img
+                    src={dadosEmpresa.logoUrl}
+                    alt="logo"
+                    style={logoPreview}
+                  />
                 ) : (
                   <div
                     style={{
@@ -1176,8 +1219,8 @@ export default function ConfiguracoesPage() {
                 <div>
                   <strong style={strongText}>Preview da identidade</strong>
                   <p style={cardDescription}>
-                    Essa logo será usada no agendador público, comprovantes e pontos
-                    visuais do sistema.
+                    Essa logo será usada no agendador público, comprovantes e
+                    pontos visuais do sistema.
                   </p>
                 </div>
               </div>
@@ -1187,573 +1230,715 @@ export default function ConfiguracoesPage() {
                 style={primaryButton}
                 className="marcae-premium-button"
               >
-                {salvandoEmpresa ? "Salvando..." : "Salvar alterações da empresa"}
+                {salvandoEmpresa
+                  ? "Salvando..."
+                  : "Salvar alterações da empresa"}
               </button>
             </>
           )}
         </section>
 
         <section style={card} className="marcae-premium-card">
-            <div style={sectionHeaderRow}>
-              <div>
-                <span style={badge}>Mercado Pago</span>
-
-                <h2 style={cardTitle}>Recebimento online</h2>
-
-                <p style={cardDescription}>
-                  Configuração do recebimento online da empresa via Mercado
-                  Pago. Isso será utilizado para pré-pagamentos, assinaturas e
-                  automações financeiras.
-                </p>
-              </div>
+          <div style={sectionHeaderRow}>
+            <div>
+              <span style={badge}>Agendador público</span>
+              <h2 style={cardTitle}>Link público de agendamento</h2>
+              <p style={cardDescription}>
+                Compartilhe este link com clientes para que eles escolham
+                serviço, profissional, data e horário pelo agendador público da
+                empresa.
+              </p>
             </div>
-            <div style={integracaoStatusCard}>
+          </div>
+
+          <div
+            className="config-link-publico-mobile"
+            style={linkAgendamentoBox}
+          >
+            <div style={linkAgendamentoInfo}>
               <div
-                style={{
-                  ...statusDot,
-                  background: dadosEmpresa.mercadoPagoAtivo
-                    ? "#10b981"
-                    : "#f59e0b",
-                }}
-              />
+                className="config-link-linha-mobile"
+                style={linkAgendamentoLine}
+              >
+                <input
+                  readOnly
+                  value={
+                    linkAgendamento ||
+                    "Configure o slug da empresa no painel master"
+                  }
+                  style={input}
+                  className="marcae-premium-input"
+                />
 
-              <div>
-                <strong style={strongText}>
-                  {dadosEmpresa.mercadoPagoAtivo
-                    ? "Integração ativa"
-                    : "Integração pendente"}
-                </strong>
+                <button
+                  type="button"
+                  disabled={!linkAgendamento}
+                  onClick={async () => {
+                    if (!linkAgendamento) return;
 
-                <p style={cardDescription}>
-                  {dadosEmpresa.mercadoPagoAtivo
-                    ? "Seu sistema já está pronto para receber pagamentos online."
-                    : (dadosEmpresa as any).solicitouIntegracaoMp
-                      ? "Solicitação enviada. Aguarde a configuração pela equipe Marcaê."
-                      : "Solicite sua integração Mercado Pago para liberar pagamentos automáticos."}
-                </p>
+                    try {
+                      await navigator.clipboard.writeText(linkAgendamento);
+                      alert("Link do agendador copiado!");
+                    } catch {
+                      alert("Não foi possível copiar o link automaticamente.");
+                    }
+                  }}
+                  style={{
+                    ...secondaryButton,
+                    opacity: linkAgendamento ? 1 : 0.55,
+                    cursor: linkAgendamento ? "pointer" : "not-allowed",
+                  }}
+                  className="marcae-ghost-button"
+                >
+                  Copiar link
+                </button>
+              </div>
+
+              <div
+                className="config-link-acoes-mobile"
+                style={linkAgendamentoAcoes}
+              >
+                <button
+                  type="button"
+                  disabled={!linkAgendamento}
+                  onClick={() => {
+                    if (!linkAgendamento) return;
+                    window.open(
+                      linkAgendamento,
+                      "_blank",
+                      "noopener,noreferrer",
+                    );
+                  }}
+                  style={{
+                    ...whatsappButton,
+                    opacity: linkAgendamento ? 1 : 0.55,
+                    cursor: linkAgendamento ? "pointer" : "not-allowed",
+                  }}
+                  className="marcae-premium-button"
+                >
+                  Abrir agendador
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!linkAgendamento}
+                  onClick={() => {
+                    if (!linkAgendamento) return;
+
+                    const mensagem = `Olá! 😊 Você pode agendar seu horário pelo link: ${linkAgendamento}`;
+                    window.open(
+                      `https://wa.me/?text=${encodeURIComponent(mensagem)}`,
+                      "_blank",
+                      "noopener,noreferrer",
+                    );
+                  }}
+                  style={{
+                    ...secondaryButton,
+                    opacity: linkAgendamento ? 1 : 0.55,
+                    cursor: linkAgendamento ? "pointer" : "not-allowed",
+                  }}
+                  className="marcae-ghost-button"
+                >
+                  Compartilhar no WhatsApp
+                </button>
+              </div>
+
+              <div style={integracaoStatusCard}>
+                <div
+                  style={{
+                    ...statusDot,
+                    background: linkAgendamento ? "#10b981" : "#f59e0b",
+                  }}
+                />
+
+                <div>
+                  <strong style={strongText}>
+                    {linkAgendamento
+                      ? "Link disponível"
+                      : "Link ainda não disponível"}
+                  </strong>
+
+                  <p style={cardDescription}>
+                    {linkAgendamento
+                      ? "Esse é o endereço público que pode ir na bio do Instagram, WhatsApp, QR Code e materiais da empresa."
+                      : "O link aparece aqui quando a empresa possui slug configurado no painel master."}
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div style={mercadoPagoGrid}>
-              {!dadosEmpresa.mercadoPagoAtivo &&
-                !(dadosEmpresa as any).solicitouIntegracaoMp && (
-                  <div style={solicitacaoMpCard}>
+            <div className="config-qr-mobile" style={qrCard}>
+              {qrCodeUrl ? (
+                <img
+                  src={qrCodeUrl}
+                  alt="QR Code do agendador público"
+                  style={qrImage}
+                />
+              ) : (
+                <div style={logoVazio}>QR</div>
+              )}
+
+              <div>
+                <strong style={strongText}>QR Code público</strong>
+                <p style={cardDescription}>
+                  Ideal para recepção, balcão, cartão digital e divulgação
+                  rápida.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section style={card} className="marcae-premium-card">
+          <div style={sectionHeaderRow}>
+            <div>
+              <span style={badge}>Mercado Pago</span>
+
+              <h2 style={cardTitle}>Recebimento online</h2>
+
+              <p style={cardDescription}>
+                Configuração do recebimento online da empresa via Mercado Pago.
+                Isso será utilizado para pré-pagamentos, assinaturas e
+                automações financeiras.
+              </p>
+            </div>
+          </div>
+          <div style={integracaoStatusCard}>
+            <div
+              style={{
+                ...statusDot,
+                background: dadosEmpresa.mercadoPagoAtivo
+                  ? "#10b981"
+                  : "#f59e0b",
+              }}
+            />
+
+            <div>
+              <strong style={strongText}>
+                {dadosEmpresa.mercadoPagoAtivo
+                  ? "Integração ativa"
+                  : "Integração pendente"}
+              </strong>
+
+              <p style={cardDescription}>
+                {dadosEmpresa.mercadoPagoAtivo
+                  ? "Seu sistema já está pronto para receber pagamentos online."
+                  : (dadosEmpresa as any).solicitouIntegracaoMp
+                    ? "Solicitação enviada. Aguarde a configuração pela equipe Marcaê."
+                    : "Solicite sua integração Mercado Pago para liberar pagamentos automáticos."}
+              </p>
+            </div>
+          </div>
+
+          <div style={mercadoPagoGrid}>
+            {!dadosEmpresa.mercadoPagoAtivo &&
+              !(dadosEmpresa as any).solicitouIntegracaoMp && (
+                <div style={solicitacaoMpCard}>
+                  <div>
+                    <strong style={strongText}>
+                      Solicitar integração Mercado Pago
+                    </strong>
+
+                    <p style={cardDescription}>
+                      A integração será configurada pela equipe Marcaê para
+                      garantir segurança e funcionamento correto dos pagamentos
+                      online.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(
+                          `/api/admin/empresas/${empresaId}/dados`,
+                          {
+                            method: "PATCH",
+                            headers: {
+                              "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                              nome: dadosEmpresa.nome,
+                              endereco: dadosEmpresa.endereco,
+                              telefone: dadosEmpresa.telefone,
+                              responsavel: dadosEmpresa.responsavel,
+                              logoUrl: dadosEmpresa.logoUrl,
+                              instagramUrl: dadosEmpresa.instagramUrl,
+                              corPrimaria: dadosEmpresa.corPrimaria,
+                              corSecundaria: dadosEmpresa.corSecundaria,
+                              corSidebar: dadosEmpresa.corSidebar,
+                              solicitouIntegracaoMp: true,
+                            }),
+                          },
+                        );
+
+                        const data = await res.json();
+
+                        if (!data.success) {
+                          alert("Erro ao solicitar integração.");
+                          return;
+                        }
+
+                        setDadosEmpresa((atual: any) => ({
+                          ...atual,
+                          solicitouIntegracaoMp: true,
+                        }));
+
+                        alert("Solicitação enviada com sucesso!");
+                      } catch (error) {
+                        alert("Erro ao solicitar integração.");
+                      }
+                    }}
+                    style={primaryButton}
+                    className="marcae-premium-button"
+                  >
+                    Solicitar integração
+                  </button>
+                </div>
+              )}
+
+            {!dadosEmpresa.mercadoPagoAtivo &&
+              (dadosEmpresa as any).solicitouIntegracaoMp && (
+                <div style={integracaoSolicitadaCard}>
+                  <strong style={strongText}>Solicitação enviada</strong>
+
+                  <p style={cardDescription}>
+                    A equipe Marcaê já recebeu a solicitação de integração.
+                    Aguarde a configuração do Mercado Pago no painel master.
+                  </p>
+                </div>
+              )}
+
+            {dadosEmpresa.mercadoPagoAtivo && (
+              <>
+                <div style={integracaoAtivaCard}>
+                  <strong style={strongText}>
+                    ✅ Recebimento online disponível
+                  </strong>
+
+                  <p style={cardDescription}>
+                    Sua integração Mercado Pago já foi configurada. Agora você
+                    já pode receber pré-pagamentos pelo agendador público.
+                  </p>
+
+                  <p style={{ ...cardDescription, marginTop: 10 }}>
+                    Configure agora quais serviços terão pré-pagamento
+                    obrigatório no menu Serviços.
+                  </p>
+
+                  <div
+                    style={{
+                      marginTop: 14,
+                      display: "inline-flex",
+                      padding: "8px 12px",
+                      borderRadius: 999,
+                      background:
+                        dadosEmpresa.mercadoPagoModo === "producao"
+                          ? "rgba(16,185,129,.16)"
+                          : "rgba(245,158,11,.16)",
+                      color:
+                        dadosEmpresa.mercadoPagoModo === "producao"
+                          ? "#6ee7b7"
+                          : "#fcd34d",
+                      fontWeight: 800,
+                      fontSize: 12,
+                    }}
+                  >
+                    Ambiente:{" "}
+                    {dadosEmpresa.mercadoPagoModo === "producao"
+                      ? "Produção"
+                      : "Sandbox"}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+
+        <section style={card} className="marcae-premium-card">
+          <div style={sectionHeaderRow}>
+            <div>
+              <span style={badge}>Usuários</span>
+
+              <h2 style={cardTitle}>Usuários e permissões</h2>
+
+              <p style={cardDescription}>
+                Controle completo de acessos, permissões e segurança do sistema.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setMostrarUsuarios(!mostrarUsuarios)}
+              style={primaryButtonInline}
+              className="marcae-premium-button"
+            >
+              {mostrarUsuarios ? "Fechar gerenciamento" : "Gerenciar usuários"}
+            </button>
+          </div>
+
+          {!mostrarUsuarios ? (
+            <div style={usuariosResumoBox}>
+              <div style={usuariosResumoItem}>
+                <strong style={usuariosResumoNumero}>{usuarios.length}</strong>
+                <span style={usuariosResumoTexto}>usuários cadastrados</span>
+              </div>
+
+              <div style={usuariosResumoDivider} />
+
+              <div style={usuariosResumoItem}>
+                <strong style={usuariosResumoNumero}>
+                  {usuarios.filter((u) => u.ativo !== false).length}
+                </strong>
+                <span style={usuariosResumoTexto}>usuários ativos</span>
+              </div>
+
+              <div style={usuariosResumoDivider} />
+
+              <div style={usuariosResumoItem}>
+                <strong style={usuariosResumoNumero}>
+                  {usuarios.filter((u) => u.perfil === "admin").length}
+                </strong>
+                <span style={usuariosResumoTexto}>administradores</span>
+              </div>
+            </div>
+          ) : (
+            <div style={usuarioLayoutGrid}>
+              <div style={usuarioFormCard}>
+                <div style={usuarioFormHeader}>
+                  <div>
+                    <h3 style={usuarioFormTitle}>
+                      {usuarioEditandoId ? "Editar usuário" : "Novo usuário"}
+                    </h3>
+
+                    <p style={cardDescription}>
+                      Configure acessos individuais para cada colaborador.
+                    </p>
+                  </div>
+
+                  {usuarioEditandoId && (
+                    <button
+                      onClick={limparFormularioUsuario}
+                      style={ghostButton}
+                      className="marcae-ghost-button"
+                    >
+                      Cancelar edição
+                    </button>
+                  )}
+                </div>
+
+                <div style={usuarioFormGrid}>
+                  <TextField
+                    label="Nome"
+                    value={nomeUsuario}
+                    placeholder="Nome do usuário"
+                    onChange={(value: string) => setNomeUsuario(value)}
+                  />
+
+                  <TextField
+                    label="Login / E-mail"
+                    value={loginUsuario}
+                    placeholder="email@empresa.com"
+                    onChange={(value: string) => setLoginUsuario(value)}
+                  />
+
+                  <TextField
+                    label="WhatsApp para recuperação"
+                    value={whatsappUsuario}
+                    placeholder="Ex: 75999999999"
+                    onChange={(value: string) => setWhatsappUsuario(value)}
+                  />
+
+                  <TextField
+                    label="Senha"
+                    value={senhaUsuario}
+                    placeholder={
+                      usuarioEditandoId
+                        ? "Preencha apenas se desejar alterar"
+                        : "Senha de acesso"
+                    }
+                    type="password"
+                    onChange={(value: string) => setSenhaUsuario(value)}
+                  />
+
+                  <div style={field}>
+                    <label style={labelStyle}>Perfil</label>
+
+                    <select
+                      value={perfilUsuario}
+                      onChange={(e) => setPerfilUsuario(e.target.value)}
+                      style={input}
+                    >
+                      <option value="usuario">Usuário comum</option>
+                      <option value="admin">Administrador</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={toggleCard}>
+                  <div>
+                    <strong style={strongText}>Usuário ativo</strong>
+
+                    <p style={toggleDescription}>
+                      Usuários inativos não conseguem acessar o sistema.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setAtivoUsuario(!ativoUsuario)}
+                    style={{
+                      ...toggleButton,
+                      justifyContent: ativoUsuario ? "flex-end" : "flex-start",
+                      background: ativoUsuario
+                        ? dadosEmpresa.corPrimaria
+                        : "rgba(255,255,255,.12)",
+                    }}
+                  >
+                    <div style={toggleCircle} />
+                  </button>
+                </div>
+
+                {perfilUsuario !== "admin" && (
+                  <div style={permissaoCompactCard}>
                     <div>
-                      <strong style={strongText}>
-                        Solicitar integração Mercado Pago
-                      </strong>
+                      <strong style={strongText}>Permissões do usuário</strong>
 
                       <p style={cardDescription}>
-                        A integração será configurada pela equipe Marcaê para
-                        garantir segurança e funcionamento correto dos
-                        pagamentos online.
+                        {totalPermissoesAtivas} permissões ativas. Clique para
+                        configurar em uma tela flutuante.
                       </p>
                     </div>
 
                     <button
                       type="button"
-                      onClick={async () => {
-                        try {
-                          const res = await fetch(
-                            `/api/admin/empresas/${empresaId}/dados`,
-                            {
-                              method: "PATCH",
-                              headers: {
-                                "Content-Type": "application/json",
-                              },
-                              body: JSON.stringify({
-                                nome: dadosEmpresa.nome,
-                                endereco: dadosEmpresa.endereco,
-                                telefone: dadosEmpresa.telefone,
-                                responsavel: dadosEmpresa.responsavel,
-                                logoUrl: dadosEmpresa.logoUrl,
-                                instagramUrl: dadosEmpresa.instagramUrl,
-                                corPrimaria: dadosEmpresa.corPrimaria,
-                                corSecundaria: dadosEmpresa.corSecundaria,
-                                corSidebar: dadosEmpresa.corSidebar,
-                                solicitouIntegracaoMp: true,
-                              }),
-                            },
-                          );
-
-                          const data = await res.json();
-
-                          if (!data.success) {
-                            alert("Erro ao solicitar integração.");
-                            return;
-                          }
-
-                          setDadosEmpresa((atual: any) => ({
-                            ...atual,
-                            solicitouIntegracaoMp: true,
-                          }));
-
-                          alert("Solicitação enviada com sucesso!");
-                        } catch (error) {
-                          alert("Erro ao solicitar integração.");
-                        }
-                      }}
-                      style={primaryButton}
-                      className="marcae-premium-button"
+                      onClick={() => setModalPermissoesAberto(true)}
+                      style={secondaryButton}
+                      className="marcae-ghost-button"
                     >
-                      Solicitar integração
+                      Configurar permissões
                     </button>
                   </div>
                 )}
 
-              {!dadosEmpresa.mercadoPagoAtivo &&
-                (dadosEmpresa as any).solicitouIntegracaoMp && (
-                  <div style={integracaoSolicitadaCard}>
-                    <strong style={strongText}>Solicitação enviada</strong>
+                <button
+                  onClick={salvarUsuario}
+                  style={primaryButton}
+                  className="marcae-premium-button"
+                >
+                  {salvandoUsuario
+                    ? "Salvando usuário..."
+                    : usuarioEditandoId
+                      ? "Atualizar usuário"
+                      : "Criar usuário"}
+                </button>
+              </div>
+
+              <div style={usuariosListCard}>
+                <div style={usuariosListHeader}>
+                  <div>
+                    <h3 style={usuarioFormTitle}>Usuários cadastrados</h3>
 
                     <p style={cardDescription}>
-                      A equipe Marcaê já recebeu a solicitação de integração.
-                      Aguarde a configuração do Mercado Pago no painel master.
+                      Visualize rapidamente quem possui acesso ao sistema.
                     </p>
                   </div>
-                )}
+                </div>
 
-              {dadosEmpresa.mercadoPagoAtivo && (
-                <>
-                  <div style={integracaoAtivaCard}>
-                    <strong style={strongText}>
-                      ✅ Recebimento online disponível
-                    </strong>
+                <div style={usuariosList}>
+                  {usuarios.length === 0 ? (
+                    <div style={emptyUsers}>Nenhum usuário cadastrado.</div>
+                  ) : (
+                    usuarios.map((usuario) => (
+                      <div key={usuario.id} style={usuarioItem}>
+                        <div style={usuarioAvatar}>
+                          {usuario.nome?.charAt(0)?.toUpperCase() || "U"}
+                        </div>
 
-                    <p style={cardDescription}>
-                      Sua integração Mercado Pago já foi configurada. Agora você
-                      já pode receber pré-pagamentos pelo agendador público.
-                    </p>
+                        <div style={usuarioInfo}>
+                          <div style={usuarioTextoColuna}>
+                            <strong style={usuarioNome}>
+                              {usuario.nome || "Usuário"}
+                            </strong>
 
-                    <p style={{ ...cardDescription, marginTop: 10 }}>
-                      Configure agora quais serviços terão pré-pagamento
-                      obrigatório no menu Serviços.
-                    </p>
+                            <span style={usuarioEmail}>{usuario.email}</span>
 
-                    <div
-                      style={{
-                        marginTop: 14,
-                        display: "inline-flex",
-                        padding: "8px 12px",
-                        borderRadius: 999,
-                        background:
-                          dadosEmpresa.mercadoPagoModo === "producao"
-                            ? "rgba(16,185,129,.16)"
-                            : "rgba(245,158,11,.16)",
-                        color:
-                          dadosEmpresa.mercadoPagoModo === "producao"
-                            ? "#6ee7b7"
-                            : "#fcd34d",
-                        fontWeight: 800,
-                        fontSize: 12,
-                      }}
-                    >
-                      Ambiente:{" "}
-                      {dadosEmpresa.mercadoPagoModo === "producao"
-                        ? "Produção"
-                        : "Sandbox"}
-                    </div>
-                  </div>
-                </>
-              )}
+                            {usuario.whatsapp && (
+                              <span style={usuarioWhatsapp}>
+                                WhatsApp: {usuario.whatsapp}
+                              </span>
+                            )}
+
+                            <div style={usuarioBadges}>
+                              <span
+                                style={{
+                                  ...usuarioBadge,
+                                  background:
+                                    usuario.perfil === "admin"
+                                      ? "rgba(124,58,237,.20)"
+                                      : "rgba(59,130,246,.20)",
+                                  color:
+                                    usuario.perfil === "admin"
+                                      ? "#c4b5fd"
+                                      : "#93c5fd",
+                                }}
+                              >
+                                {usuario.perfil === "admin"
+                                  ? "Administrador"
+                                  : "Usuário"}
+                              </span>
+
+                              <span
+                                style={{
+                                  ...usuarioBadge,
+                                  background:
+                                    usuario.ativo !== false
+                                      ? "rgba(16,185,129,.18)"
+                                      : "rgba(239,68,68,.18)",
+                                  color:
+                                    usuario.ativo !== false
+                                      ? "#6ee7b7"
+                                      : "#fca5a5",
+                                }}
+                              >
+                                {usuario.ativo !== false ? "Ativo" : "Inativo"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => editarUsuario(usuario)}
+                            style={editButton}
+                            className="marcae-ghost-button"
+                          >
+                            ✏️ Editar
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
-          </section>
+          )}
+        </section>
+      </div>
 
-          <section style={card} className="marcae-premium-card">
-            <div style={sectionHeaderRow}>
+      {modalPermissoesAberto && perfilUsuario !== "admin" && (
+        <div style={modalOverlay}>
+          <div style={modalPermissoesCard}>
+            <div style={modalHeader}>
               <div>
-                <span style={badge}>Usuários</span>
+                <span style={badge}>Permissões</span>
 
-                <h2 style={cardTitle}>Usuários e permissões</h2>
+                <h2 style={cardTitle}>
+                  {usuarioEditandoId
+                    ? "Permissões do usuário"
+                    : "Permissões do novo usuário"}
+                </h2>
 
                 <p style={cardDescription}>
-                  Controle completo de acessos, permissões e segurança do
-                  sistema.
+                  Configure acessos por módulo. As alterações serão aplicadas
+                  quando você salvar o usuário.
                 </p>
               </div>
 
               <button
-                onClick={() => setMostrarUsuarios(!mostrarUsuarios)}
-                style={primaryButtonInline}
-                className="marcae-premium-button"
+                type="button"
+                onClick={() => setModalPermissoesAberto(false)}
+                style={modalCloseButton}
+                className="marcae-ghost-button"
               >
-                {mostrarUsuarios
-                  ? "Fechar gerenciamento"
-                  : "Gerenciar usuários"}
+                Fechar
               </button>
             </div>
 
-            {!mostrarUsuarios ? (
-              <div style={usuariosResumoBox}>
-                <div style={usuariosResumoItem}>
-                  <strong style={usuariosResumoNumero}>
-                    {usuarios.length}
-                  </strong>
-                  <span style={usuariosResumoTexto}>usuários cadastrados</span>
-                </div>
+            <div style={modalResumoPermissoes}>
+              <strong>{totalPermissoesAtivas}</strong>
+              <span>permissões ativas</span>
+            </div>
 
-                <div style={usuariosResumoDivider} />
-
-                <div style={usuariosResumoItem}>
-                  <strong style={usuariosResumoNumero}>
-                    {usuarios.filter((u) => u.ativo !== false).length}
-                  </strong>
-                  <span style={usuariosResumoTexto}>usuários ativos</span>
-                </div>
-
-                <div style={usuariosResumoDivider} />
-
-                <div style={usuariosResumoItem}>
-                  <strong style={usuariosResumoNumero}>
-                    {usuarios.filter((u) => u.perfil === "admin").length}
-                  </strong>
-                  <span style={usuariosResumoTexto}>administradores</span>
-                </div>
-              </div>
-            ) : (
-              <div style={usuarioLayoutGrid}>
-                <div style={usuarioFormCard}>
-                  <div style={usuarioFormHeader}>
-                    <div>
-                      <h3 style={usuarioFormTitle}>
-                        {usuarioEditandoId ? "Editar usuário" : "Novo usuário"}
-                      </h3>
-
-                      <p style={cardDescription}>
-                        Configure acessos individuais para cada colaborador.
-                      </p>
-                    </div>
-
-                    {usuarioEditandoId && (
-                      <button
-                        onClick={limparFormularioUsuario}
-                        style={ghostButton}
-                        className="marcae-ghost-button"
-                      >
-                        Cancelar edição
-                      </button>
-                    )}
+            <div style={modalPermissoesScroll}>
+              {[
+                "Módulos",
+                "Financeiro",
+                "Caixa",
+                "Clientes",
+                "Atendimentos",
+                "Relatórios",
+                "Configurações",
+              ].map((grupo) => (
+                <div key={grupo} style={permissionGroup}>
+                  <div style={permissionGroupHeader}>
+                    <h4 style={permissionGroupTitle}>{grupo}</h4>
                   </div>
 
-                  <div style={usuarioFormGrid}>
-                    <TextField
-                      label="Nome"
-                      value={nomeUsuario}
-                      placeholder="Nome do usuário"
-                      onChange={(value: string) => setNomeUsuario(value)}
-                    />
-
-                    <TextField
-                      label="Login / E-mail"
-                      value={loginUsuario}
-                      placeholder="email@empresa.com"
-                      onChange={(value: string) => setLoginUsuario(value)}
-                    />
-
-                    <TextField
-                      label="WhatsApp para recuperação"
-                      value={whatsappUsuario}
-                      placeholder="Ex: 75999999999"
-                      onChange={(value: string) => setWhatsappUsuario(value)}
-                    />
-
-                    <TextField
-                      label="Senha"
-                      value={senhaUsuario}
-                      placeholder={
-                        usuarioEditandoId
-                          ? "Preencha apenas se desejar alterar"
-                          : "Senha de acesso"
-                      }
-                      type="password"
-                      onChange={(value: string) => setSenhaUsuario(value)}
-                    />
-
-                    <div style={field}>
-                      <label style={labelStyle}>Perfil</label>
-
-                      <select
-                        value={perfilUsuario}
-                        onChange={(e) => setPerfilUsuario(e.target.value)}
-                        style={input}
-                      >
-                        <option value="usuario">Usuário comum</option>
-                        <option value="admin">Administrador</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div style={toggleCard}>
-                    <div>
-                      <strong style={strongText}>Usuário ativo</strong>
-
-                      <p style={toggleDescription}>
-                        Usuários inativos não conseguem acessar o sistema.
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setAtivoUsuario(!ativoUsuario)}
-                      style={{
-                        ...toggleButton,
-                        justifyContent: ativoUsuario
-                          ? "flex-end"
-                          : "flex-start",
-                        background: ativoUsuario
-                          ? dadosEmpresa.corPrimaria
-                          : "rgba(255,255,255,.12)",
-                      }}
-                    >
-                      <div style={toggleCircle} />
-                    </button>
-                  </div>
-
-                  {perfilUsuario !== "admin" && (
-                    <div style={permissaoCompactCard}>
-                      <div>
-                        <strong style={strongText}>
-                          Permissões do usuário
-                        </strong>
-
-                        <p style={cardDescription}>
-                          {totalPermissoesAtivas} permissões ativas. Clique para
-                          configurar em uma tela flutuante.
-                        </p>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setModalPermissoesAberto(true)}
-                        style={secondaryButton}
-                        className="marcae-ghost-button"
-                      >
-                        Configurar permissões
-                      </button>
-                    </div>
-                  )}
-
-                  <button
-                    onClick={salvarUsuario}
-                    style={primaryButton}
-                    className="marcae-premium-button"
-                  >
-                    {salvandoUsuario
-                      ? "Salvando usuário..."
-                      : usuarioEditandoId
-                        ? "Atualizar usuário"
-                        : "Criar usuário"}
-                  </button>
-                </div>
-
-                <div style={usuariosListCard}>
-                  <div style={usuariosListHeader}>
-                    <div>
-                      <h3 style={usuarioFormTitle}>Usuários cadastrados</h3>
-
-                      <p style={cardDescription}>
-                        Visualize rapidamente quem possui acesso ao sistema.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div style={usuariosList}>
-                    {usuarios.length === 0 ? (
-                      <div style={emptyUsers}>Nenhum usuário cadastrado.</div>
-                    ) : (
-                      usuarios.map((usuario) => (
-                        <div key={usuario.id} style={usuarioItem}>
-                          <div style={usuarioAvatar}>
-                            {usuario.nome?.charAt(0)?.toUpperCase() || "U"}
-                          </div>
-
-                          <div style={usuarioInfo}>
-                            <div style={usuarioTextoColuna}>
-                              <strong style={usuarioNome}>
-                                {usuario.nome || "Usuário"}
-                              </strong>
-
-                              <span style={usuarioEmail}>{usuario.email}</span>
-
-                              {usuario.whatsapp && (
-                                <span style={usuarioWhatsapp}>
-                                  WhatsApp: {usuario.whatsapp}
-                                </span>
-                              )}
-
-                              <div style={usuarioBadges}>
-                                <span
-                                  style={{
-                                    ...usuarioBadge,
-                                    background:
-                                      usuario.perfil === "admin"
-                                        ? "rgba(124,58,237,.20)"
-                                        : "rgba(59,130,246,.20)",
-                                    color:
-                                      usuario.perfil === "admin"
-                                        ? "#c4b5fd"
-                                        : "#93c5fd",
-                                  }}
-                                >
-                                  {usuario.perfil === "admin"
-                                    ? "Administrador"
-                                    : "Usuário"}
-                                </span>
-
-                                <span
-                                  style={{
-                                    ...usuarioBadge,
-                                    background:
-                                      usuario.ativo !== false
-                                        ? "rgba(16,185,129,.18)"
-                                        : "rgba(239,68,68,.18)",
-                                    color:
-                                      usuario.ativo !== false
-                                        ? "#6ee7b7"
-                                        : "#fca5a5",
-                                  }}
-                                >
-                                  {usuario.ativo !== false
-                                    ? "Ativo"
-                                    : "Inativo"}
-                                </span>
-                              </div>
-                            </div>
-
-                            <button
-                              onClick={() => editarUsuario(usuario)}
-                              style={editButton}
-                              className="marcae-ghost-button"
-                            >
-                              ✏️ Editar
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </section>
-        </div>
-
-        {modalPermissoesAberto && perfilUsuario !== "admin" && (
-          <div style={modalOverlay}>
-            <div style={modalPermissoesCard}>
-              <div style={modalHeader}>
-                <div>
-                  <span style={badge}>Permissões</span>
-
-                  <h2 style={cardTitle}>
-                    {usuarioEditandoId
-                      ? "Permissões do usuário"
-                      : "Permissões do novo usuário"}
-                  </h2>
-
-                  <p style={cardDescription}>
-                    Configure acessos por módulo. As alterações serão aplicadas
-                    quando você salvar o usuário.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setModalPermissoesAberto(false)}
-                  style={modalCloseButton}
-                  className="marcae-ghost-button"
-                >
-                  Fechar
-                </button>
-              </div>
-
-              <div style={modalResumoPermissoes}>
-                <strong>{totalPermissoesAtivas}</strong>
-                <span>permissões ativas</span>
-              </div>
-
-              <div style={modalPermissoesScroll}>
-                {[
-                  "Módulos",
-                  "Financeiro",
-                  "Caixa",
-                  "Clientes",
-                  "Atendimentos",
-                  "Relatórios",
-                  "Configurações",
-                ].map((grupo) => (
-                  <div key={grupo} style={permissionGroup}>
-                    <div style={permissionGroupHeader}>
-                      <h4 style={permissionGroupTitle}>{grupo}</h4>
-                    </div>
-
-                    <div style={permissionsGrid}>
-                      {permissoesLista
-                        .filter((item) => item.grupo === grupo)
-                        .map((item) => (
-                          <button
-                            key={item.chave}
-                            type="button"
-                            onClick={() => alterarPermissao(item.chave)}
+                  <div style={permissionsGrid}>
+                    {permissoesLista
+                      .filter((item) => item.grupo === grupo)
+                      .map((item) => (
+                        <button
+                          key={item.chave}
+                          type="button"
+                          onClick={() => alterarPermissao(item.chave)}
+                          style={{
+                            ...permissionCard,
+                            borderColor: permissoes[item.chave]
+                              ? dadosEmpresa.corPrimaria
+                              : "rgba(255,255,255,.08)",
+                            background: permissoes[item.chave]
+                              ? `${dadosEmpresa.corPrimaria}18`
+                              : "rgba(255,255,255,.03)",
+                          }}
+                        >
+                          <div
                             style={{
-                              ...permissionCard,
-                              borderColor: permissoes[item.chave]
+                              ...permissionCheck,
+                              background: permissoes[item.chave]
                                 ? dadosEmpresa.corPrimaria
                                 : "rgba(255,255,255,.08)",
-                              background: permissoes[item.chave]
-                                ? `${dadosEmpresa.corPrimaria}18`
-                                : "rgba(255,255,255,.03)",
                             }}
                           >
-                            <div
-                              style={{
-                                ...permissionCheck,
-                                background: permissoes[item.chave]
-                                  ? dadosEmpresa.corPrimaria
-                                  : "rgba(255,255,255,.08)",
-                              }}
-                            >
-                              {permissoes[item.chave] ? "✓" : ""}
-                            </div>
+                            {permissoes[item.chave] ? "✓" : ""}
+                          </div>
 
-                            <div>
-                              <strong style={permissionTitle}>
-                                {item.titulo}
-                              </strong>
+                          <div>
+                            <strong style={permissionTitle}>
+                              {item.titulo}
+                            </strong>
 
-                              <p style={permissionDescription}>
-                                {item.descricao}
-                              </p>
-                            </div>
-                          </button>
-                        ))}
-                    </div>
+                            <p style={permissionDescription}>
+                              {item.descricao}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
+            </div>
 
-              <div style={modalFooter}>
-                <button
-                  type="button"
-                  onClick={() => setPermissoes(permissoesPadrao)}
-                  style={secondaryButton}
-                  className="marcae-ghost-button"
-                >
-                  Limpar permissões
-                </button>
+            <div style={modalFooter}>
+              <button
+                type="button"
+                onClick={() => setPermissoes(permissoesPadrao)}
+                style={secondaryButton}
+                className="marcae-ghost-button"
+              >
+                Limpar permissões
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => setModalPermissoesAberto(false)}
-                  style={primaryButtonInline}
-                  className="marcae-premium-button"
-                >
-                  Concluir permissões
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setModalPermissoesAberto(false)}
+                style={primaryButtonInline}
+                className="marcae-premium-button"
+              >
+                Concluir permissões
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
     </PremiumLayout>
   );
 }

@@ -7,7 +7,6 @@ function limparCpf(cpf?: string | null) {
   return String(cpf || '').replace(/\D/g, '');
 }
 
-
 function criarDataBrasil(data: string, horario: string) {
   return new Date(`${data}T${horario}:00${TIMEZONE_OFFSET_BRASIL}`);
 }
@@ -46,6 +45,16 @@ function inteiroPositivo(valor: any, padrao = 1) {
   return Math.max(Math.floor(convertido), 1);
 }
 
+function minutosServico(valor: any) {
+  const convertido = Number(valor);
+
+  if (!Number.isFinite(convertido) || convertido < 5) {
+    return 30;
+  }
+
+  return Math.max(Math.floor(convertido), 5);
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -78,6 +87,8 @@ export async function GET(req: Request) {
       );
     }
 
+    const duracaoServicoMin = minutosServico((servico as any).duracaoMin);
+
     const disponibilidades = await prisma.disponibilidade.findMany({
       where: {
         profissionalId,
@@ -107,11 +118,13 @@ export async function GET(req: Request) {
     });
 
     if (!disponibilidades.length) {
-      return NextResponse.json({ horarios: [] });
+      return NextResponse.json({
+        horarios: [],
+        duracaoServicoMin,
+        intervaloAplicadoMin: duracaoServicoMin,
+      });
     }
 
-    const inicioDia = criarDataBrasil(data, '00:00');
-    const fimDia = criarDataBrasil(data, '23:59');
     const dataCampo = formatarDataParaCampoBrasil(data);
     const capacidadeSimultanea = inteiroPositivo(
       (servico as any).capacidadeSimultanea,
@@ -145,11 +158,11 @@ export async function GET(req: Request) {
     const mesmaData = data === hojeBrasil;
 
     for (const disponibilidade of disponibilidades) {
-      const [horaIni, minIni] = disponibilidade.horaInicio
+      const [horaIni, minIni] = String(disponibilidade.horaInicio || '00:00')
         .split(':')
         .map(Number);
 
-      const [horaFim, minFim] = disponibilidade.horaFim
+      const [horaFim, minFim] = String(disponibilidade.horaFim || '00:00')
         .split(':')
         .map(Number);
 
@@ -164,17 +177,12 @@ export async function GET(req: Request) {
       );
 
       while (true) {
-        const proximo = new Date(atual);
+        const fimAtendimento = new Date(atual);
+        fimAtendimento.setMinutes(fimAtendimento.getMinutes() + duracaoServicoMin);
 
-        proximo.setMinutes(
-          proximo.getMinutes() + Number(servico.duracaoMin || 30)
-        );
+        if (fimAtendimento > fim) break;
 
-        if (proximo > fim) break;
-
-        const horarioPassado =
-          mesmaData && atual <= agora;
-
+        const horarioPassado = mesmaData && atual <= agora;
         const horarioFormatado = formatarHorario(atual);
 
         const agendamentosMesmoHorario = agendamentos.filter(
@@ -200,20 +208,19 @@ export async function GET(req: Request) {
           clienteJaTemEsseHorario ||
           quantidadeMesmoServicoNoHorario >= capacidadeSimultanea;
 
-        if (!ocupado && !horarioPassado) {
-          if (!horarios.includes(horarioFormatado)) {
-            horarios.push(horarioFormatado);
-          }
+        if (!ocupado && !horarioPassado && !horarios.includes(horarioFormatado)) {
+          horarios.push(horarioFormatado);
         }
 
-        atual = new Date(
-          atual.getTime() +
-            Number(disponibilidade.intervaloMin || servico.duracaoMin || 30) * 60000
-        );
+        atual = new Date(atual.getTime() + duracaoServicoMin * 60000);
       }
     }
 
-    return NextResponse.json({ horarios });
+    return NextResponse.json({
+      horarios,
+      duracaoServicoMin,
+      intervaloAplicadoMin: duracaoServicoMin,
+    });
   } catch (error) {
     console.error(error);
     return NextResponse.json(

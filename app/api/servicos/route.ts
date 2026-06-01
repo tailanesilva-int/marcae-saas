@@ -172,3 +172,111 @@ export async function PUT(req: Request) {
     );
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const body = await req.json();
+    const { id, empresaId } = body;
+
+    if (!id || !empresaId) {
+      return NextResponse.json(
+        { error: 'ID do serviço e empresaId são obrigatórios.' },
+        { status: 400 },
+      );
+    }
+
+    const servicoExistente = await prisma.servico.findFirst({
+      where: {
+        id,
+        empresaId,
+      },
+    });
+
+    if (!servicoExistente) {
+      return NextResponse.json(
+        { error: 'Serviço não encontrado.' },
+        { status: 404 },
+      );
+    }
+
+    const totalAgendamentos = await prisma.agendamento.count({
+      where: {
+        empresaId,
+        servicoId: id,
+      },
+    });
+
+    if (totalAgendamentos > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          bloqueadoPorMovimentacao: true,
+          error:
+            'Este serviço possui movimentações e não pode ser excluído. Inative o serviço para ocultá-lo do sistema sem perder o histórico.',
+        },
+        { status: 409 },
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const banco = tx as any;
+
+      if (banco.profissionalServico?.deleteMany) {
+        await banco.profissionalServico.deleteMany({
+          where: {
+            servicoId: id,
+          },
+        });
+      }
+
+      if (banco.disponibilidadeServico?.deleteMany) {
+        await banco.disponibilidadeServico.deleteMany({
+          where: {
+            servicoId: id,
+          },
+        });
+      }
+
+      if (banco.servicoProfissional?.deleteMany) {
+        await banco.servicoProfissional.deleteMany({
+          where: {
+            servicoId: id,
+          },
+        });
+      }
+
+      await banco.servico.delete({
+        where: {
+          id,
+        },
+      });
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Serviço excluído com sucesso.',
+    });
+  } catch (error: any) {
+    console.error('Erro ao excluir serviço:', error);
+
+    if (error?.code === 'P2003') {
+      return NextResponse.json(
+        {
+          success: false,
+          bloqueadoPorMovimentacao: true,
+          error:
+            'Este serviço possui vínculos ou movimentações e não pode ser excluído. Inative o serviço para ocultá-lo do sistema sem perder o histórico.',
+        },
+        { status: 409 },
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Erro ao excluir serviço.',
+      },
+      { status: 500 },
+    );
+  }
+}

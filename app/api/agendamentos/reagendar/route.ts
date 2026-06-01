@@ -120,9 +120,6 @@ export async function GET(req: Request) {
         status: {
           in: ['confirmado', 'pendente'],
         },
-        statusPagamento: {
-          in: ['pago', 'confirmado', 'aprovado'],
-        },
         dataHoraInicio: {
           gte: agora,
         },

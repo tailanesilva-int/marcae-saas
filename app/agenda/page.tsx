@@ -216,8 +216,30 @@ function removerAgendamentosDuplicadosAgenda(lista: any[]) {
     });
   }
 
-  function formatarDataCurta(data: string) {
-    return new Date(data).toLocaleDateString('pt-BR', {
+  function criarDataLocalDeInput(valor: string) {
+    const [ano, mes, dia] = valor.split('-').map(Number);
+
+    if (!ano || !mes || !dia) {
+      return new Date(valor);
+    }
+
+    return new Date(ano, mes - 1, dia, 0, 0, 0, 0);
+  }
+
+  function normalizarDataLocal(data: string | Date) {
+    if (data instanceof Date) {
+      return data;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+      return criarDataLocalDeInput(data);
+    }
+
+    return new Date(data);
+  }
+
+  function formatarDataCurta(data: string | Date) {
+    return normalizarDataLocal(data).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
     });
@@ -234,7 +256,7 @@ function removerAgendamentosDuplicadosAgenda(lista: any[]) {
   function dataInputParaDate(valor?: string | null) {
     if (!valor) return new Date();
 
-    return new Date(`${valor}T00:00:00`);
+    return criarDataLocalDeInput(valor);
   }
 
   function dataParaInput(data: Date) {
@@ -1890,7 +1912,7 @@ const eventosDia = eventosFiltrados
         inicioSemana.getFullYear(),
         inicioSemana.getMonth(),
         inicioSemana.getDate() + dia.key,
-      ).toISOString(),
+      ),
     )}
   </span>
 </div>

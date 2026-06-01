@@ -13,6 +13,9 @@ export default function ServicosPage() {
   const [filtroStatus, setFiltroStatus] = useState<'todos' | 'ativos' | 'inativos'>('todos');
   const [pesquisaServico, setPesquisaServico] = useState('');
   const [formularioAberto, setFormularioAberto] = useState(false);
+  const [salvandoServico, setSalvandoServico] = useState(false);
+  const [servicoStatusProcessandoId, setServicoStatusProcessandoId] = useState<string | null>(null);
+  const [servicoExcluindoId, setServicoExcluindoId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     nome: '',
@@ -175,32 +178,148 @@ export default function ServicosPage() {
   }
 
   async function salvar() {
+    if (salvandoServico || servicoStatusProcessandoId) return;
+
     if (!form.nome || !form.valor) {
       alert('Preencha nome e valor.');
       return;
     }
 
-    const res = await fetch('/api/servicos', {
-      method: editandoId ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(montarPayloadServico()),
-    });
+    try {
+      setSalvandoServico(true);
 
-    const data = await res.json();
+      const res = await fetch('/api/servicos', {
+        method: editandoId ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(montarPayloadServico()),
+      });
 
-    if (!res.ok) {
-      alert(data.error || 'Erro ao salvar serviço.');
-      return;
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Erro ao salvar serviço.');
+        return;
+      }
+
+      alert(editandoId ? 'Serviço atualizado!' : 'Serviço criado!');
+
+      await carregarServicos(empresa.id);
+      limparFormulario();
+    } catch (error) {
+      console.error('Erro ao salvar serviço:', error);
+      alert('Erro ao salvar serviço. Tente novamente.');
+    } finally {
+      setSalvandoServico(false);
     }
+  }
 
-    alert(editandoId ? 'Serviço atualizado!' : 'Serviço criado!');
+  async function alternarStatusServico(servico: any) {
+    if (salvandoServico || servicoStatusProcessandoId) return;
 
-    await carregarServicos(empresa.id);
-    limparFormulario();
+    const confirmar = confirm(
+      servico.ativo === false
+        ? 'Deseja ativar este serviço?'
+        : 'Deseja inativar este serviço?'
+    );
+
+    if (!confirmar) return;
+
+    try {
+      setServicoStatusProcessandoId(servico.id);
+
+      const res = await fetch('/api/servicos', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: servico.id,
+          empresaId: empresa.id,
+          nome: servico.nome,
+          descricao: servico.descricao || '',
+          duracaoMin: Math.max(Number(servico.duracaoMin || 30), 5),
+          capacidadeSimultanea: normalizarCapacidadeSimultanea(servico.capacidadeSimultanea),
+          valor: servico.valor,
+          custo: servico.custo,
+          exigePrePagamento: servico.exigePrePagamento || false,
+          valorPrePagamento: servico.valorPrePagamento || '',
+          imagemUrl1: servico.imagemUrl1 || '',
+          imagemUrl2: servico.imagemUrl2 || '',
+          imagemUrl3: servico.imagemUrl3 || '',
+          ativo: servico.ativo === false,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Erro ao atualizar status.');
+        return;
+      }
+
+      await carregarServicos(empresa.id);
+    } catch (error) {
+      console.error('Erro ao atualizar status do serviço:', error);
+      alert('Erro ao atualizar status. Tente novamente.');
+    } finally {
+      setServicoStatusProcessandoId(null);
+    }
+  }
+
+
+
+  async function excluirServico(servico: any) {
+    if (salvandoServico || servicoStatusProcessandoId || servicoExcluindoId) return;
+
+    const confirmar = window.confirm(
+      `Deseja excluir definitivamente o serviço "${servico.nome}"?\n\nEssa ação só será permitida se o serviço não tiver movimentações.`,
+    );
+
+    if (!confirmar) return;
+
+    try {
+      setServicoExcluindoId(servico.id);
+
+      const res = await fetch('/api/servicos', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: servico.id,
+          empresaId: empresa.id,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert(
+          data.error ||
+            'Não foi possível excluir este serviço. Se ele possuir movimentações, inative para ocultar do sistema.',
+        );
+        return;
+      }
+
+      alert('Serviço excluído com sucesso!');
+
+      if (editandoId === servico.id) {
+        limparFormulario();
+      }
+
+      await carregarServicos(empresa.id);
+    } catch (error) {
+      console.error('Erro ao excluir serviço:', error);
+      alert('Erro ao excluir serviço. Tente novamente.');
+    } finally {
+      setServicoExcluindoId(null);
+    }
   }
 
   const corPrimaria = empresa?.corSidebar || empresa?.corPrimaria || '#7c3aed';
   const corSecundaria = empresa?.corSecundaria || '#06b6d4';
+  const acaoServicoEmAndamento =
+    salvandoServico || Boolean(servicoStatusProcessandoId) || Boolean(servicoExcluindoId);
 
   const metricas = useMemo(() => {
     const totalServicos = servicos.length;
@@ -791,7 +910,10 @@ const servicosFiltrados = servicos.filter((servico) => {
 
               <button
                 type="button"
+                disabled={acaoServicoEmAndamento}
                 onClick={() => {
+                  if (acaoServicoEmAndamento) return;
+
                   if (formularioAberto && editandoId) {
                     limparFormulario();
                     return;
@@ -802,6 +924,8 @@ const servicosFiltrados = servicos.filter((servico) => {
                 aria-label={formularioAberto ? 'Ocultar cadastro de serviço' : 'Abrir cadastro de serviço'}
                 style={{
                   ...botaoToggleCadastro,
+                  opacity: acaoServicoEmAndamento ? 0.55 : 1,
+                  cursor: acaoServicoEmAndamento ? 'not-allowed' : 'pointer',
                   background: formularioAberto
                     ? 'rgba(255,255,255,0.06)'
                     : `linear-gradient(135deg, ${corPrimaria}, ${corSecundaria})`,
@@ -820,8 +944,17 @@ const servicosFiltrados = servicos.filter((servico) => {
                   <div style={edicaoAvisoLinha}>
                     <span>Você está editando um serviço existente.</span>
 
-                    <button onClick={limparFormulario} style={botaoSecundarioCompacto}>
-                      Cancelar edição
+                    <button
+                      type="button"
+                      onClick={limparFormulario}
+                      disabled={acaoServicoEmAndamento}
+                      style={{
+                        ...botaoSecundarioCompacto,
+                        opacity: acaoServicoEmAndamento ? 0.55 : 1,
+                        cursor: acaoServicoEmAndamento ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      {acaoServicoEmAndamento ? 'Aguarde...' : 'Cancelar edição'}
                     </button>
                   </div>
                 )}
@@ -1014,13 +1147,22 @@ const servicosFiltrados = servicos.filter((servico) => {
 
                 <button
                   onClick={salvar}
+                  disabled={acaoServicoEmAndamento}
                   style={{
                     ...botaoPrincipal,
+                    opacity: acaoServicoEmAndamento ? 0.62 : 1,
+                    cursor: acaoServicoEmAndamento ? 'not-allowed' : 'pointer',
                     background: `linear-gradient(135deg, ${corPrimaria}, ${corSecundaria})`,
                     boxShadow: `0 18px 45px ${hexToRgba(corPrimaria, 0.32)}`,
                   }}
                 >
-                  {editandoId ? 'Atualizar serviço' : 'Salvar serviço'}
+                  {salvandoServico
+                    ? editandoId
+                      ? 'Atualizando serviço... aguarde'
+                      : 'Salvando serviço... aguarde'
+                    : editandoId
+                    ? 'Atualizar serviço'
+                    : 'Salvar serviço'}
                 </button>
               </>
             )}
@@ -1258,9 +1400,15 @@ const servicosFiltrados = servicos.filter((servico) => {
 
                       <div style={servicoCompactoAcoes}>
                         <button
-                          onClick={() => iniciarEdicao(s)}
+                          onClick={() => {
+                            if (acaoServicoEmAndamento) return;
+                            iniciarEdicao(s);
+                          }}
+                          disabled={acaoServicoEmAndamento}
                           style={{
                             ...botaoAcaoCompacto,
+                            opacity: acaoServicoEmAndamento ? 0.55 : 1,
+                            cursor: acaoServicoEmAndamento ? 'not-allowed' : 'pointer',
                             color: '#c4b5fd',
                             borderColor: 'rgba(124,58,237,0.25)',
                           }}
@@ -1269,49 +1417,12 @@ const servicosFiltrados = servicos.filter((servico) => {
                         </button>
 
                         <button
-                          onClick={async () => {
-                            const confirmar = confirm(
-                              s.ativo === false
-                                ? 'Deseja ativar este serviço?'
-                                : 'Deseja inativar este serviço?'
-                            );
-
-                            if (!confirmar) return;
-
-                            const res = await fetch('/api/servicos', {
-                              method: 'PUT',
-                              headers: {
-                                'Content-Type': 'application/json',
-                              },
-                              body: JSON.stringify({
-                                id: s.id,
-                                empresaId: empresa.id,
-                                nome: s.nome,
-                                descricao: s.descricao || '',
-                                duracaoMin: Math.max(Number(s.duracaoMin || 30), 5),
-                                capacidadeSimultanea: normalizarCapacidadeSimultanea(s.capacidadeSimultanea),
-                                valor: s.valor,
-                                custo: s.custo,
-                                exigePrePagamento: s.exigePrePagamento || false,
-                                valorPrePagamento: s.valorPrePagamento || '',
-                                imagemUrl1: s.imagemUrl1 || '',
-                                imagemUrl2: s.imagemUrl2 || '',
-                                imagemUrl3: s.imagemUrl3 || '',
-                                ativo: s.ativo === false,
-                              }),
-                            });
-
-                            const data = await res.json();
-
-                            if (!res.ok) {
-                              alert(data.error || 'Erro ao atualizar status.');
-                              return;
-                            }
-
-                            await carregarServicos(empresa.id);
-                          }}
+                          onClick={() => alternarStatusServico(s)}
+                          disabled={acaoServicoEmAndamento}
                           style={{
                             ...botaoAcaoCompacto,
+                            opacity: acaoServicoEmAndamento ? 0.55 : 1,
+                            cursor: acaoServicoEmAndamento ? 'not-allowed' : 'pointer',
                             borderColor:
                               s.ativo === false
                                 ? 'rgba(34,197,94,0.25)'
@@ -1322,7 +1433,27 @@ const servicosFiltrados = servicos.filter((servico) => {
                                 : '#fca5a5',
                           }}
                         >
-                          {s.ativo === false ? '✅ Ativar' : '🚫 Inativar'}
+                          {servicoStatusProcessandoId === s.id
+                            ? 'Processando... aguarde'
+                            : s.ativo === false
+                            ? '✅ Ativar'
+                            : '🚫 Inativar'}
+                        </button>
+
+                        <button
+                          onClick={() => excluirServico(s)}
+                          disabled={acaoServicoEmAndamento}
+                          style={{
+                            ...botaoAcaoCompacto,
+                            opacity: acaoServicoEmAndamento ? 0.55 : 1,
+                            cursor: acaoServicoEmAndamento ? 'not-allowed' : 'pointer',
+                            borderColor: 'rgba(248,113,113,0.28)',
+                            color: '#fecaca',
+                            background: 'rgba(127,29,29,0.10)',
+                          }}
+                          title="Excluir definitivamente somente se o serviço não possuir movimentações"
+                        >
+                          {servicoExcluindoId === s.id ? 'Excluindo... aguarde' : '🗑️ Excluir'}
                         </button>
                       </div>
                     </div>

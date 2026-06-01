@@ -52,6 +52,8 @@ export default function ProfissionaisPage() {
   const [carregando, setCarregando] = useState(true);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [salvandoProfissional, setSalvandoProfissional] = useState(false);
+  const [carregandoEdicaoProfissionalId, setCarregandoEdicaoProfissionalId] = useState<string | null>(null);
+  const [profissionalStatusProcessandoId, setProfissionalStatusProcessandoId] = useState<string | null>(null);
   const [filtroStatus, setFiltroStatus] = useState<
     "todos" | "ativos" | "inativos"
   >("todos");
@@ -492,8 +494,16 @@ export default function ProfissionaisPage() {
     });
   }
 
+  function servicosAtivosDisponiveis() {
+    return servicos.filter((servico) => servico.ativo !== false);
+  }
+
+  function servicoEstaAtivo(servicoId: string) {
+    return servicos.some((servico) => servico.id === servicoId && servico.ativo !== false);
+  }
+
   function servicosDoProfissional() {
-    return servicos.filter((servico) => form.servicosIds.includes(servico.id));
+    return servicosAtivosDisponiveis().filter((servico) => form.servicosIds.includes(servico.id));
   }
 
   function normalizarDisponibilidadeParaSalvar() {
@@ -503,8 +513,8 @@ export default function ProfissionaisPage() {
         horaInicio: bloco.horaInicio,
         horaFim: bloco.horaFim,
         servicosIds: Array.isArray(bloco.servicosIds)
-          ? bloco.servicosIds.filter((servicoId) =>
-              form.servicosIds.includes(servicoId),
+          ? bloco.servicosIds.filter(
+              (servicoId) => form.servicosIds.includes(servicoId) && servicoEstaAtivo(servicoId),
             )
           : [],
       })),
@@ -542,7 +552,7 @@ export default function ProfissionaisPage() {
   }
 
   async function salvar() {
-    if (salvandoProfissional) return;
+    if (salvandoProfissional || carregandoEdicaoProfissionalId || profissionalStatusProcessandoId) return;
 
     if (!form.nome.trim()) {
       alert("Informe o nome do profissional.");
@@ -565,12 +575,13 @@ export default function ProfissionaisPage() {
           id: editandoId,
           empresaId: empresa.id,
           ...form,
+          servicosIds: form.servicosIds.filter((servicoId) => servicoEstaAtivo(servicoId)),
           valorComissao:
             form.valorComissao !== ""
               ? Number(String(form.valorComissao).replace(",", "."))
               : null,
           comissoesServicos: comissoesServicos
-            .filter((item) => form.servicosIds.includes(item.servicoId))
+            .filter((item) => form.servicosIds.includes(item.servicoId) && servicoEstaAtivo(item.servicoId))
             .map((item) => ({
               servicoId: item.servicoId,
               tipoComissao: item.tipoComissao || "percentual",
@@ -623,41 +634,107 @@ export default function ProfissionaisPage() {
   }
 
   async function editar(profissional: any) {
-    const servicosIds =
-      profissional.servicos?.map((item: any) => item.servicoId) || [];
+    if (salvandoProfissional || carregandoEdicaoProfissionalId || profissionalStatusProcessandoId) return;
 
-    setEditandoId(profissional.id);
-    setFormProfissionalAberto(true);
+    try {
+      setCarregandoEdicaoProfissionalId(profissional.id);
 
-    setForm({
-      nome: profissional.nome || "",
-      bio: profissional.bio || "",
-      fotoUrl: profissional.fotoUrl || "",
-      ativo: profissional.ativo ?? true,
-      servicosIds,
-      modoComissao: profissional.modoComissao || "geral",
-      tipoComissao: profissional.tipoComissao || "percentual",
-      valorComissao:
-        profissional.valorComissao !== null &&
-        profissional.valorComissao !== undefined
-          ? String(profissional.valorComissao)
-          : "",
-    });
+      const servicosIds =
+        profissional.servicos
+          ?.map((item: any) => item.servicoId)
+          .filter((servicoId: string) => servicoEstaAtivo(servicoId)) || [];
 
-    setComissoesServicos(
-      profissional.servicos?.map((item: any) => ({
-        servicoId: item.servicoId,
-        tipoComissao: item.tipoComissao || "percentual",
+      setEditandoId(profissional.id);
+      setFormProfissionalAberto(true);
+
+      setForm({
+        nome: profissional.nome || "",
+        bio: profissional.bio || "",
+        fotoUrl: profissional.fotoUrl || "",
+        ativo: profissional.ativo ?? true,
+        servicosIds,
+        modoComissao: profissional.modoComissao || "geral",
+        tipoComissao: profissional.tipoComissao || "percentual",
         valorComissao:
-          item.valorComissao !== null && item.valorComissao !== undefined
-            ? String(item.valorComissao)
+          profissional.valorComissao !== null &&
+          profissional.valorComissao !== undefined
+            ? String(profissional.valorComissao)
             : "",
-      })) || [],
+      });
+
+      setComissoesServicos(
+        profissional.servicos
+          ?.filter((item: any) => servicoEstaAtivo(item.servicoId))
+          .map((item: any) => ({
+            servicoId: item.servicoId,
+            tipoComissao: item.tipoComissao || "percentual",
+            valorComissao:
+              item.valorComissao !== null && item.valorComissao !== undefined
+                ? String(item.valorComissao)
+                : "",
+          })) || [],
+      );
+
+      await carregarDisponibilidade(profissional.id);
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      console.error("Erro ao carregar profissional para edição:", error);
+      alert("Erro ao carregar profissional para edição.");
+    } finally {
+      setCarregandoEdicaoProfissionalId(null);
+    }
+  }
+
+  async function alternarStatusProfissional(profissional: any) {
+    if (salvandoProfissional || carregandoEdicaoProfissionalId || profissionalStatusProcessandoId) return;
+
+    const confirmar = confirm(
+      profissional.ativo === false
+        ? "Deseja ativar este profissional?"
+        : "Deseja inativar este profissional?",
     );
 
-    await carregarDisponibilidade(profissional.id);
+    if (!confirmar) return;
 
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    try {
+      setProfissionalStatusProcessandoId(profissional.id);
+
+      const res = await fetch("/api/profissionais", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...profissional,
+          empresaId: empresa.id,
+          servicosIds:
+            profissional.servicos?.map((item: any) => item.servicoId) || [],
+          modoComissao: profissional.modoComissao || "geral",
+          tipoComissao: profissional.tipoComissao || null,
+          valorComissao: profissional.valorComissao ?? null,
+          comissoesServicos:
+            profissional.servicos?.map((item: any) => ({
+              servicoId: item.servicoId,
+              tipoComissao: item.tipoComissao || null,
+              valorComissao: item.valorComissao ?? null,
+            })) || [],
+          ativo: profissional.ativo === false,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.error || "Erro ao atualizar profissional.");
+        return;
+      }
+
+      await carregarTudo(empresa.id);
+    } catch (error) {
+      console.error("Erro ao atualizar status do profissional:", error);
+      alert("Erro ao atualizar profissional. Tente novamente.");
+    } finally {
+      setProfissionalStatusProcessandoId(null);
+    }
   }
 
   function limparFormulario() {
@@ -719,6 +796,8 @@ export default function ProfissionaisPage() {
             profissionais.length,
         )
       : 0;
+  const acaoProfissionalEmAndamento =
+    salvandoProfissional || Boolean(carregandoEdicaoProfissionalId) || Boolean(profissionalStatusProcessandoId);
 
   if (!empresa) {
     return (
@@ -1532,7 +1611,11 @@ export default function ProfissionaisPage() {
               <button
                 className="profissional-botao-plus"
                 type="button"
-                onClick={() => setFormProfissionalAberto((aberto) => !aberto)}
+                onClick={() => {
+                  if (acaoProfissionalEmAndamento) return;
+                  setFormProfissionalAberto((aberto) => !aberto);
+                }}
+                disabled={acaoProfissionalEmAndamento}
                 aria-label={
                   formProfissionalAberto
                     ? "Fechar cadastro de profissional"
@@ -1540,6 +1623,8 @@ export default function ProfissionaisPage() {
                 }
                 style={{
                   ...botaoAbrirCadastro,
+                  opacity: acaoProfissionalEmAndamento ? 0.55 : 1,
+                  cursor: acaoProfissionalEmAndamento ? "not-allowed" : "pointer",
                   background: formProfissionalAberto
                     ? "rgba(255,255,255,0.08)"
                     : `linear-gradient(135deg, ${empresa?.corSidebar || "#7c3aed"}, ${
@@ -1711,13 +1796,13 @@ export default function ProfissionaisPage() {
             <div style={{ marginTop: 26 }}>
               <h3>Serviços que este profissional realiza</h3>
 
-              {servicos.length === 0 ? (
+              {servicosAtivosDisponiveis().length === 0 ? (
                 <p style={{ color: "#64748b" }}>
-                  Nenhum serviço cadastrado. Cadastre serviços primeiro.
+                  Nenhum serviço ativo disponível. Ative ou cadastre um serviço primeiro.
                 </p>
               ) : (
                 <div style={servicosGrid}>
-                  {servicos.map((servico) => {
+                  {servicosAtivosDisponiveis().map((servico) => {
                     const selecionado = form.servicosIds.includes(servico.id);
 
                     return (
@@ -2055,25 +2140,38 @@ export default function ProfissionaisPage() {
             >
               <button
                 onClick={salvar}
-                disabled={salvandoProfissional}
+                disabled={acaoProfissionalEmAndamento}
                 style={{
                   ...botaoPrincipal,
-                  opacity: salvandoProfissional ? 0.65 : 1,
-                  cursor: salvandoProfissional ? "not-allowed" : "pointer",
+                  opacity: acaoProfissionalEmAndamento ? 0.65 : 1,
+                  cursor: acaoProfissionalEmAndamento ? "not-allowed" : "pointer",
                 }}
               >
                 {salvandoProfissional
                   ? editandoId
-                    ? "Salvando alterações..."
-                    : "Cadastrando profissional..."
-                  : editandoId
-                    ? "Salvar alterações"
-                    : "Cadastrar profissional"}
+                    ? "Salvando alterações... aguarde"
+                    : "Cadastrando profissional... aguarde"
+                  : carregandoEdicaoProfissionalId
+                    ? "Carregando edição... aguarde"
+                    : profissionalStatusProcessandoId
+                      ? "Processando... aguarde"
+                      : editandoId
+                        ? "Salvar alterações"
+                        : "Cadastrar profissional"}
               </button>
 
               {editandoId && (
-                <button onClick={limparFormulario} style={botaoSecundario}>
-                  Cancelar edição
+                <button
+                  type="button"
+                  onClick={limparFormulario}
+                  disabled={acaoProfissionalEmAndamento}
+                  style={{
+                    ...botaoSecundario,
+                    opacity: acaoProfissionalEmAndamento ? 0.55 : 1,
+                    cursor: acaoProfissionalEmAndamento ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {acaoProfissionalEmAndamento ? "Aguarde..." : "Cancelar edição"}
                 </button>
               )}
             </div>
@@ -2262,62 +2360,29 @@ export default function ProfissionaisPage() {
                   <div style={profissionalActions}>
                     <button
                       onClick={() => editar(p)}
+                      disabled={acaoProfissionalEmAndamento}
                       style={{
                         ...botaoEditarPremium,
+                        opacity: acaoProfissionalEmAndamento ? 0.55 : 1,
+                        cursor: acaoProfissionalEmAndamento ? "not-allowed" : "pointer",
                         background: `linear-gradient(135deg, ${empresa?.corSidebar || "#d709ab"}, ${
                           empresa?.corSecundaria || "#57f755"
                         })`,
                       }}
                     >
-                      Editar profissional
+                      {carregandoEdicaoProfissionalId === p.id
+                        ? "Carregando... aguarde"
+                        : "Editar profissional"}
                     </button>
 
                     <button
-                      onClick={async () => {
-                        const confirmar = confirm(
-                          p.ativo === false
-                            ? "Deseja ativar este profissional?"
-                            : "Deseja inativar este profissional?",
-                        );
-
-                        if (!confirmar) return;
-
-                        const res = await fetch("/api/profissionais", {
-                          method: "PUT",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            ...p,
-                            empresaId: empresa.id,
-                            servicosIds:
-                              p.servicos?.map((item: any) => item.servicoId) ||
-                              [],
-                            modoComissao: p.modoComissao || "geral",
-                            tipoComissao: p.tipoComissao || null,
-                            valorComissao: p.valorComissao ?? null,
-                            comissoesServicos:
-                              p.servicos?.map((item: any) => ({
-                                servicoId: item.servicoId,
-                                tipoComissao: item.tipoComissao || null,
-                                valorComissao: item.valorComissao ?? null,
-                              })) || [],
-                            ativo: p.ativo === false,
-                          }),
-                        });
-
-                        const data = await res.json();
-
-                        if (!data.success) {
-                          alert(
-                            data.error || "Erro ao atualizar profissional.",
-                          );
-                          return;
-                        }
-
-                        await carregarTudo(empresa.id);
-                      }}
+                      onClick={() => alternarStatusProfissional(p)}
+                      disabled={acaoProfissionalEmAndamento}
                       style={{
                         ...botaoEditarPremium,
                         marginLeft: 10,
+                        opacity: acaoProfissionalEmAndamento ? 0.55 : 1,
+                        cursor: acaoProfissionalEmAndamento ? "not-allowed" : "pointer",
                         background:
                           p.ativo === false
                             ? "rgba(34,197,94,0.12)"
@@ -2329,9 +2394,11 @@ export default function ProfissionaisPage() {
                         color: p.ativo === false ? "#86efac" : "#fca5a5",
                       }}
                     >
-                      {p.ativo === false
-                        ? "✅ Ativar profissional"
-                        : "🚫 Inativar profissional"}
+                      {profissionalStatusProcessandoId === p.id
+                        ? "Processando... aguarde"
+                        : p.ativo === false
+                          ? "✅ Ativar profissional"
+                          : "🚫 Inativar profissional"}
                     </button>
                   </div>
                 </div>

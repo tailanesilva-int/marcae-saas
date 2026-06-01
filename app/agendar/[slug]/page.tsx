@@ -1,29 +1,33 @@
-'use client';
+"use client";
 
-import { useEffect, useState, type CSSProperties } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
-import { gerarTemaEmpresa } from '@/app/lib/theme';
+import { useEffect, useState, type CSSProperties } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import { gerarTemaEmpresa } from "@/app/lib/theme";
 
 export default function AgendarPage() {
   const { slug } = useParams();
   const searchParams = useSearchParams();
-  const clienteIdUrl = searchParams.get('clienteId');
-  const origemUrl = searchParams.get('origem');
-  const veioDoPainel = origemUrl === 'painel';
+  const clienteIdUrl = searchParams.get("clienteId");
+  const origemUrl = searchParams.get("origem");
+  const veioDoPainel = origemUrl === "painel";
 
   const [empresa, setEmpresa] = useState<any>(null);
   const [servicos, setServicos] = useState<any[]>([]);
   const [profissionais, setProfissionais] = useState<any[]>([]);
   const [promocoes, setPromocoes] = useState<any[]>([]);
 
-  const [servicoId, setServicoId] = useState('');
-  const [profissionalId, setProfissionalId] = useState('');
-  const [data, setData] = useState('');
+  const [servicoId, setServicoId] = useState("");
+  const [profissionalId, setProfissionalId] = useState("");
+  const [data, setData] = useState("");
   const [horarios, setHorarios] = useState<string[]>([]);
-  const [horarioSelecionado, setHorarioSelecionado] = useState('');
+  const [horarioSelecionado, setHorarioSelecionado] = useState("");
   const [servicosCarrinho, setServicosCarrinho] = useState<any[]>([]);
+  const [galeriaServicoAberta, setGaleriaServicoAberta] = useState<
+    string[] | null
+  >(null);
+  const [imagemGaleriaAtual, setImagemGaleriaAtual] = useState(0);
 
-  const [cpf, setCpf] = useState('');
+  const [cpf, setCpf] = useState("");
   const [buscandoCpf, setBuscandoCpf] = useState(false);
   const [cpfConsultado, setCpfConsultado] = useState(false);
   const [clienteEncontrado, setClienteEncontrado] = useState<any>(null);
@@ -31,109 +35,102 @@ export default function AgendarPage() {
 
   const [modoReagendamento, setModoReagendamento] = useState(false);
   const [buscandoReagendamentos, setBuscandoReagendamentos] = useState(false);
-  const [agendamentosReagendamento, setAgendamentosReagendamento] = useState<any[]>([]);
-  const [agendamentoSelecionado, setAgendamentoSelecionado] = useState<any>(null);
-  const [novaDataReagendamento, setNovaDataReagendamento] = useState('');
-  const [novosHorariosReagendamento, setNovosHorariosReagendamento] = useState<string[]>([]);
-  const [novoHorarioReagendamento, setNovoHorarioReagendamento] = useState('');
+  const [agendamentosReagendamento, setAgendamentosReagendamento] = useState<
+    any[]
+  >([]);
+  const [agendamentoSelecionado, setAgendamentoSelecionado] =
+    useState<any>(null);
+  const [novaDataReagendamento, setNovaDataReagendamento] = useState("");
+  const [novosHorariosReagendamento, setNovosHorariosReagendamento] = useState<
+    string[]
+  >([]);
+  const [novoHorarioReagendamento, setNovoHorarioReagendamento] = useState("");
   const [reagendando, setReagendando] = useState(false);
   const [reagendamentoDireto, setReagendamentoDireto] = useState(false);
 
   const [cliente, setCliente] = useState({
-  nome: '',
-  whatsapp: '',
-  dataNascimento: '',
-  cpf: '',
-});
+    nome: "",
+    whatsapp: "",
+    dataNascimento: "",
+    cpf: "",
+  });
 
   const [etapaAtual, setEtapaAtual] = useState<
-    'identificacao' | 'servico' | 'profissional' | 'data' | 'horario' | 'confirmacao'
-  >('identificacao');
+    | "identificacao"
+    | "servico"
+    | "profissional"
+    | "data"
+    | "horario"
+    | "confirmacao"
+  >("identificacao");
 
   useEffect(() => {
     carregarEmpresa();
   }, [slug]);
 
-useEffect(() => {
-  window.scrollTo({
-    top: 0,
-    behavior: 'smooth',
-  });
-}, [etapaAtual]);
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }, [etapaAtual]);
 
   function hojeFormatoInput() {
     const hoje = new Date();
     const ano = hoje.getFullYear();
-    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-    const dia = String(hoje.getDate()).padStart(2, '0');
+    const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+    const dia = String(hoje.getDate()).padStart(2, "0");
 
     return `${ano}-${mes}-${dia}`;
   }
 
-function dataMaximaNascimentoPermitida() {
-  const hoje = new Date();
+  function dataMaximaNascimentoPermitida() {
+    const hoje = new Date();
 
-  const dataLimite = new Date(
-    hoje.getFullYear() - 10,
-    hoje.getMonth(),
-    hoje.getDate()
-  );
+    const dataLimite = new Date(
+      hoje.getFullYear() - 10,
+      hoje.getMonth(),
+      hoje.getDate(),
+    );
 
-  const ano = dataLimite.getFullYear();
+    const ano = dataLimite.getFullYear();
 
-  const mes = String(
-    dataLimite.getMonth() + 1
-  ).padStart(2, '0');
+    const mes = String(dataLimite.getMonth() + 1).padStart(2, "0");
 
-  const dia = String(
-    dataLimite.getDate()
-  ).padStart(2, '0');
+    const dia = String(dataLimite.getDate()).padStart(2, "0");
 
-  return `${ano}-${mes}-${dia}`;
-}
-
-function clienteTemIdadeMinima(
-  dataNascimento?: string
-) {
-  if (!dataNascimento) return false;
-
-  const hoje = new Date();
-
-  const nascimento = new Date(
-    `${dataNascimento}T00:00:00`
-  );
-
-  let idade =
-    hoje.getFullYear() -
-    nascimento.getFullYear();
-
-  const mes =
-    hoje.getMonth() -
-    nascimento.getMonth();
-
-  if (
-    mes < 0 ||
-    (mes === 0 &&
-      hoje.getDate() <
-        nascimento.getDate())
-  ) {
-    idade--;
+    return `${ano}-${mes}-${dia}`;
   }
 
-  return idade >= 10;
-}
+  function clienteTemIdadeMinima(dataNascimento?: string) {
+    if (!dataNascimento) return false;
+
+    const hoje = new Date();
+
+    const nascimento = new Date(`${dataNascimento}T00:00:00`);
+
+    let idade = hoje.getFullYear() - nascimento.getFullYear();
+
+    const mes = hoje.getMonth() - nascimento.getMonth();
+
+    if (mes < 0 || (mes === 0 && hoje.getDate() < nascimento.getDate())) {
+      idade--;
+    }
+
+    return idade >= 10;
+  }
 
   function somenteNumeros(valor: string) {
-    return valor.replace(/\D/g, '');
+    return valor.replace(/\D/g, "");
   }
 
   function formatarCpf(valor: string) {
     const numeros = somenteNumeros(valor).slice(0, 11);
 
     return numeros
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
   }
 
   function formatarWhatsapp(valor: string) {
@@ -141,55 +138,57 @@ function clienteTemIdadeMinima(
 
     if (numeros.length <= 10) {
       return numeros
-        .replace(/(\d{2})(\d)/, '($1) $2')
-        .replace(/(\d{4})(\d)/, '$1-$2');
+        .replace(/(\d{2})(\d)/, "($1) $2")
+        .replace(/(\d{4})(\d)/, "$1-$2");
     }
 
     return numeros
-      .replace(/(\d{2})(\d)/, '($1) $2')
-      .replace(/(\d{5})(\d)/, '$1-$2');
+      .replace(/(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{5})(\d)/, "$1-$2");
   }
 
   function formatarDataHora(dataHora?: string | null) {
-    if (!dataHora) return 'Data não informada';
+    if (!dataHora) return "Data não informada";
 
-    return new Intl.DateTimeFormat('pt-BR', {
-      dateStyle: 'full',
-      timeStyle: 'short',
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "full",
+      timeStyle: "short",
     }).format(new Date(dataHora));
   }
 
   function limparFluxoAgendamento() {
     setReagendamentoDireto(false);
     setAgendamentoSelecionado(null);
-    setServicoId('');
-    setProfissionalId('');
-    setData('');
+    setServicoId("");
+    setProfissionalId("");
+    setData("");
     setHorarios([]);
-    setHorarioSelecionado('');
+    setHorarioSelecionado("");
   }
 
   function limparFluxoReagendamento() {
     setAgendamentosReagendamento([]);
     setAgendamentoSelecionado(null);
-    setNovaDataReagendamento('');
+    setNovaDataReagendamento("");
     setNovosHorariosReagendamento([]);
-    setNovoHorarioReagendamento('');
+    setNovoHorarioReagendamento("");
   }
 
   function abrirWhatsappEmpresa() {
-    const numeroEmpresa = somenteNumeros(empresa?.whatsapp || empresa?.telefone || '');
+    const numeroEmpresa = somenteNumeros(
+      empresa?.whatsapp || empresa?.telefone || "",
+    );
 
     if (!numeroEmpresa) {
-      alert('A empresa ainda não possui WhatsApp/telefone cadastrado.');
+      alert("A empresa ainda não possui WhatsApp/telefone cadastrado.");
       return;
     }
 
     const mensagem = encodeURIComponent(
-      `Olá! Estou tentando reagendar um horário pelo Marcaê e preciso de ajuda.\n\nEmpresa: ${empresa.nome}`
+      `Olá! Estou tentando reagendar um horário pelo Marcaê e preciso de ajuda.\n\nEmpresa: ${empresa.nome}`,
     );
 
-    window.open(`https://wa.me/55${numeroEmpresa}?text=${mensagem}`, '_blank');
+    window.open(`https://wa.me/55${numeroEmpresa}?text=${mensagem}`, "_blank");
   }
 
   async function carregarEmpresa() {
@@ -197,7 +196,7 @@ function clienteTemIdadeMinima(
     const data = await res.json();
 
     if (!data.empresa) {
-      alert('Empresa não encontrada');
+      alert("Empresa não encontrada");
       return;
     }
 
@@ -213,63 +212,77 @@ function clienteTemIdadeMinima(
     try {
       const res = await fetch(
         `/api/v1/clients?empresaId=${empresaId}&clienteId=${clienteId}`,
-        { cache: 'no-store' }
+        { cache: "no-store" },
       );
 
       const data = await res.json();
 
       if (!data.cliente) {
-        alert('Cliente não encontrado para esta empresa.');
+        alert("Cliente não encontrado para esta empresa.");
         return;
       }
 
-      setCpf(formatarCpf(data.cliente.cpf || ''));
+      setCpf(formatarCpf(data.cliente.cpf || ""));
       setCpfConsultado(true);
       setClienteEncontrado(data.cliente);
       setMostrarCamposExtras(false);
       setModoReagendamento(false);
 
       setCliente({
-  nome: data.cliente.nome || '',
-  whatsapp: data.cliente.whatsapp || '',
-  dataNascimento: data.cliente.dataNascimento
-    ? String(data.cliente.dataNascimento).slice(0, 10)
-    : '',
-  cpf: data.cliente.cpf || '',
-});
+        nome: data.cliente.nome || "",
+        whatsapp: data.cliente.whatsapp || "",
+        dataNascimento: data.cliente.dataNascimento
+          ? String(data.cliente.dataNascimento).slice(0, 10)
+          : "",
+        cpf: data.cliente.cpf || "",
+      });
 
       await carregarPromocoesComCpf(empresaId, data.cliente.cpf || cpf);
 
-      setEtapaAtual('servico');
+      setEtapaAtual("servico");
     } catch (error) {
-      alert('Erro ao carregar cliente selecionado.');
+      alert("Erro ao carregar cliente selecionado.");
     }
   }
 
   async function carregarDados(empresaId: string) {
     const [s, p, promocoesRes] = await Promise.all([
-      fetch(`/api/servicos?empresaId=${empresaId}`, { cache: 'no-store' }).then((r) => r.json()),
-      fetch(`/api/profissionais?empresaId=${empresaId}`, { cache: 'no-store' }).then((r) => r.json()),
-      fetch(`/api/promocoes?empresaId=${empresaId}`, { cache: 'no-store' }).then((r) => r.json()),
+      fetch(`/api/servicos?empresaId=${empresaId}`, { cache: "no-store" }).then(
+        (r) => r.json(),
+      ),
+      fetch(`/api/profissionais?empresaId=${empresaId}`, {
+        cache: "no-store",
+      }).then((r) => r.json()),
+      fetch(`/api/promocoes?empresaId=${empresaId}`, {
+        cache: "no-store",
+      }).then((r) => r.json()),
     ]);
 
     setServicos(
-  (s.servicos || []).filter((servico: any) => servico.ativo !== false)
-);
+      (s.servicos || []).filter((servico: any) => servico.ativo !== false),
+    );
 
-setProfissionais(
-  (p.profissionais || []).filter((profissional: any) => profissional.ativo !== false)
-);
+    setProfissionais(
+      (p.profissionais || []).filter(
+        (profissional: any) => profissional.ativo !== false,
+      ),
+    );
     setPromocoes(promocoesRes.promocoes || []);
   }
 
-  async function carregarPromocoesComCpf(empresaId: string, cpfCliente?: string | null) {
-    const cpfLimpo = somenteNumeros(cpfCliente || '');
-    const queryCpf = cpfLimpo ? `&cpf=${cpfLimpo}` : '';
+  async function carregarPromocoesComCpf(
+    empresaId: string,
+    cpfCliente?: string | null,
+  ) {
+    const cpfLimpo = somenteNumeros(cpfCliente || "");
+    const queryCpf = cpfLimpo ? `&cpf=${cpfLimpo}` : "";
 
-    const res = await fetch(`/api/promocoes?empresaId=${empresaId}${queryCpf}`, {
-      cache: 'no-store',
-    });
+    const res = await fetch(
+      `/api/promocoes?empresaId=${empresaId}${queryCpf}`,
+      {
+        cache: "no-store",
+      },
+    );
 
     const data = await res.json();
     setPromocoes(data.promocoes || []);
@@ -281,7 +294,7 @@ setProfissionais(
     const cpfLimpo = somenteNumeros(cpf);
 
     if (cpfLimpo.length !== 11) {
-      alert('Informe um CPF válido com 11 dígitos.');
+      alert("Informe um CPF válido com 11 dígitos.");
       return;
     }
 
@@ -291,7 +304,7 @@ setProfissionais(
       limparFluxoReagendamento();
 
       const res = await fetch(
-        `/api/v1/clients/by-cpf?empresaId=${empresa.id}&cpf=${cpfLimpo}`
+        `/api/v1/clients/by-cpf?empresaId=${empresa.id}&cpf=${cpfLimpo}`,
       );
 
       const data = await res.json();
@@ -302,32 +315,32 @@ setProfissionais(
         setClienteEncontrado(data.cliente);
 
         setCliente({
-  nome: data.cliente.nome || '',
-  whatsapp: data.cliente.whatsapp || '',
-  dataNascimento: data.cliente.dataNascimento
-    ? String(data.cliente.dataNascimento).slice(0, 10)
-    : '',
-  cpf: data.cliente.cpf || '',
-});
+          nome: data.cliente.nome || "",
+          whatsapp: data.cliente.whatsapp || "",
+          dataNascimento: data.cliente.dataNascimento
+            ? String(data.cliente.dataNascimento).slice(0, 10)
+            : "",
+          cpf: data.cliente.cpf || "",
+        });
 
         await carregarPromocoesComCpf(empresa.id, data.cliente.cpf || cpfLimpo);
 
         setMostrarCamposExtras(false);
-        setEtapaAtual('servico');
+        setEtapaAtual("servico");
       } else {
         setClienteEncontrado(null);
         setCliente({
-  nome: '',
-  whatsapp: '',
-  dataNascimento: '',
-  cpf: '',
+          nome: "",
+          whatsapp: "",
+          dataNascimento: "",
+          cpf: "",
         });
         await carregarPromocoesComCpf(empresa.id, cpfLimpo);
         setMostrarCamposExtras(true);
-        setEtapaAtual('identificacao');
+        setEtapaAtual("identificacao");
       }
     } catch (error) {
-      alert('Erro ao consultar CPF. Tente novamente.');
+      alert("Erro ao consultar CPF. Tente novamente.");
     } finally {
       setBuscandoCpf(false);
     }
@@ -339,13 +352,13 @@ setProfissionais(
     const cpfLimpo = somenteNumeros(cpf);
 
     if (cpfLimpo.length !== 11) {
-      alert('Informe o CPF para buscar seus agendamentos.');
+      alert("Informe o CPF para buscar seus agendamentos.");
       return;
     }
 
     try {
       setModoReagendamento(true);
-      setEtapaAtual('identificacao');
+      setEtapaAtual("identificacao");
       setCpfConsultado(false);
       setClienteEncontrado(null);
       setMostrarCamposExtras(false);
@@ -355,19 +368,19 @@ setProfissionais(
 
       const res = await fetch(
         `/api/agendamentos/reagendar?empresaId=${empresa.id}&cpf=${cpfLimpo}`,
-        { cache: 'no-store' }
+        { cache: "no-store" },
       );
 
       const data = await res.json();
 
       if (!data.success) {
-        alert(data.error || 'Erro ao buscar agendamentos para reagendamento.');
+        alert(data.error || "Erro ao buscar agendamentos para reagendamento.");
         return;
       }
 
       setAgendamentosReagendamento(data.agendamentos || []);
     } catch (error) {
-      alert('Erro ao buscar agendamentos para reagendamento.');
+      alert("Erro ao buscar agendamentos para reagendamento.");
     } finally {
       setBuscandoReagendamentos(false);
     }
@@ -375,15 +388,15 @@ setProfissionais(
 
   async function buscarHorarios() {
     if (!servicoId || !profissionalId || !data) {
-      alert('Selecione serviço, profissional e data para buscar horários.');
+      alert("Selecione serviço, profissional e data para buscar horários.");
       return false;
     }
 
     if (data < hojeFormatoInput()) {
-      alert('A data do atendimento não pode ser anterior ao dia atual.');
-      setData('');
+      alert("A data do atendimento não pode ser anterior ao dia atual.");
+      setData("");
       setHorarios([]);
-      setHorarioSelecionado('');
+      setHorarioSelecionado("");
       return false;
     }
 
@@ -394,50 +407,49 @@ setProfissionais(
       data,
     });
 
-    const clienteIdAtual = clienteEncontrado?.id || clienteIdUrl || '';
+    const clienteIdAtual = clienteEncontrado?.id || clienteIdUrl || "";
     const cpfAtual = somenteNumeros(
       clienteEncontrado?.cpf ||
         clienteEncontrado?.clienteCpf ||
         cpf ||
         cliente?.cpf ||
-        ''
+        "",
     );
 
     if (clienteIdAtual) {
-      params.set('clienteId', clienteIdAtual);
+      params.set("clienteId", clienteIdAtual);
     }
 
     if (cpfAtual) {
-      params.set('cpf', cpfAtual);
+      params.set("cpf", cpfAtual);
     }
 
-    const res = await fetch(
-      `/api/horarios-disponiveis?${params.toString()}`,
-      { cache: 'no-store' }
-    );
+    const res = await fetch(`/api/horarios-disponiveis?${params.toString()}`, {
+      cache: "no-store",
+    });
 
     const dataRes = await res.json();
     setHorarios(dataRes.horarios || []);
-    setHorarioSelecionado('');
+    setHorarioSelecionado("");
     return true;
   }
 
   async function buscarHorariosReagendamento() {
     if (!agendamentoSelecionado) {
-      alert('Selecione um agendamento para reagendar.');
+      alert("Selecione um agendamento para reagendar.");
       return;
     }
 
     if (!novaDataReagendamento) {
-      alert('Selecione a nova data.');
+      alert("Selecione a nova data.");
       return;
     }
 
     if (novaDataReagendamento < hojeFormatoInput()) {
-      alert('A nova data não pode ser anterior ao dia atual.');
-      setNovaDataReagendamento('');
+      alert("A nova data não pode ser anterior ao dia atual.");
+      setNovaDataReagendamento("");
       setNovosHorariosReagendamento([]);
-      setNovoHorarioReagendamento('');
+      setNovoHorarioReagendamento("");
       return;
     }
 
@@ -445,7 +457,9 @@ setProfissionais(
     const profissionalAtualId = agendamentoSelecionado.profissionalId;
 
     if (!servicoAtualId || !profissionalAtualId) {
-      alert('Este agendamento não possui serviço ou profissional vinculado para buscar horários.');
+      alert(
+        "Este agendamento não possui serviço ou profissional vinculado para buscar horários.",
+      );
       return;
     }
 
@@ -462,7 +476,7 @@ setProfissionais(
       agendamentoSelecionado.Cliente?.id ||
       clienteEncontrado?.id ||
       clienteIdUrl ||
-      '';
+      "";
 
     const cpfAtual = somenteNumeros(
       agendamentoSelecionado.clienteCpf ||
@@ -471,48 +485,85 @@ setProfissionais(
         agendamentoSelecionado.Cliente?.cpf ||
         clienteEncontrado?.cpf ||
         cpf ||
-        ''
+        "",
     );
 
     if (clienteIdAtual) {
-      params.set('clienteId', clienteIdAtual);
+      params.set("clienteId", clienteIdAtual);
     }
 
     if (cpfAtual) {
-      params.set('cpf', cpfAtual);
+      params.set("cpf", cpfAtual);
     }
 
-    const res = await fetch(
-      `/api/horarios-disponiveis?${params.toString()}`,
-      { cache: 'no-store' }
-    );
+    const res = await fetch(`/api/horarios-disponiveis?${params.toString()}`, {
+      cache: "no-store",
+    });
 
     const dataRes = await res.json();
     setNovosHorariosReagendamento(dataRes.horarios || []);
-    setNovoHorarioReagendamento('');
+    setNovoHorarioReagendamento("");
+  }
+
+  function redirecionarParaComprovante(agendamentoId?: string | null, ids?: string | null) {
+    if (!agendamentoId) {
+      alert("Agendamento atualizado, mas não foi possível localizar o comprovante.");
+      return;
+    }
+
+    const idsParam = ids || agendamentoId;
+    const destino = `/sucesso/${agendamentoId}?ids=${idsParam}#topo-comprovante`;
+
+    try {
+      if ("scrollRestoration" in window.history) {
+        window.history.scrollRestoration = "manual";
+      }
+
+      sessionStorage.setItem("marcae_forcar_topo_sucesso", "true");
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      window.scrollTo(0, 0);
+    } catch (error) {}
+
+    window.history.scrollRestoration = 'manual';
+
+document.documentElement.scrollTop = 0;
+document.body.scrollTop = 0;
+
+window.scrollTo({
+  top: 0,
+  left: 0,
+  behavior: 'auto',
+});
+
+setTimeout(() => {
+  window.location.replace(`/sucesso/${agendamentoId}`);
+}, 50);
   }
 
   async function confirmarReagendamento() {
-    if (!agendamentoSelecionado) return alert('Selecione o agendamento.');
-    if (!novaDataReagendamento) return alert('Selecione a nova data.');
-    if (!novoHorarioReagendamento) return alert('Selecione o novo horário.');
+    if (!agendamentoSelecionado) return alert("Selecione o agendamento.");
+    if (!novaDataReagendamento) return alert("Selecione a nova data.");
+    if (!novoHorarioReagendamento) return alert("Selecione o novo horário.");
 
     if (novaDataReagendamento < hojeFormatoInput()) {
-      alert('A nova data não pode ser anterior ao dia atual.');
-      setNovaDataReagendamento('');
+      alert("A nova data não pode ser anterior ao dia atual.");
+      setNovaDataReagendamento("");
       setNovosHorariosReagendamento([]);
-      setNovoHorarioReagendamento('');
+      setNovoHorarioReagendamento("");
       return;
     }
 
     try {
       setReagendando(true);
 
-      const novaDataHora = new Date(`${novaDataReagendamento}T${novoHorarioReagendamento}`);
+      const novaDataHora = new Date(
+        `${novaDataReagendamento}T${novoHorarioReagendamento}`,
+      );
 
-      const res = await fetch('/api/agendamentos/reagendar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/agendamentos/reagendar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agendamentoId: agendamentoSelecionado.id,
           dataHoraInicio: novaDataHora,
@@ -526,44 +577,51 @@ setProfissionais(
       const dataRes = await res.json();
 
       if (!dataRes.success) {
-        alert(dataRes.error || 'Erro ao reagendar atendimento.');
+        alert(dataRes.error || "Erro ao reagendar atendimento.");
         return;
       }
 
-      window.location.href = `/sucesso/${dataRes.agendamento.id}`;
+      redirecionarParaComprovante(dataRes.agendamento?.id);
     } catch (error) {
-      alert('Erro ao reagendar atendimento.');
+      alert("Erro ao reagendar atendimento.");
     } finally {
       setReagendando(false);
     }
   }
 
   async function agendar() {
-    if (!clienteEncontrado && !cpf) return alert('Informe o CPF');
-    if (!clienteEncontrado && !cpfConsultado) return alert('Clique em continuar para validar o CPF');
+    if (!clienteEncontrado && !cpf) return alert("Informe o CPF");
+    if (!clienteEncontrado && !cpfConsultado)
+      return alert("Clique em continuar para validar o CPF");
 
     if (itensResumo.length === 0) {
-      return alert('Adicione pelo menos um serviço para finalizar o agendamento.');
+      return alert(
+        "Adicione pelo menos um serviço para finalizar o agendamento.",
+      );
     }
 
-    if (!servicoId) return alert('Selecione um serviço');
-    if (!profissionalId) return alert('Selecione um profissional');
-    if (!data) return alert('Selecione uma data');
+    const itemPrincipalResumo = itensResumo[0];
 
-    if (data < hojeFormatoInput()) {
-      alert('A data do atendimento não pode ser anterior ao dia atual.');
-      setData('');
+    if (!itemPrincipalResumo?.servicoId) return alert("Selecione um serviço");
+    if (!itemPrincipalResumo?.profissionalId)
+      return alert("Selecione um profissional");
+    if (!itemPrincipalResumo?.data) return alert("Selecione uma data");
+
+    if (itemPrincipalResumo.data < hojeFormatoInput()) {
+      alert("A data do atendimento não pode ser anterior ao dia atual.");
+      setData("");
       setHorarios([]);
-      setHorarioSelecionado('');
+      setHorarioSelecionado("");
       return;
     }
 
-    if (!horarioSelecionado) return alert('Selecione um horário');
+    if (!itemPrincipalResumo?.horario) return alert("Selecione um horário");
 
     if (!clienteEncontrado) {
-      if (!cliente.nome.trim()) return alert('Informe seu nome completo');
-      if (!cliente.whatsapp.trim()) return alert('Informe seu WhatsApp');
-      if (!cliente.dataNascimento) return alert('Informe sua data de nascimento');
+      if (!cliente.nome.trim()) return alert("Informe seu nome completo");
+      if (!cliente.whatsapp.trim()) return alert("Informe seu WhatsApp");
+      if (!cliente.dataNascimento)
+        return alert("Informe sua data de nascimento");
 
       const hoje = new Date();
       const nascimento = new Date(cliente.dataNascimento);
@@ -576,24 +634,28 @@ setProfissionais(
       }
 
       if (idade < 10) {
-        return alert('É necessário ter pelo menos 10 anos para realizar um agendamento.');
+        return alert(
+          "É necessário ter pelo menos 10 anos para realizar um agendamento.",
+        );
       }
     }
 
-    const dataHora = new Date(`${data}T${horarioSelecionado}`);
+    const dataHora = new Date(
+      `${itemPrincipalResumo.data}T${itemPrincipalResumo.horario}`,
+    );
 
     if (reagendamentoDireto && agendamentoSelecionado?.id) {
       const confirmar = confirm(
-        `Confirma o reagendamento do atendimento aberto para ${new Date(`${data}T00:00:00`).toLocaleDateString('pt-BR')} às ${horarioSelecionado}?`
+        `Confirma o reagendamento do atendimento aberto para ${new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR")} às ${horarioSelecionado}?`,
       );
 
       if (!confirmar) {
         return;
       }
 
-      const reagendamentoRes = await fetch('/api/agendamentos/reagendar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const reagendamentoRes = await fetch("/api/agendamentos/reagendar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agendamentoId: agendamentoSelecionado.id,
           dataHoraInicio: dataHora,
@@ -607,17 +669,17 @@ setProfissionais(
       const reagendamentoData = await reagendamentoRes.json();
 
       if (!reagendamentoData.success) {
-        alert(reagendamentoData.error || 'Erro ao reagendar atendimento.');
+        alert(reagendamentoData.error || "Erro ao reagendar atendimento.");
         return;
       }
 
-      window.location.href = `/sucesso/${reagendamentoData.agendamento.id}`;
+      redirecionarParaComprovante(reagendamentoData.agendamento?.id);
       return;
     }
 
-    const res = await fetch('/api/agendamentos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch("/api/agendamentos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         empresaId: empresa.id,
         clienteId: clienteEncontrado?.id || null,
@@ -631,8 +693,8 @@ setProfissionais(
           profissionalId: item.profissionalId,
           dataHoraInicio: new Date(`${item.data}T${item.horario}`),
         })),
-        servicoId,
-        profissionalId,
+        servicoId: itemPrincipalResumo.servicoId,
+        profissionalId: itemPrincipalResumo.profissionalId,
         dataHoraInicio: dataHora,
       }),
     });
@@ -642,7 +704,7 @@ setProfissionais(
     if (!dataRes.success) {
       if (dataRes.reagendamentoDisponivel && dataRes.agendamentoExistente) {
         const desejaReagendar = confirm(
-          `${dataRes.error || 'Você já possui um atendimento em aberto para este serviço.'}\n\nDeseja reagendar esse atendimento para ${data ? new Date(`${data}T00:00:00`).toLocaleDateString('pt-BR') : 'a nova data'} às ${horarioSelecionado}?`
+          `${dataRes.error || "Você já possui um atendimento em aberto para este serviço."}\n\nDeseja reagendar esse atendimento para ${data ? new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR") : "a nova data"} às ${horarioSelecionado}?`,
         );
 
         if (!desejaReagendar) {
@@ -651,9 +713,9 @@ setProfissionais(
 
         const agendamentoAberto = dataRes.agendamentoExistente;
 
-        const reagendamentoRes = await fetch('/api/agendamentos/reagendar', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const reagendamentoRes = await fetch("/api/agendamentos/reagendar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             agendamentoId: agendamentoAberto.id,
             dataHoraInicio: dataHora,
@@ -667,15 +729,15 @@ setProfissionais(
         const reagendamentoData = await reagendamentoRes.json();
 
         if (!reagendamentoData.success) {
-          alert(reagendamentoData.error || 'Erro ao reagendar atendimento.');
+          alert(reagendamentoData.error || "Erro ao reagendar atendimento.");
           return;
         }
 
-        window.location.href = `/sucesso/${reagendamentoData.agendamento.id}`;
+        redirecionarParaComprovante(reagendamentoData.agendamento?.id);
         return;
       }
 
-      alert(dataRes.error || 'Erro ao agendar');
+      alert(dataRes.error || "Erro ao agendar");
       return;
     }
 
@@ -688,22 +750,25 @@ setProfissionais(
     const agendamentoPrincipal = dataRes.agendamento || agendamentosCriados[0];
 
     if (!agendamentoPrincipal?.id) {
-      alert('Agendamento criado, mas não foi possível localizar o comprovante.');
+      alert(
+        "Agendamento criado, mas não foi possível localizar o comprovante.",
+      );
       return;
     }
 
-    const idsAgendamentos = agendamentosCriados.length > 0
-      ? agendamentosCriados.map((a: any) => a.id).join(',')
-      : agendamentoPrincipal.id;
+    const idsAgendamentos =
+      agendamentosCriados.length > 0
+        ? agendamentosCriados.map((a: any) => a.id).join(",")
+        : agendamentoPrincipal.id;
 
     if (existePrePagamentoResumo) {
-      const pagamentoRes = await fetch('/api/pagamentos/criar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const pagamentoRes = await fetch("/api/pagamentos/criar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agendamentoId: agendamentoPrincipal.id,
-          tipo: 'agendamento',
-          agendamentosIds: idsAgendamentos.split(','),
+          tipo: "agendamento",
+          agendamentosIds: idsAgendamentos.split(","),
           valorTotal: totalResumo,
         }),
       });
@@ -715,67 +780,64 @@ setProfissionais(
         return;
       }
 
-      alert(pagamentoData.error || 'Erro ao gerar pagamento');
+      alert(pagamentoData.error || "Erro ao gerar pagamento");
       return;
     }
 
-    window.location.href = `/sucesso/${agendamentoPrincipal.id}?ids=${idsAgendamentos}`;
+    redirecionarParaComprovante(agendamentoPrincipal.id, idsAgendamentos);
   }
 
   function clienteNovoValido() {
     if (clienteEncontrado) return true;
 
     if (!cpfConsultado) {
-      alert('Clique em continuar para validar o CPF.');
+      alert("Clique em continuar para validar o CPF.");
       return false;
     }
 
     if (!cliente.nome.trim()) {
-      alert('Informe seu nome completo.');
+      alert("Informe seu nome completo.");
       return false;
     }
 
     if (!cliente.whatsapp.trim()) {
-      alert('Informe seu WhatsApp.');
+      alert("Informe seu WhatsApp.");
       return false;
     }
 
     if (!cliente.dataNascimento) {
-      alert('Informe sua data de nascimento.');
+      alert("Informe sua data de nascimento.");
       return false;
     }
 
-if (!clienteTemIdadeMinima(cliente.dataNascimento)) {
-  alert(
-    'É necessário ter pelo menos 10 anos para realizar um agendamento.'
-  );
+    if (!clienteTemIdadeMinima(cliente.dataNascimento)) {
+      alert(
+        "É necessário ter pelo menos 10 anos para realizar um agendamento.",
+      );
 
-  return false;
-}
+      return false;
+    }
 
     return true;
   }
 
   function avancarParaServico() {
     if (!clienteEncontrado && !cpf) {
-      alert('Informe o CPF.');
+      alert("Informe o CPF.");
       return;
     }
 
     if (!clienteNovoValido()) return;
 
     setModoReagendamento(false);
-    setEtapaAtual('servico');
+    setEtapaAtual("servico");
   }
 
   async function verificarAgendamentoAbertoParaServico(servicoIdBusca: string) {
     if (!empresa?.id) return null;
 
     const cpfAtual = somenteNumeros(
-      clienteEncontrado?.cpf ||
-        clienteEncontrado?.clienteCpf ||
-        cpf ||
-        ''
+      clienteEncontrado?.cpf || clienteEncontrado?.clienteCpf || cpf || "",
     );
 
     if (!cpfAtual) return null;
@@ -785,12 +847,15 @@ if (!clienteTemIdadeMinima(cliente.dataNascimento)) {
         empresaId: empresa.id,
         cpf: cpfAtual,
         servicoId: servicoIdBusca,
-        modo: 'aberto_servico',
+        modo: "aberto_servico",
       });
 
-      const res = await fetch(`/api/agendamentos/reagendar?${params.toString()}`, {
-        cache: 'no-store',
-      });
+      const res = await fetch(
+        `/api/agendamentos/reagendar?${params.toString()}`,
+        {
+          cache: "no-store",
+        },
+      );
 
       const dataRes = await res.json();
 
@@ -805,23 +870,36 @@ if (!clienteTemIdadeMinima(cliente.dataNascimento)) {
   }
 
   async function selecionarServicoPublico(servicoIdSelecionado: string) {
-    setServicoId('');
-    setProfissionalId('');
-    setData('');
+    const servicoJaEstaNoResumo = itensResumo.some(
+      (item) => item.servicoId === servicoIdSelecionado,
+    );
+
+    if (servicoJaEstaNoResumo) {
+      alert(
+        "Este serviço já foi adicionado ao agendamento. Para alterar, remova o serviço existente primeiro.",
+      );
+      return;
+    }
+    setServicoId("");
+    setProfissionalId("");
+    setData("");
     setHorarios([]);
-    setHorarioSelecionado('');
+    setHorarioSelecionado("");
     setReagendamentoDireto(false);
     setAgendamentoSelecionado(null);
 
-    const agendamentoAberto = await verificarAgendamentoAbertoParaServico(servicoIdSelecionado);
+    const agendamentoAberto =
+      await verificarAgendamentoAbertoParaServico(servicoIdSelecionado);
 
     if (agendamentoAberto) {
       const desejaReagendar = confirm(
-        `Já existe um atendimento aberto para esse serviço.\n\nServiço: ${agendamentoAberto.servico?.nome || 'Serviço selecionado'}\nAgendamento atual: ${formatarDataHora(agendamentoAberto.dataHoraInicio)}\n\nDeseja reagendar esse atendimento?`
+        `Já existe um atendimento aberto para esse serviço.\n\nServiço: ${agendamentoAberto.servico?.nome || "Serviço selecionado"}\nAgendamento atual: ${formatarDataHora(agendamentoAberto.dataHoraInicio)}\n\nDeseja reagendar esse atendimento?`,
       );
 
       if (!desejaReagendar) {
-        alert('Para evitar duplicidade, não será criado outro agendamento para esse serviço enquanto houver um atendimento em aberto.');
+        alert(
+          "Para evitar duplicidade, não será criado outro agendamento para esse serviço enquanto houver um atendimento em aberto.",
+        );
         return;
       }
 
@@ -829,15 +907,15 @@ if (!clienteTemIdadeMinima(cliente.dataNascimento)) {
       setAgendamentoSelecionado(agendamentoAberto);
       setReagendamentoDireto(true);
       setModoReagendamento(false);
-      setEtapaAtual('profissional');
+      setEtapaAtual("profissional");
       return;
     }
 
     setServicoId(servicoIdSelecionado);
-    setProfissionalId('');
-    setData('');
+    setProfissionalId("");
+    setData("");
     setHorarios([]);
-    setHorarioSelecionado('');
+    setHorarioSelecionado("");
     setReagendamentoDireto(false);
     setAgendamentoSelecionado(null);
     setModoReagendamento(false);
@@ -845,243 +923,346 @@ if (!clienteTemIdadeMinima(cliente.dataNascimento)) {
 
   function avancarParaProfissional() {
     if (!servicoId) {
-      alert('Escolha um serviço para continuar.');
+      alert("Escolha um serviço para continuar.");
       return;
     }
 
-    setEtapaAtual('profissional');
+    setEtapaAtual("profissional");
   }
 
   function avancarParaData() {
     if (!profissionalId) {
-      alert('Escolha um profissional para continuar.');
+      alert("Escolha um profissional para continuar.");
       return;
     }
 
-    setEtapaAtual('data');
+    setEtapaAtual("data");
   }
 
   async function avancarParaHorarios() {
     const ok = await buscarHorarios();
     if (ok) {
-      setEtapaAtual('horario');
+      setEtapaAtual("horario");
     }
   }
 
-function avancarParaConfirmacao() {
-  if (!horarioSelecionado) {
-    alert('Escolha um horário para continuar.');
-    return;
+  function avancarParaConfirmacao() {
+    if (!horarioSelecionado) {
+      alert("Escolha um horário para continuar.");
+      return;
+    }
+
+    setEtapaAtual("confirmacao");
   }
 
-  setEtapaAtual('confirmacao');
-}
-
-function adicionarServicoAoCarrinho() {
-  if (!servicoSelecionado || !profissionalSelecionado || !data || !horarioSelecionado) {
-    alert('Selecione serviço, profissional, data e horário antes de adicionar.');
-    return;
-  }
-
-  const item = {
-    id: `${servicoId}-${profissionalId}-${data}-${horarioSelecionado}-${Date.now()}`,
-    servicoId,
-    profissionalId,
-    data,
-    horario: horarioSelecionado,
-    servico: servicoSelecionado,
-    profissional: profissionalSelecionado,
-  };
-
-  setServicosCarrinho((atual) => [...atual, item]);
-  limparFluxoAgendamento();
-  setEtapaAtual('servico');
-}
-
-function removerServicoDoCarrinho(itemId: string) {
-  setServicosCarrinho((atual) => atual.filter((item) => item.id !== itemId));
-}
-
-function numeroValor(valor: any) {
-  if (valor === null || valor === undefined || valor === '') return 0;
-
-  const convertido = Number(String(valor).replace(',', '.'));
-
-  return Number.isNaN(convertido) ? 0 : convertido;
-}
-
-function obterValorOriginalServico(servico: any) {
-  return numeroValor(servico?.valor ?? servico?.preco ?? servico?.valorTotal ?? 0);
-}
-
-function promocaoEstaAtiva(promocao: any) {
-  if (!promocao) return false;
-  if (promocao.status !== 'ativa') return false;
-
-  const agora = new Date();
-  const inicio = promocao.dataInicio ? new Date(promocao.dataInicio) : null;
-  const fim = promocao.dataFim ? new Date(promocao.dataFim) : null;
-
-  if (inicio) {
-    inicio.setHours(0, 0, 0, 0);
-  }
-
-  if (fim) {
-    fim.setHours(23, 59, 59, 999);
-  }
-
-  if (inicio && agora < inicio) return false;
-  if (fim && agora > fim) return false;
-
-  return true;
-}
-
-function clienteFazAniversarioNoMesAtual() {
-  const dataNascimento =
-    clienteEncontrado?.dataNascimento ||
-    clienteEncontrado?.clienteNascimento ||
-    cliente.dataNascimento;
-
-  if (!dataNascimento) return false;
-
-  const nascimento = new Date(`${String(dataNascimento).slice(0, 10)}T00:00:00`);
-
-  if (Number.isNaN(nascimento.getTime())) return false;
-
-  return nascimento.getMonth() === new Date().getMonth();
-}
-
-function promocaoBloqueadaPorCpf(promocao: any) {
-  return Boolean(promocao?.usoUnicoCpf && promocao?.usoCpfBloqueado);
-}
-
-function promocaoAtivaDoServico(servicoIdBusca?: string | null) {
-  if (!servicoIdBusca) return null;
-
-  const promocoesAtivas = promocoes.filter((promocao) => promocaoEstaAtiva(promocao));
-
-  const promocaoServico = promocoesAtivas.find((promocao) => {
-    if (promocao.tipo !== 'servico') return false;
-    if (promocaoBloqueadaPorCpf(promocao)) return false;
-
-    return Array.isArray(promocao.servicos) &&
-      promocao.servicos.some(
-        (item: any) => item.servicoId === servicoIdBusca || item.servico?.id === servicoIdBusca
+  function adicionarServicoAoCarrinho() {
+    if (
+      !servicoSelecionado ||
+      !profissionalSelecionado ||
+      !data ||
+      !horarioSelecionado
+    ) {
+      alert(
+        "Selecione serviço, profissional, data e horário antes de adicionar.",
       );
-  });
+      return;
+    }
 
-  if (promocaoServico) return promocaoServico;
+    const servicoJaAdicionado = servicosCarrinho.some(
+      (item) => item.servicoId === servicoId,
+    );
 
-  const promocaoAniversario = promocoesAtivas.find((promocao) => {
-    if (promocao.tipo !== 'aniversariantes') return false;
-    if (promocaoBloqueadaPorCpf(promocao)) return false;
+    if (servicoJaAdicionado) {
+      alert(
+        "Este serviço já foi adicionado ao agendamento. Para alterar, remova o serviço existente primeiro.",
+      );
+      return;
+    }
 
-    return clienteFazAniversarioNoMesAtual();
-  });
+    const item = {
+      id: `${servicoId}-${profissionalId}-${data}-${horarioSelecionado}-${Date.now()}`,
+      servicoId,
+      profissionalId,
+      data,
+      horario: horarioSelecionado,
+      servico: servicoSelecionado,
+      profissional: profissionalSelecionado,
+    };
 
-  if (promocaoAniversario) return promocaoAniversario;
+    setServicosCarrinho((atual) => [...atual, item]);
+    limparFluxoAgendamento();
+    setEtapaAtual("servico");
+  }
 
-  const promocaoGeral = promocoesAtivas.find((promocao) => {
-    if (promocao.tipo !== 'geral') return false;
-    if (promocaoBloqueadaPorCpf(promocao)) return false;
+  function removerServicoDoCarrinho(itemId: string) {
+    if (itensResumo.length <= 1) {
+      alert("Mantenha pelo menos um serviço para finalizar o agendamento.");
+      return;
+    }
+
+    if (itemId === "atual") {
+      setServicoId("");
+      setProfissionalId("");
+      setData("");
+      setHorarios([]);
+      setHorarioSelecionado("");
+      setReagendamentoDireto(false);
+      setAgendamentoSelecionado(null);
+      return;
+    }
+
+    setServicosCarrinho((atual) => atual.filter((item) => item.id !== itemId));
+  }
+
+  function iniciarAdicionarOutroServico() {
+    if (
+      !servicoSelecionado ||
+      !profissionalSelecionado ||
+      !data ||
+      !horarioSelecionado
+    ) {
+      setServicoId("");
+      setProfissionalId("");
+      setData("");
+      setHorarios([]);
+      setHorarioSelecionado("");
+      setReagendamentoDireto(false);
+      setAgendamentoSelecionado(null);
+      setEtapaAtual("servico");
+      return;
+    }
+
+    const servicoJaEstaNoCarrinho = servicosCarrinho.some(
+      (item) => item.servicoId === servicoId,
+    );
+
+    if (!servicoJaEstaNoCarrinho) {
+      const item = {
+        id: `${servicoId}-${profissionalId}-${data}-${horarioSelecionado}-${Date.now()}`,
+        servicoId,
+        profissionalId,
+        data,
+        horario: horarioSelecionado,
+        servico: servicoSelecionado,
+        profissional: profissionalSelecionado,
+      };
+
+      setServicosCarrinho((atual) => [...atual, item]);
+    }
+
+    setServicoId("");
+    setProfissionalId("");
+    setData("");
+    setHorarios([]);
+    setHorarioSelecionado("");
+    setReagendamentoDireto(false);
+    setAgendamentoSelecionado(null);
+    setEtapaAtual("servico");
+  }
+
+  function numeroValor(valor: any) {
+    if (valor === null || valor === undefined || valor === "") return 0;
+
+    const convertido = Number(String(valor).replace(",", "."));
+
+    return Number.isNaN(convertido) ? 0 : convertido;
+  }
+
+  function obterValorOriginalServico(servico: any) {
+    return numeroValor(
+      servico?.valor ?? servico?.preco ?? servico?.valorTotal ?? 0,
+    );
+  }
+
+  function promocaoEstaAtiva(promocao: any) {
+    if (!promocao) return false;
+    if (promocao.status !== "ativa") return false;
+
+    const agora = new Date();
+    const inicio = promocao.dataInicio ? new Date(promocao.dataInicio) : null;
+    const fim = promocao.dataFim ? new Date(promocao.dataFim) : null;
+
+    if (inicio) {
+      inicio.setHours(0, 0, 0, 0);
+    }
+
+    if (fim) {
+      fim.setHours(23, 59, 59, 999);
+    }
+
+    if (inicio && agora < inicio) return false;
+    if (fim && agora > fim) return false;
 
     return true;
-  });
-
-  return promocaoGeral || null;
-}
-
-function calcularValorComPromocao(valorOriginal: number, promocao: any) {
-  const desconto = numeroValor(promocao?.desconto);
-
-  if (!promocao || desconto <= 0) return valorOriginal;
-
-  if (promocao.tipoDesconto === 'percentual') {
-    const percentual = Math.min(Math.max(desconto, 0), 100);
-    return Math.max(valorOriginal - (valorOriginal * percentual) / 100, 0);
   }
 
-  return Math.max(valorOriginal - desconto, 0);
-}
+  function clienteFazAniversarioNoMesAtual() {
+    const dataNascimento =
+      clienteEncontrado?.dataNascimento ||
+      clienteEncontrado?.clienteNascimento ||
+      cliente.dataNascimento;
 
-function obterValorServico(servico: any) {
-  const valorOriginal = obterValorOriginalServico(servico);
-  const promocao = promocaoAtivaDoServico(servico?.id);
+    if (!dataNascimento) return false;
 
-  return calcularValorComPromocao(valorOriginal, promocao);
-}
+    const nascimento = new Date(
+      `${String(dataNascimento).slice(0, 10)}T00:00:00`,
+    );
 
-function obterResumoPromocaoServico(servico: any) {
-  const valorOriginal = obterValorOriginalServico(servico);
-  const promocao = promocaoAtivaDoServico(servico?.id);
-  const valorPromocional = calcularValorComPromocao(valorOriginal, promocao);
-  const possuiPromocao = Boolean(promocao && valorPromocional < valorOriginal);
+    if (Number.isNaN(nascimento.getTime())) return false;
 
-  return {
-    promocao,
-    possuiPromocao,
-    valorOriginal,
-    valorPromocional,
-    economia: Math.max(valorOriginal - valorPromocional, 0),
-  };
-}
+    return nascimento.getMonth() === new Date().getMonth();
+  }
 
-function obterValorPrePagamentoOriginalServico(servico: any) {
-  return numeroValor(
-    servico?.valorPrePagamento ??
-    servico?.valorPrePago ??
-    servico?.precoPrePagamento ??
-    servico?.prePagamentoValor ??
-    servico?.valorSinal ??
-    0
-  );
-}
+  function promocaoBloqueadaPorCpf(promocao: any) {
+    return Boolean(promocao?.usoUnicoCpf && promocao?.usoCpfBloqueado);
+  }
 
-function obterValorPrePagamentoServico(servico: any) {
-  const valorPrePagamentoOriginal = obterValorPrePagamentoOriginalServico(servico);
+  function promocaoAtivaDoServico(servicoIdBusca?: string | null) {
+    if (!servicoIdBusca) return null;
 
-  if (valorPrePagamentoOriginal <= 0) return 0;
+    const promocoesAtivas = promocoes.filter((promocao) =>
+      promocaoEstaAtiva(promocao),
+    );
 
-  const promocao = promocaoAtivaDoServico(servico?.id);
+    const promocaoServico = promocoesAtivas.find((promocao) => {
+      if (promocao.tipo !== "servico") return false;
+      if (promocaoBloqueadaPorCpf(promocao)) return false;
 
-  return calcularValorComPromocao(valorPrePagamentoOriginal, promocao);
-}
+      return (
+        Array.isArray(promocao.servicos) &&
+        promocao.servicos.some(
+          (item: any) =>
+            item.servicoId === servicoIdBusca ||
+            item.servico?.id === servicoIdBusca,
+        )
+      );
+    });
 
-function formatarMoeda(valor: number) {
-  return valor.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  });
-}
+    if (promocaoServico) return promocaoServico;
 
-function itemExigePrePagamento(item: any) {
-  return Boolean(item?.servico?.exigePrePagamento || item?.servico?.prePagamentoObrigatorio);
-}
+    const promocaoAniversario = promocoesAtivas.find((promocao) => {
+      if (promocao.tipo !== "aniversariantes") return false;
+      if (promocaoBloqueadaPorCpf(promocao)) return false;
 
-function obterDescricaoServico(servico: any) {
-  const descricao =
-    servico?.descricao ||
-    servico?.descricaoPublica ||
-    servico?.detalhes ||
-    '';
+      return clienteFazAniversarioNoMesAtual();
+    });
 
-  return String(descricao || '').trim();
-}
+    if (promocaoAniversario) return promocaoAniversario;
+
+    const promocaoGeral = promocoesAtivas.find((promocao) => {
+      if (promocao.tipo !== "geral") return false;
+      if (promocaoBloqueadaPorCpf(promocao)) return false;
+
+      return true;
+    });
+
+    return promocaoGeral || null;
+  }
+
+  function calcularValorComPromocao(valorOriginal: number, promocao: any) {
+    const desconto = numeroValor(promocao?.desconto);
+
+    if (!promocao || desconto <= 0) return valorOriginal;
+
+    if (promocao.tipoDesconto === "percentual") {
+      const percentual = Math.min(Math.max(desconto, 0), 100);
+      return Math.max(valorOriginal - (valorOriginal * percentual) / 100, 0);
+    }
+
+    return Math.max(valorOriginal - desconto, 0);
+  }
+
+  function obterValorServico(servico: any) {
+    const valorOriginal = obterValorOriginalServico(servico);
+    const promocao = promocaoAtivaDoServico(servico?.id);
+
+    return calcularValorComPromocao(valorOriginal, promocao);
+  }
+
+  function obterResumoPromocaoServico(servico: any) {
+    const valorOriginal = obterValorOriginalServico(servico);
+    const promocao = promocaoAtivaDoServico(servico?.id);
+    const valorPromocional = calcularValorComPromocao(valorOriginal, promocao);
+    const possuiPromocao = Boolean(
+      promocao && valorPromocional < valorOriginal,
+    );
+
+    return {
+      promocao,
+      possuiPromocao,
+      valorOriginal,
+      valorPromocional,
+      economia: Math.max(valorOriginal - valorPromocional, 0),
+    };
+  }
+
+  function obterValorPrePagamentoOriginalServico(servico: any) {
+    return numeroValor(
+      servico?.valorPrePagamento ??
+        servico?.valorPrePago ??
+        servico?.precoPrePagamento ??
+        servico?.prePagamentoValor ??
+        servico?.valorSinal ??
+        0,
+    );
+  }
+
+  function obterValorPrePagamentoServico(servico: any) {
+    const valorPrePagamentoOriginal =
+      obterValorPrePagamentoOriginalServico(servico);
+
+    if (valorPrePagamentoOriginal <= 0) return 0;
+
+    const promocao = promocaoAtivaDoServico(servico?.id);
+
+    return calcularValorComPromocao(valorPrePagamentoOriginal, promocao);
+  }
+
+  function formatarMoeda(valor: number) {
+    return valor.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
+
+  function itemExigePrePagamento(item: any) {
+    return Boolean(
+      item?.servico?.exigePrePagamento ||
+      item?.servico?.prePagamentoObrigatorio,
+    );
+  }
+
+  function obterDescricaoServico(servico: any) {
+    const descricao =
+      servico?.descricao ||
+      servico?.descricaoPublica ||
+      servico?.detalhes ||
+      "";
+
+    return String(descricao || "").trim();
+  }
 
   const servicoSelecionado = servicos.find((s) => s.id === servicoId);
-  const profissionalSelecionado = profissionais.find((p) => p.id === profissionalId);
+  const profissionalSelecionado = profissionais.find(
+    (p) => p.id === profissionalId,
+  );
   const itensResumo = [
     ...servicosCarrinho,
-    ...(servicoSelecionado && profissionalSelecionado && data && horarioSelecionado
-      ? [{
-          id: 'atual',
-          servicoId,
-          profissionalId,
-          data,
-          horario: horarioSelecionado,
-          servico: servicoSelecionado,
-          profissional: profissionalSelecionado,
-        }]
+    ...(servicoSelecionado &&
+    profissionalSelecionado &&
+    data &&
+    horarioSelecionado
+      ? [
+          {
+            id: "atual",
+            servicoId,
+            profissionalId,
+            data,
+            horario: horarioSelecionado,
+            servico: servicoSelecionado,
+            profissional: profissionalSelecionado,
+          },
+        ]
       : []),
   ];
 
@@ -1095,22 +1276,70 @@ function obterDescricaoServico(servico: any) {
     return total + obterValorPrePagamentoServico(item.servico);
   }, 0);
 
-  const existePrePagamentoResumo = itensResumo.some((item) => itemExigePrePagamento(item));
+  const existePrePagamentoResumo = itensResumo.some((item) =>
+    itemExigePrePagamento(item),
+  );
 
-  const profissionaisFiltrados = profissionais.filter((p: any) =>
-  p.ativo !== false &&
-  Array.isArray(p.servicos) &&
-  p.servicos.some(
-    (ps: any) =>
-      ps.servico?.ativo !== false &&
-      (
-        ps.servicoId === servicoId ||
-        ps.servico?.id === servicoId
-      )
-  )
-);
+  const profissionaisFiltrados = profissionais.filter(
+    (p: any) =>
+      p.ativo !== false &&
+      Array.isArray(p.servicos) &&
+      p.servicos.some(
+        (ps: any) =>
+          ps.servico?.ativo !== false &&
+          (ps.servicoId === servicoId || ps.servico?.id === servicoId),
+      ),
+  );
+
+  useEffect(() => {
+    const podeAutoSelecionarServico =
+      !modoReagendamento &&
+      cpfConsultado &&
+      Boolean(clienteEncontrado || mostrarCamposExtras);
+
+    if (!podeAutoSelecionarServico) return;
+    if (servicoId) return;
+    if (servicos.length !== 1) return;
+
+    selecionarServicoPublico(servicos[0].id);
+  }, [
+    modoReagendamento,
+    cpfConsultado,
+    clienteEncontrado,
+    mostrarCamposExtras,
+    servicoId,
+    servicos,
+  ]);
+
+  useEffect(() => {
+    const podeAutoSelecionarProfissional =
+      !modoReagendamento &&
+      cpfConsultado &&
+      Boolean(clienteEncontrado || mostrarCamposExtras) &&
+      Boolean(servicoId);
+
+    if (!podeAutoSelecionarProfissional) return;
+    if (profissionalId) return;
+    if (profissionaisFiltrados.length !== 1) return;
+
+    setProfissionalId(profissionaisFiltrados[0].id);
+    setData("");
+    setHorarios([]);
+    setHorarioSelecionado("");
+  }, [
+    modoReagendamento,
+    cpfConsultado,
+    clienteEncontrado,
+    mostrarCamposExtras,
+    servicoId,
+    profissionalId,
+    profissionaisFiltrados,
+  ]);
+
   const podeMostrarAgenda =
-    !modoReagendamento && cpfConsultado && (clienteEncontrado || mostrarCamposExtras);
+    !modoReagendamento &&
+    cpfConsultado &&
+    (clienteEncontrado || mostrarCamposExtras);
   const clienteVeioDoPainel = Boolean(clienteIdUrl);
 
   if (!empresa) {
@@ -1130,185 +1359,237 @@ function obterDescricaoServico(servico: any) {
   const tema = gerarTemaEmpresa(empresa);
 
   return (
-  <main
-    className="page"
-    style={{
-      '--marcae-primary': tema.primary,
-      '--marcae-secondary': tema.secondary,
-      '--marcae-sidebar': tema.sidebar,
-      '--marcae-primary-soft': tema.primarySoft,
-      '--marcae-secondary-soft': tema.secondarySoft,
-      '--marcae-primary-medium': tema.primaryMedium,
-      '--marcae-secondary-medium': tema.secondaryMedium,
-      '--marcae-gradient': tema.gradient,
-      '--marcae-bg': tema.bg,
-      '--marcae-bg-soft': tema.bgSoft,
-      '--marcae-card': tema.card,
-      '--marcae-card-strong': tema.cardStrong,
-      '--marcae-border': tema.border,
-      '--marcae-text': tema.text,
-      '--marcae-muted': tema.muted,
-      '--marcae-glow': tema.glow,
-    } as CSSProperties}
-  >
-    <section className="shell">
-      <div className="wizardSteps">
-        {[
-  { id: 'identificacao', label: 'CPF' },
-  { id: 'servico', label: 'Serviço' },
-  { id: 'profissional', label: 'Profissional' },
-  { id: 'data', label: 'Data' },
-  { id: 'horario', label: 'Horário' },
-  { id: 'confirmacao', label: 'Resumo' },
-].map((etapa, index) => {
-  const ordem = [
-    'identificacao',
-    'servico',
-    'profissional',
-    'data',
-    'horario',
-    'confirmacao',
-  ];
+    <main
+      className="page"
+      style={
+        {
+          "--marcae-primary": tema.primary,
+          "--marcae-secondary": tema.secondary,
+          "--marcae-sidebar": tema.sidebar,
+          "--marcae-primary-soft": tema.primarySoft,
+          "--marcae-secondary-soft": tema.secondarySoft,
+          "--marcae-primary-medium": tema.primaryMedium,
+          "--marcae-secondary-medium": tema.secondaryMedium,
+          "--marcae-gradient": tema.gradient,
+          "--marcae-bg": tema.bg,
+          "--marcae-bg-soft": tema.bgSoft,
+          "--marcae-card": tema.card,
+          "--marcae-card-strong": tema.cardStrong,
+          "--marcae-border": tema.border,
+          "--marcae-text": tema.text,
+          "--marcae-muted": tema.muted,
+          "--marcae-glow": tema.glow,
+        } as CSSProperties
+      }
+    >
+      <section className="shell">
+        <div className="wizardSteps">
+          {[
+            { id: "identificacao", label: "CPF" },
+            { id: "servico", label: "Serviço" },
+            { id: "profissional", label: "Profissional" },
+            { id: "data", label: "Data" },
+            { id: "horario", label: "Horário" },
+            { id: "confirmacao", label: "Resumo" },
+          ].map((etapa, index) => {
+            const ordem = [
+              "identificacao",
+              "servico",
+              "profissional",
+              "data",
+              "horario",
+              "confirmacao",
+            ];
 
-  const ativoIndex = ordem.indexOf(etapaAtual);
-          const numero = index + 1;
+            const ativoIndex = ordem.indexOf(etapaAtual);
+            const numero = index + 1;
 
-          return (
-            <div
-              key={etapa.id}
-              className={`wizardStep ${
-                etapaAtual === etapa.id
-  ? 'active'
-  : ativoIndex > index
-    ? 'done'
-    : ''
-              }`}
-            >
-              <div className="wizardBall">
-                {numero}
+            return (
+              <div
+                key={etapa.id}
+                className={`wizardStep ${
+                  etapaAtual === etapa.id
+                    ? "active"
+                    : ativoIndex > index
+                      ? "done"
+                      : ""
+                }`}
+              >
+                <div className="wizardBall">{numero}</div>
+
+                <span>{etapa.label}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {etapaAtual === "identificacao" && (
+          <header className="topBar">
+            {veioDoPainel && (
+              <button
+                className="voltarPainelButton"
+                onClick={() => {
+                  window.location.href = "/clientes";
+                }}
+              >
+                ← Voltar ao painel
+              </button>
+            )}
+            <div className="marca">
+              Marc<span>aê</span>
+            </div>
+
+            <div className="secureBadge">Ambiente seguro de agendamento</div>
+          </header>
+        )}
+
+        {etapaAtual === "identificacao" && (
+          <section className="hero">
+            <div className="heroBackgroundGlow" />
+
+            <div className="empresaHeroCard">
+              <div className="heroOfficialBadge">
+                <span>✓</span>
+                Agendamento online oficial
               </div>
 
-              <span>{etapa.label}</span>
+              <div className="empresaHeroCentered">
+                <div className="empresaLogoBox">
+                  {empresa.logoUrl ? (
+                    <img
+                      src={empresa.logoUrl}
+                      alt={empresa.nome}
+                      className="empresaLogo"
+                    />
+                  ) : (
+                    <div className="empresaLogoFallback">
+                      {String(empresa.nome || "M").charAt(0)}
+                    </div>
+                  )}
+                </div>
+
+                <h1>{empresa.nome}</h1>
+
+                <p className="subtitle">
+                  Agende seu atendimento em poucos minutos!
+                </p>
+
+                <div className="heroMiniBadges heroMiniBadgesCompact">
+                  <div className="heroMiniBadge">🛡️ Dados protegidos</div>
+                </div>
+              </div>
             </div>
-          );
-        })}
-      </div>
-
-      {etapaAtual === 'identificacao' && (
-  <header className="topBar">
-{veioDoPainel && (
-  <button
-    className="voltarPainelButton"
-    onClick={() => {
-      window.location.href = '/clientes';
-    }}
-  >
-    ← Voltar ao painel
-  </button>
-)}
-    <div className="marca">
-      Marc<span>aê</span>
-    </div>
-
-    <div className="secureBadge">
-      Ambiente seguro de agendamento
-    </div>
-  </header>
-)}
-
-       {etapaAtual === 'identificacao' && (
-<section className="hero">
-  <div className="heroBackgroundGlow" />
-
-  <div className="empresaHeroCard">
-    <div className="heroOfficialBadge">
-      <span>✓</span>
-      Agendamento online oficial
-    </div>
-
-    <div className="empresaHeroCentered">
-      <div className="empresaLogoBox">
-        {empresa.logoUrl ? (
-          <img
-            src={empresa.logoUrl}
-            alt={empresa.nome}
-            className="empresaLogo"
-          />
-        ) : (
-          <div className="empresaLogoFallback">
-            {String(empresa.nome || 'M').charAt(0)}
-          </div>
+          </section>
         )}
-      </div>
 
-      <h1>{empresa.nome}</h1>
-
-      <p className="subtitle">
-        Agende seu atendimento em poucos minutos!
-      </p>
-
-      <div className="heroMiniBadges heroMiniBadgesCompact">
-  <div className="heroMiniBadge">
-    🛡️ Dados protegidos
-  </div>
-</div>
-    </div>
-
-  </div>
-</section>
-)}
-
-<section className="card wizardCard">
+        <section className="card wizardCard">
           <div className="cardHeader">
             <div>
               <h2>Reserve seu horário</h2>
               <p>
-                {etapaAtual === 'identificacao' && 'Comece pelo CPF para localizar seu cadastro ou criar um novo.'}
-                {etapaAtual === 'servico' && 'Agora escolha o serviço que deseja agendar.'}
-                {etapaAtual === 'profissional' && 'Escolha o profissional disponível para o serviço selecionado.'}
-                {etapaAtual === 'data' && 'Escolha o melhor dia para seu atendimento.'}
-                {etapaAtual === 'horario' && 'Agora selecione o horário que funciona melhor para você.'}
-                {etapaAtual === 'confirmacao' && 'Confira tudo antes de finalizar sua reserva.'}
+                {etapaAtual === "identificacao" &&
+                  "Comece pelo CPF para localizar seu cadastro ou criar um novo."}
+                {etapaAtual === "servico" &&
+                  "Agora escolha o serviço que deseja agendar."}
+                {etapaAtual === "profissional" &&
+                  "Escolha o profissional disponível para o serviço selecionado."}
+                {etapaAtual === "data" &&
+                  "Escolha o melhor dia para seu atendimento."}
+                {etapaAtual === "horario" &&
+                  "Agora selecione o horário que funciona melhor para você."}
+                {etapaAtual === "confirmacao" &&
+                  "Confira tudo antes de finalizar sua reserva."}
               </p>
             </div>
 
             <div className="step">
-              {etapaAtual === 'identificacao' && '1/6'}
-              {etapaAtual === 'servico' && '2/6'}
-              {etapaAtual === 'profissional' && '3/6'}
-              {etapaAtual === 'data' && '4/6'}
-              {etapaAtual === 'horario' && '5/6'}
-              {etapaAtual === 'confirmacao' && '6/6'}
+              {etapaAtual === "identificacao" && "1/6"}
+              {etapaAtual === "servico" && "2/6"}
+              {etapaAtual === "profissional" && "3/6"}
+              {etapaAtual === "data" && "4/6"}
+              {etapaAtual === "horario" && "5/6"}
+              {etapaAtual === "confirmacao" && "6/6"}
             </div>
           </div>
 
           <div className="progressSteps wizardSteps">
-            <div className={['identificacao', 'servico', 'profissional', 'data', 'horario', 'confirmacao'].includes(etapaAtual) ? 'progressStep active' : 'progressStep'}>
+            <div
+              className={
+                [
+                  "identificacao",
+                  "servico",
+                  "profissional",
+                  "data",
+                  "horario",
+                  "confirmacao",
+                ].includes(etapaAtual)
+                  ? "progressStep active"
+                  : "progressStep"
+              }
+            >
               <span>1</span>
               <p>CPF</p>
             </div>
 
-            <div className={['servico', 'profissional', 'data', 'horario', 'confirmacao'].includes(etapaAtual) ? 'progressStep active' : 'progressStep'}>
+            <div
+              className={
+                [
+                  "servico",
+                  "profissional",
+                  "data",
+                  "horario",
+                  "confirmacao",
+                ].includes(etapaAtual)
+                  ? "progressStep active"
+                  : "progressStep"
+              }
+            >
               <span>2</span>
               <p>Serviço</p>
             </div>
 
-            <div className={['profissional', 'data', 'horario', 'confirmacao'].includes(etapaAtual) ? 'progressStep active' : 'progressStep'}>
+            <div
+              className={
+                ["profissional", "data", "horario", "confirmacao"].includes(
+                  etapaAtual,
+                )
+                  ? "progressStep active"
+                  : "progressStep"
+              }
+            >
               <span>3</span>
               <p>Profissional</p>
             </div>
 
-            <div className={['data', 'horario', 'confirmacao'].includes(etapaAtual) ? 'progressStep active' : 'progressStep'}>
+            <div
+              className={
+                ["data", "horario", "confirmacao"].includes(etapaAtual)
+                  ? "progressStep active"
+                  : "progressStep"
+              }
+            >
               <span>4</span>
               <p>Data</p>
             </div>
 
-            <div className={['horario', 'confirmacao'].includes(etapaAtual) ? 'progressStep active' : 'progressStep'}>
+            <div
+              className={
+                ["horario", "confirmacao"].includes(etapaAtual)
+                  ? "progressStep active"
+                  : "progressStep"
+              }
+            >
               <span>5</span>
               <p>Horário</p>
             </div>
 
-            <div className={etapaAtual === 'confirmacao' ? 'progressStep active' : 'progressStep'}>
+            <div
+              className={
+                etapaAtual === "confirmacao"
+                  ? "progressStep active"
+                  : "progressStep"
+              }
+            >
               <span>6</span>
               <p>Confirmar</p>
             </div>
@@ -1318,35 +1599,52 @@ function obterDescricaoServico(servico: any) {
             <div className="clienteSelecionadoCard">
               <div className="clienteSelecionadoTop">
                 <div className="clienteAvatar">
-                  {String(clienteEncontrado.nome || 'C').charAt(0).toUpperCase()}
+                  {String(clienteEncontrado.nome || "C")
+                    .charAt(0)
+                    .toUpperCase()}
                 </div>
 
                 <div className="clienteInfo">
                   <strong>{clienteEncontrado.nome}</strong>
-                  <span>📲 {formatarWhatsapp(clienteEncontrado.whatsapp || '')}</span>
-                  {clienteEncontrado.cpf && <span>🪪 {formatarCpf(clienteEncontrado.cpf)}</span>}
+                  <span>
+                    📲 {formatarWhatsapp(clienteEncontrado.whatsapp || "")}
+                  </span>
+                  {clienteEncontrado.cpf && (
+                    <span>🪪 {formatarCpf(clienteEncontrado.cpf)}</span>
+                  )}
                   {clienteEncontrado.dataNascimento && (
-                    <span>🎂 {new Date(clienteEncontrado.dataNascimento).toLocaleDateString('pt-BR')}</span>
+                    <span>
+                      🎂{" "}
+                      {new Date(
+                        clienteEncontrado.dataNascimento,
+                      ).toLocaleDateString("pt-BR")}
+                    </span>
                   )}
                 </div>
               </div>
 
               <div className="clienteSelecionadoFooter">
                 <div className="clienteBadge">✅ Cliente identificado</div>
-                <button className="trocarClienteButton" onClick={() => (window.location.href = `/agendar/${slug}`)}>
+                <button
+                  className="trocarClienteButton"
+                  onClick={() => (window.location.href = `/agendar/${slug}`)}
+                >
                   Trocar cliente
                 </button>
               </div>
             </div>
           )}
 
-          {etapaAtual === 'identificacao' && !clienteVeioDoPainel && (
+          {etapaAtual === "identificacao" && !clienteVeioDoPainel && (
             <div className="cpfBox etapaBox">
               <div className="etapaIntro">
                 <span>👋</span>
                 <div>
                   <strong>Vamos começar?</strong>
-                  <p>Informe seu CPF para localizarmos seu cadastro ou criar um novo rapidinho.</p>
+                  <p>
+                    Informe seu CPF para localizarmos seu cadastro ou criar um
+                    novo rapidinho.
+                  </p>
                 </div>
               </div>
 
@@ -1370,18 +1668,27 @@ function obterDescricaoServico(servico: any) {
                 />
 
                 <button onClick={buscarClientePorCpf} disabled={buscandoCpf}>
-                  {buscandoCpf ? 'Buscando...' : 'Continuar'}
+                  {buscandoCpf ? "Buscando..." : "Continuar"}
                 </button>
               </div>
 
-              <button className="outlineButton" onClick={buscarAgendamentosParaReagendar} disabled={buscandoReagendamentos}>
-                {buscandoReagendamentos ? 'Buscando agendamentos...' : 'Já tenho horário e quero reagendar'}
+              <button
+                className="outlineButton"
+                onClick={buscarAgendamentosParaReagendar}
+                disabled={buscandoReagendamentos}
+              >
+                {buscandoReagendamentos
+                  ? "Buscando agendamentos..."
+                  : "Já tenho horário e quero reagendar"}
               </button>
 
               {clienteEncontrado && (
                 <div className="successBox">
                   <strong>Cadastro encontrado</strong>
-                  <span>Olá, {clienteEncontrado.nome}. Você já pode escolher seu serviço.</span>
+                  <span>
+                    Olá, {clienteEncontrado.nome}. Você já pode escolher seu
+                    serviço.
+                  </span>
                 </div>
               )}
 
@@ -1389,59 +1696,69 @@ function obterDescricaoServico(servico: any) {
                 <div className="section dadosClienteBox">
                   <div className="warningBox">
                     <strong>Novo cadastro</strong>
-                    <span>Não encontramos seu CPF. Complete seus dados uma única vez para continuar.</span>
+                    <span>
+                      Não encontramos seu CPF. Complete seus dados uma única vez
+                      para continuar.
+                    </span>
                   </div>
 
                   <input
                     className="field"
                     placeholder="Nome completo"
                     value={cliente.nome}
-                    onChange={(e) => setCliente({ ...cliente, nome: e.target.value })}
+                    onChange={(e) =>
+                      setCliente({ ...cliente, nome: e.target.value })
+                    }
                   />
 
                   <input
                     className="field"
                     placeholder="WhatsApp"
                     value={cliente.whatsapp}
-                    onChange={(e) => setCliente({ ...cliente, whatsapp: formatarWhatsapp(e.target.value) })}
+                    onChange={(e) =>
+                      setCliente({
+                        ...cliente,
+                        whatsapp: formatarWhatsapp(e.target.value),
+                      })
+                    }
                   />
 
                   <div className="fieldGroup">
                     <label className="fieldLabel">Data de nascimento</label>
                     <input
-  className="field"
-  type="date"
-  max={dataMaximaNascimentoPermitida()}
-  value={cliente.dataNascimento}
-  onChange={(e) => {
-    const valor = e.target.value;
+                      className="field"
+                      type="date"
+                      max={dataMaximaNascimentoPermitida()}
+                      value={cliente.dataNascimento}
+                      onChange={(e) => {
+                        const valor = e.target.value;
 
-    if (
-      valor &&
-      !clienteTemIdadeMinima(valor)
-    ) {
-      alert(
-        'É necessário ter pelo menos 10 anos para realizar um agendamento.'
-      );
+                        if (valor && !clienteTemIdadeMinima(valor)) {
+                          alert(
+                            "É necessário ter pelo menos 10 anos para realizar um agendamento.",
+                          );
 
-      setCliente({
-  nome: '',
-  whatsapp: '',
-  dataNascimento: '',
-  cpf: '',
-});
+                          setCliente({
+                            nome: "",
+                            whatsapp: "",
+                            dataNascimento: "",
+                            cpf: "",
+                          });
 
-      return;
-    }
+                          return;
+                        }
 
-    setCliente({
-      ...cliente,
-      dataNascimento: valor,
-    });
-  }}
-/>
-   
-                    <span className="fieldHint">Usamos essa informação apenas para identificação do cadastro.</span>
+                        setCliente({
+                          ...cliente,
+                          dataNascimento: valor,
+                        });
+                      }}
+                    />
+
+                    <span className="fieldHint">
+                      Usamos essa informação apenas para identificação do
+                      cadastro.
+                    </span>
                   </div>
                 </div>
               )}
@@ -1460,56 +1777,87 @@ function obterDescricaoServico(servico: any) {
 
               <div className="policyBox">
                 <strong>Política de reagendamento</strong>
-                <span>Você pode reagendar seu horário gratuitamente com até <b>24 horas</b> de antecedência.</span>
-                <span>Após esse período, o reagendamento não estará disponível pelo link e o valor pago não será reembolsado.</span>
-                <span>Em caso de dúvidas, entre em contato diretamente com a empresa.</span>
-                <button className="whatsappButton" onClick={abrirWhatsappEmpresa}>Falar com a empresa no WhatsApp</button>
+                <span>
+                  Você pode reagendar seu horário gratuitamente com até{" "}
+                  <b>24 horas</b> de antecedência.
+                </span>
+                <span>
+                  Após esse período, o reagendamento não estará disponível pelo
+                  link e o valor pago não será reembolsado.
+                </span>
+                <span>
+                  Em caso de dúvidas, entre em contato diretamente com a
+                  empresa.
+                </span>
+                <button
+                  className="whatsappButton"
+                  onClick={abrirWhatsappEmpresa}
+                >
+                  Falar com a empresa no WhatsApp
+                </button>
               </div>
 
-              {buscandoReagendamentos && <div className="emptySlots">Buscando seus agendamentos...</div>}
-
-              {!buscandoReagendamentos && agendamentosReagendamento.length === 0 && (
-                <div className="emptySlots">Não encontramos agendamentos pagos e futuros para este CPF.</div>
+              {buscandoReagendamentos && (
+                <div className="emptySlots">Buscando seus agendamentos...</div>
               )}
 
-              {!buscandoReagendamentos && agendamentosReagendamento.length > 0 && (
-                <div className="rescheduleList">
-                  {agendamentosReagendamento.map((agendamento) => (
-                    <div
-                      key={agendamento.id}
-                      className={agendamentoSelecionado?.id === agendamento.id ? 'rescheduleCard selected' : 'rescheduleCard'}
-                    >
-                      <div>
-                        <strong>{agendamento.servico?.nome || 'Serviço'}</strong>
-                        <p>{formatarDataHora(agendamento.dataHoraInicio)}</p>
-                        {agendamento.profissional?.nome && <span>Profissional: {agendamento.profissional.nome}</span>}
-                      </div>
+              {!buscandoReagendamentos &&
+                agendamentosReagendamento.length === 0 && (
+                  <div className="emptySlots">
+                    Não encontramos agendamentos pagos e futuros para este CPF.
+                  </div>
+                )}
 
-                      {agendamento.podeReagendarPublico ? (
-                        <button
-                          className="miniButton"
-                          onClick={() => {
-                            setAgendamentoSelecionado(agendamento);
-                            setNovaDataReagendamento('');
-                            setNovosHorariosReagendamento([]);
-                            setNovoHorarioReagendamento('');
-                          }}
-                        >
-                          Selecionar
-                        </button>
-                      ) : (
-                        <div className="blockedText">Menos de 24h</div>
-                      )}
-
-                      {!agendamento.podeReagendarPublico && (
-                        <div className="dangerBox">
-                          {agendamento.motivoBloqueio || 'Este agendamento não pode ser reagendado pelo link público.'}
+              {!buscandoReagendamentos &&
+                agendamentosReagendamento.length > 0 && (
+                  <div className="rescheduleList">
+                    {agendamentosReagendamento.map((agendamento) => (
+                      <div
+                        key={agendamento.id}
+                        className={
+                          agendamentoSelecionado?.id === agendamento.id
+                            ? "rescheduleCard selected"
+                            : "rescheduleCard"
+                        }
+                      >
+                        <div>
+                          <strong>
+                            {agendamento.servico?.nome || "Serviço"}
+                          </strong>
+                          <p>{formatarDataHora(agendamento.dataHoraInicio)}</p>
+                          {agendamento.profissional?.nome && (
+                            <span>
+                              Profissional: {agendamento.profissional.nome}
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+
+                        {agendamento.podeReagendarPublico ? (
+                          <button
+                            className="miniButton"
+                            onClick={() => {
+                              setAgendamentoSelecionado(agendamento);
+                              setNovaDataReagendamento("");
+                              setNovosHorariosReagendamento([]);
+                              setNovoHorarioReagendamento("");
+                            }}
+                          >
+                            Selecionar
+                          </button>
+                        ) : (
+                          <div className="blockedText">Menos de 24h</div>
+                        )}
+
+                        {!agendamento.podeReagendarPublico && (
+                          <div className="dangerBox">
+                            {agendamento.motivoBloqueio ||
+                              "Este agendamento não pode ser reagendado pelo link público."}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
 
               {agendamentoSelecionado && (
                 <div className="section rescheduleForm">
@@ -1524,35 +1872,51 @@ function obterDescricaoServico(servico: any) {
                       const novaData = e.target.value;
 
                       if (novaData && novaData < hojeFormatoInput()) {
-                        alert('A nova data não pode ser anterior ao dia atual.');
-                        setNovaDataReagendamento('');
+                        alert(
+                          "A nova data não pode ser anterior ao dia atual.",
+                        );
+                        setNovaDataReagendamento("");
                         setNovosHorariosReagendamento([]);
-                        setNovoHorarioReagendamento('');
+                        setNovoHorarioReagendamento("");
                         return;
                       }
 
                       setNovaDataReagendamento(novaData);
                       setNovosHorariosReagendamento([]);
-                      setNovoHorarioReagendamento('');
+                      setNovoHorarioReagendamento("");
                     }}
                   />
 
-                  <button className="secondaryButton" onClick={buscarHorariosReagendamento}>Buscar novos horários</button>
+                  <button
+                    className="secondaryButton"
+                    onClick={buscarHorariosReagendamento}
+                  >
+                    Buscar novos horários
+                  </button>
 
                   <div className="sectionTitleRow">
                     <div className="sectionTitle">Novos horários</div>
-                    {novosHorariosReagendamento.length > 0 && <span>{novosHorariosReagendamento.length} opções</span>}
+                    {novosHorariosReagendamento.length > 0 && (
+                      <span>{novosHorariosReagendamento.length} opções</span>
+                    )}
                   </div>
 
                   {novosHorariosReagendamento.length === 0 ? (
-                    <div className="emptySlots">Selecione uma nova data para visualizar os horários disponíveis.</div>
+                    <div className="emptySlots">
+                      Selecione uma nova data para visualizar os horários
+                      disponíveis.
+                    </div>
                   ) : (
                     <div className="slots">
                       {novosHorariosReagendamento.map((h) => (
                         <button
                           key={h}
                           onClick={() => setNovoHorarioReagendamento(h)}
-                          className={novoHorarioReagendamento === h ? 'slot active' : 'slot'}
+                          className={
+                            novoHorarioReagendamento === h
+                              ? "slot active"
+                              : "slot"
+                          }
                         >
                           {h}
                         </button>
@@ -1560,15 +1924,19 @@ function obterDescricaoServico(servico: any) {
                     </div>
                   )}
 
-                  <button className="primaryButton" onClick={confirmarReagendamento} disabled={reagendando}>
-                    {reagendando ? 'Reagendando...' : 'Confirmar novo horário'}
+                  <button
+                    className="primaryButton"
+                    onClick={confirmarReagendamento}
+                    disabled={reagendando}
+                  >
+                    {reagendando ? "Reagendando..." : "Confirmar novo horário"}
                   </button>
                 </div>
               )}
             </div>
           )}
 
-          {podeMostrarAgenda && etapaAtual === 'servico' && (
+          {podeMostrarAgenda && etapaAtual === "servico" && (
             <div className="section etapaBox">
               <div className="etapaIntro">
                 <span>✨</span>
@@ -1584,41 +1952,78 @@ function obterDescricaoServico(servico: any) {
               </div>
 
               {servicos.length === 0 ? (
-                <div className="emptySlots">Nenhum serviço disponível para agendamento no momento.</div>
+                <div className="emptySlots">
+                  Nenhum serviço disponível para agendamento no momento.
+                </div>
               ) : (
                 <div className="servicosPublicos">
                   {servicos.map((s) => {
                     const servicoAtivo = servicoId === s.id;
+                    const servicoJaEstaNoResumo = itensResumo.some(
+                      (item) => item.servicoId === s.id,
+                    );
                     const resumoPromocao = obterResumoPromocaoServico(s);
                     const valorServico = resumoPromocao.valorPromocional;
-                    const valorPrePagamentoOriginalServico = obterValorPrePagamentoOriginalServico(s);
-                    const valorPrePagamentoServico = obterValorPrePagamentoServico(s);
+                    const valorPrePagamentoOriginalServico =
+                      obterValorPrePagamentoOriginalServico(s);
+                    const valorPrePagamentoServico =
+                      obterValorPrePagamentoServico(s);
                     const descricaoServico = obterDescricaoServico(s);
 
                     return (
                       <button
                         key={s.id}
                         type="button"
-                        className={servicoAtivo ? 'servicoPublicoCard active' : 'servicoPublicoCard'}
-                        onClick={() => selecionarServicoPublico(s.id)}
+                        aria-disabled={servicoJaEstaNoResumo}
+                        className={
+                          servicoJaEstaNoResumo
+                            ? "servicoPublicoCard disabled"
+                            : servicoAtivo
+                              ? "servicoPublicoCard active"
+                              : "servicoPublicoCard"
+                        }
+                        onClick={() => {
+                          if (servicoJaEstaNoResumo) return;
+                          selecionarServicoPublico(s.id);
+                        }}
                       >
-                        <div className="servicoPublicoImagemBox">
-  {s.imagemUrl1 ? (
-    <img
-      src={s.imagemUrl1}
-      alt={s.nome}
-      className="servicoPublicoImagem"
-    />
-  ) : (
-    <div className="servicoPublicoIcon">✨</div>
-  )}
+                        <div
+                          className="servicoPublicoImagemBox"
+                          onClick={(e) => {
+                            e.stopPropagation();
 
-  {(s.imagemUrl2 || s.imagemUrl3) && (
-    <div className="servicoGaleriaBadge">
-      +{[s.imagemUrl2, s.imagemUrl3].filter(Boolean).length}
-    </div>
-  )}
-</div>
+                            const imagensServico = [
+                              s.imagemUrl1,
+                              s.imagemUrl2,
+                              s.imagemUrl3,
+                            ].filter(Boolean);
+
+                            if (imagensServico.length > 0) {
+                              setGaleriaServicoAberta(imagensServico);
+                              setImagemGaleriaAtual(0);
+                            }
+                          }}
+                        >
+                          {s.imagemUrl1 ? (
+                            <img
+                              src={s.imagemUrl1}
+                              alt={s.nome}
+                              className="servicoPublicoImagem"
+                            />
+                          ) : (
+                            <div className="servicoPublicoIcon">✨</div>
+                          )}
+
+                          {(s.imagemUrl2 || s.imagemUrl3) && (
+                            <div className="servicoGaleriaBadge">
+                              +
+                              {
+                                [s.imagemUrl2, s.imagemUrl3].filter(Boolean)
+                                  .length
+                              }
+                            </div>
+                          )}
+                        </div>
 
                         <div className="servicoPublicoInfo">
                           <strong>{s.nome}</strong>
@@ -1631,19 +2036,28 @@ function obterDescricaoServico(servico: any) {
 
                           <div className="servicoPublicoMeta">
                             {s.duracaoMin && <span>⏱ {s.duracaoMin}min</span>}
-                            <span className={resumoPromocao.possuiPromocao ? 'priceTag promoPriceTag' : 'priceTag'}>
-                              💰{' '}
+                            <span
+                              className={
+                                resumoPromocao.possuiPromocao
+                                  ? "priceTag promoPriceTag"
+                                  : "priceTag"
+                              }
+                            >
+                              💰{" "}
                               {resumoPromocao.possuiPromocao && (
-                                <small>{formatarMoeda(resumoPromocao.valorOriginal)}</small>
+                                <small>
+                                  {formatarMoeda(resumoPromocao.valorOriginal)}
+                                </small>
                               )}
                               <strong>{formatarMoeda(valorServico)}</strong>
                             </span>
 
                             {resumoPromocao.possuiPromocao && (
                               <span className="promoBadge">
-                                {resumoPromocao.promocao?.tipo === 'aniversariantes'
-                                  ? 'Promoção de aniversário'
-                                  : 'Promoção ativa'}
+                                {resumoPromocao.promocao?.tipo ===
+                                "aniversariantes"
+                                  ? "Promoção de aniversário"
+                                  : "Promoção ativa"}
                               </span>
                             )}
                             {s.exigePrePagamento && (
@@ -1651,23 +2065,37 @@ function obterDescricaoServico(servico: any) {
                                 Pré-pagamento
                                 {valorPrePagamentoServico > 0
                                   ? `: ${formatarMoeda(valorPrePagamentoServico)}`
-                                  : ''}
-                                {resumoPromocao.possuiPromocao && valorPrePagamentoOriginalServico > valorPrePagamentoServico
+                                  : ""}
+                                {resumoPromocao.possuiPromocao &&
+                                valorPrePagamentoOriginalServico >
+                                  valorPrePagamentoServico
                                   ? ` (antes ${formatarMoeda(valorPrePagamentoOriginalServico)})`
-                                  : ''}
+                                  : ""}
                               </span>
                             )}
                           </div>
 
-                          {resumoPromocao.possuiPromocao && resumoPromocao.promocao?.descricao && (
-                            <div className="promoDescriptionBox">
-                              <strong>{resumoPromocao.promocao?.titulo || 'Oferta especial'}</strong>
-                              <span>{resumoPromocao.promocao.descricao}</span>
-                            </div>
-                          )}
+                          {resumoPromocao.possuiPromocao &&
+                            resumoPromocao.promocao?.descricao && (
+                              <div className="promoDescriptionBox">
+                                <strong>
+                                  {resumoPromocao.promocao?.titulo ||
+                                    "Oferta especial"}
+                                </strong>
+                                <span>{resumoPromocao.promocao.descricao}</span>
+                              </div>
+                            )}
                         </div>
 
-                        <div className="servicoPublicoCheck">{servicoAtivo ? '✓' : ''}</div>
+                        {servicoJaEstaNoResumo && (
+                          <div className="servicoJaAdicionadoBadge">
+                            Já adicionado
+                          </div>
+                        )}
+
+                        <div className="servicoPublicoCheck">
+                          {servicoAtivo ? "✓" : ""}
+                        </div>
                       </button>
                     );
                   })}
@@ -1676,10 +2104,19 @@ function obterDescricaoServico(servico: any) {
 
               {servicoSelecionado && (
                 <div className="selectedInfo">
-                  <span>{reagendamentoDireto ? 'Serviço em reagendamento' : 'Serviço selecionado'}</span>
-                  <strong>{servicoSelecionado.nome} • {servicoSelecionado.duracaoMin}min</strong>
+                  <span>
+                    {reagendamentoDireto
+                      ? "Serviço em reagendamento"
+                      : "Serviço selecionado"}
+                  </span>
+                  <strong>
+                    {servicoSelecionado.nome} • {servicoSelecionado.duracaoMin}
+                    min
+                  </strong>
                   {reagendamentoDireto && (
-                    <small>Você está reagendando um atendimento aberto desse serviço.</small>
+                    <small>
+                      Você está reagendando um atendimento aberto desse serviço.
+                    </small>
                   )}
                 </div>
               )}
@@ -1688,61 +2125,98 @@ function obterDescricaoServico(servico: any) {
                 <div className="policyBox">
                   <strong>Importante sobre o pré-pagamento</strong>
                   <span>
-                    A taxa de pré-pagamento não é reembolsável em caso de falta no dia do agendamento
-                    ou se o reagendamento não for solicitado com pelo menos 24h de antecedência.
+                    A taxa de pré-pagamento não é reembolsável em caso de falta
+                    no dia do agendamento ou se o reagendamento não for
+                    solicitado com pelo menos 24h de antecedência.
                   </span>
                 </div>
               )}
 
               <div className="wizardActions">
-                <button className="outlineButton" onClick={() => setEtapaAtual('identificacao')}>Voltar</button>
-                <button className="primaryButton" onClick={avancarParaProfissional}>Próximo: profissional</button>
+                <button
+                  className="outlineButton"
+                  onClick={() => setEtapaAtual("identificacao")}
+                >
+                  Voltar
+                </button>
+                <button
+                  className="primaryButton"
+                  onClick={avancarParaProfissional}
+                >
+                  Próximo: profissional
+                </button>
               </div>
             </div>
           )}
 
-          {podeMostrarAgenda && etapaAtual === 'profissional' && (
+          {podeMostrarAgenda && etapaAtual === "profissional" && (
             <div className="section etapaBox">
               <div className="etapaIntro">
                 <span>👩‍💼</span>
                 <div>
                   <strong>Escolha seu profissional</strong>
-                  <p>Mostramos apenas profissionais que realizam o serviço escolhido.</p>
+                  <p>
+                    Mostramos apenas profissionais que realizam o serviço
+                    escolhido.
+                  </p>
                 </div>
               </div>
 
               <div className="sectionTitle">Profissional</div>
 
               {!servicoId ? (
-                <div className="emptySlots">Primeiro escolha um serviço para visualizar os profissionais disponíveis.</div>
+                <div className="emptySlots">
+                  Primeiro escolha um serviço para visualizar os profissionais
+                  disponíveis.
+                </div>
               ) : profissionaisFiltrados.length === 0 ? (
-                <div className="emptySlots">Nenhum profissional disponível para este serviço no momento.</div>
+                <div className="emptySlots">
+                  Nenhum profissional disponível para este serviço no momento.
+                </div>
               ) : (
                 <div className="profissionaisPublicos">
                   {profissionaisFiltrados.map((p) => {
-                    const fotoProfissional = p.fotoUrl || p.foto || p.imagemUrl || p.avatarUrl || '';
-                    const bioProfissional = p.bio || p.descricao || 'Profissional disponível para atendimento.';
+                    const fotoProfissional =
+                      p.fotoUrl || p.foto || p.imagemUrl || p.avatarUrl || "";
+                    const bioProfissional =
+                      p.bio ||
+                      p.descricao ||
+                      "Profissional disponível para atendimento.";
                     const servicosProfissional = Array.isArray(p.servicos)
-                      ? p.servicos.map((item: any) => item?.nome || item?.servico?.nome).filter(Boolean)
+                      ? p.servicos
+                          .map((item: any) => item?.nome || item?.servico?.nome)
+                          .filter(Boolean)
                       : [];
 
                     return (
                       <button
                         key={p.id}
                         type="button"
-                        className={profissionalId === p.id ? 'profissionalPublicoCard active' : 'profissionalPublicoCard'}
+                        className={
+                          profissionalId === p.id
+                            ? "profissionalPublicoCard active"
+                            : "profissionalPublicoCard"
+                        }
                         onClick={() => {
-  setProfissionalId(p.id);
-  setData('');
-  setHorarios([]);
-  setHorarioSelecionado('');
-}}
+                          setProfissionalId(p.id);
+                          setData("");
+                          setHorarios([]);
+                          setHorarioSelecionado("");
+                        }}
                       >
                         <div className="profissionalFotoBox">
                           {fotoProfissional ? (
-                            <img src={fotoProfissional} alt={p.nome} className="profissionalFoto" />
+                            <img
+                              src={fotoProfissional}
+                              alt={p.nome}
+                              className="profissionalFoto"
+                            />
                           ) : (
-                            <div className="profissionalFotoFallback">{String(p.nome || 'P').charAt(0).toUpperCase()}</div>
+                            <div className="profissionalFotoFallback">
+                              {String(p.nome || "P")
+                                .charAt(0)
+                                .toUpperCase()}
+                            </div>
                           )}
                         </div>
 
@@ -1752,14 +2226,18 @@ function obterDescricaoServico(servico: any) {
 
                           {servicosProfissional.length > 0 && (
                             <div className="profissionalServicos">
-                              {servicosProfissional.slice(0, 4).map((nomeServico: string) => (
-                                <span key={nomeServico}>{nomeServico}</span>
-                              ))}
+                              {servicosProfissional
+                                .slice(0, 4)
+                                .map((nomeServico: string) => (
+                                  <span key={nomeServico}>{nomeServico}</span>
+                                ))}
                             </div>
                           )}
                         </div>
 
-                        <div className="profissionalCheck">{profissionalId === p.id ? '✓' : ''}</div>
+                        <div className="profissionalCheck">
+                          {profissionalId === p.id ? "✓" : ""}
+                        </div>
                       </button>
                     );
                   })}
@@ -1774,26 +2252,37 @@ function obterDescricaoServico(servico: any) {
               )}
 
               <div className="wizardActions">
-                <button className="outlineButton" onClick={() => setEtapaAtual('servico')}>Voltar</button>
-                <button className="primaryButton" onClick={avancarParaData}>Próximo: data</button>
+                <button
+                  className="outlineButton"
+                  onClick={() => setEtapaAtual("servico")}
+                >
+                  Voltar
+                </button>
+                <button className="primaryButton" onClick={avancarParaData}>
+                  Próximo: data
+                </button>
               </div>
             </div>
           )}
 
-          {podeMostrarAgenda && etapaAtual === 'data' && (
+          {podeMostrarAgenda && etapaAtual === "data" && (
             <div className="section etapaBox">
               <div className="etapaIntro">
                 <span>📅</span>
                 <div>
                   <strong>Escolha a data</strong>
-                  <p>Selecione o melhor dia para visualizar os horários disponíveis.</p>
+                  <p>
+                    Selecione o melhor dia para visualizar os horários
+                    disponíveis.
+                  </p>
                 </div>
               </div>
 
               <div className="selectedInfo">
                 <span>Resumo até aqui</span>
                 <strong>
-                  {servicoSelecionado?.nome || 'Serviço'} • {profissionalSelecionado?.nome || 'Profissional'}
+                  {servicoSelecionado?.nome || "Serviço"} •{" "}
+                  {profissionalSelecionado?.nome || "Profissional"}
                 </strong>
               </div>
 
@@ -1808,27 +2297,36 @@ function obterDescricaoServico(servico: any) {
                   const novaData = e.target.value;
 
                   if (novaData && novaData < hojeFormatoInput()) {
-                    alert('A data do atendimento não pode ser anterior ao dia atual.');
-                    setData('');
+                    alert(
+                      "A data do atendimento não pode ser anterior ao dia atual.",
+                    );
+                    setData("");
                     setHorarios([]);
-                    setHorarioSelecionado('');
+                    setHorarioSelecionado("");
                     return;
                   }
 
                   setData(novaData);
                   setHorarios([]);
-                  setHorarioSelecionado('');
+                  setHorarioSelecionado("");
                 }}
               />
 
               <div className="wizardActions">
-                <button className="outlineButton" onClick={() => setEtapaAtual('profissional')}>Voltar</button>
-                <button className="primaryButton" onClick={avancarParaHorarios}>Buscar horários</button>
+                <button
+                  className="outlineButton"
+                  onClick={() => setEtapaAtual("profissional")}
+                >
+                  Voltar
+                </button>
+                <button className="primaryButton" onClick={avancarParaHorarios}>
+                  Buscar horários
+                </button>
               </div>
             </div>
           )}
 
-          {podeMostrarAgenda && etapaAtual === 'horario' && (
+          {podeMostrarAgenda && etapaAtual === "horario" && (
             <div className="section etapaBox">
               <div className="etapaIntro">
                 <span>⏰</span>
@@ -1844,14 +2342,19 @@ function obterDescricaoServico(servico: any) {
               </div>
 
               {horarios.length === 0 ? (
-                <div className="emptySlots">Não encontramos horários disponíveis para essa combinação. Volte e tente outra data.</div>
+                <div className="emptySlots">
+                  Não encontramos horários disponíveis para essa combinação.
+                  Volte e tente outra data.
+                </div>
               ) : (
                 <div className="slots">
                   {horarios.map((h) => (
                     <button
                       key={h}
                       onClick={() => setHorarioSelecionado(h)}
-                      className={horarioSelecionado === h ? 'slot active' : 'slot'}
+                      className={
+                        horarioSelecionado === h ? "slot active" : "slot"
+                      }
                     >
                       {h}
                     </button>
@@ -1862,218 +2365,334 @@ function obterDescricaoServico(servico: any) {
               {horarioSelecionado && (
                 <div className="readyBox">
                   <strong>Horário selecionado</strong>
-                  <span>{horarioSelecionado} • {servicoSelecionado?.nome}</span>
+                  <span>
+                    {horarioSelecionado} • {servicoSelecionado?.nome}
+                  </span>
                 </div>
               )}
 
               <div className="wizardActions">
-                <button className="outlineButton" onClick={() => setEtapaAtual('data')}>Voltar</button>
-                <button className="primaryButton" onClick={avancarParaConfirmacao}>Próximo: conferir</button>
+                <button
+                  className="outlineButton"
+                  onClick={() => setEtapaAtual("data")}
+                >
+                  Voltar
+                </button>
+                <button
+                  className="primaryButton"
+                  onClick={avancarParaConfirmacao}
+                >
+                  Próximo: conferir
+                </button>
               </div>
             </div>
           )}
 
-          {podeMostrarAgenda && etapaAtual === 'confirmacao' && (
+          {podeMostrarAgenda && etapaAtual === "confirmacao" && (
             <div className="section etapaBox">
+              <div className="etapaIntro">
+                <span>✅</span>
+                <div>
+                  <strong>Confira sua reserva</strong>
+                  <p>Veja se está tudo certo antes de finalizar.</p>
+                </div>
+              </div>
 
-<div className="etapaIntro">
-  <span>✅</span>
-  <div>
-    <strong>Confira sua reserva</strong>
-    <p>Veja se está tudo certo antes de finalizar.</p>
-  </div>
-</div>
+              <div className="resumoReserva">
+                {itensResumo.map((item, index) => {
+                  const resumoPromocaoItem = obterResumoPromocaoServico(
+                    item.servico,
+                  );
+                  const valorItem = resumoPromocaoItem.valorPromocional;
+                  const valorPrePagamentoOriginalItem =
+                    obterValorPrePagamentoOriginalServico(item.servico);
+                  const valorPrePagamentoItem = obterValorPrePagamentoServico(
+                    item.servico,
+                  );
+                  const exigePrePagamentoItem = itemExigePrePagamento(item);
+                  const podeRemover = itensResumo.length > 1;
 
-<div className="resumoReserva">
-  {itensResumo.map((item, index) => {
-    const resumoPromocaoItem = obterResumoPromocaoServico(item.servico);
-    const valorItem = resumoPromocaoItem.valorPromocional;
-    const valorPrePagamentoOriginalItem = obterValorPrePagamentoOriginalServico(item.servico);
-    const valorPrePagamentoItem = obterValorPrePagamentoServico(item.servico);
-    const exigePrePagamentoItem = itemExigePrePagamento(item);
-    const podeRemover = item.id !== 'atual';
+                  return (
+                    <div key={item.id} className="resumoServicoCard">
+                      <div className="resumoServicoTopo">
+                        <div className="resumoServicoNumero">{index + 1}</div>
 
-    return (
-      <div key={item.id} className="resumoServicoCard">
-        <div className="resumoServicoTopo">
-          <div className="resumoServicoNumero">{index + 1}</div>
+                        <div className="resumoServicoInfo">
+                          <span>Serviço {index + 1}</span>
+                          <strong>{item.servico?.nome || "Serviço"}</strong>
+                          <small>
+                            {item.profissional?.nome || "Profissional"}
+                          </small>
+                        </div>
 
-          <div className="resumoServicoInfo">
-            <span>Serviço {index + 1}</span>
-            <strong>{item.servico?.nome || 'Serviço'}</strong>
-            <small>{item.profissional?.nome || 'Profissional'}</small>
-          </div>
+                        {podeRemover && (
+                          <button
+                            type="button"
+                            className="removerServicoButton"
+                            onClick={() => removerServicoDoCarrinho(item.id)}
+                            aria-label="Remover serviço do resumo"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
 
-          {podeRemover && (
-            <button
-              type="button"
-              className="removerServicoButton"
-              onClick={() => removerServicoDoCarrinho(item.id)}
-              aria-label="Remover serviço do resumo"
-            >
-              ×
-            </button>
-          )}
-        </div>
+                      <div className="resumoServicoDetalhes">
+                        <div>
+                          <span>Data</span>
+                          <strong>
+                            {item.data
+                              ? new Date(
+                                  `${item.data}T00:00:00`,
+                                ).toLocaleDateString("pt-BR")
+                              : "Data"}
+                          </strong>
+                        </div>
 
-        <div className="resumoServicoDetalhes">
-          <div>
-            <span>Data</span>
-            <strong>{item.data ? new Date(`${item.data}T00:00:00`).toLocaleDateString('pt-BR') : 'Data'}</strong>
-          </div>
+                        <div>
+                          <span>Horário</span>
+                          <strong>{item.horario || "--:--"}</strong>
+                        </div>
 
-          <div>
-            <span>Horário</span>
-            <strong>{item.horario || '--:--'}</strong>
-          </div>
+                        <div>
+                          <span>Duração</span>
+                          <strong>
+                            {item.servico?.duracaoMin
+                              ? `${item.servico.duracaoMin}min`
+                              : "Não informada"}
+                          </strong>
+                        </div>
 
-          <div>
-            <span>Duração</span>
-            <strong>{item.servico?.duracaoMin ? `${item.servico.duracaoMin}min` : 'Não informada'}</strong>
-          </div>
+                        <div>
+                          <span>Valor do serviço</span>
+                          {resumoPromocaoItem.possuiPromocao ? (
+                            <strong className="resumoValorPromocional">
+                              <small>
+                                {formatarMoeda(
+                                  resumoPromocaoItem.valorOriginal,
+                                )}
+                              </small>
+                              {formatarMoeda(valorItem)}
+                            </strong>
+                          ) : (
+                            <strong>{formatarMoeda(valorItem)}</strong>
+                          )}
+                        </div>
 
-          <div>
-            <span>Valor do serviço</span>
-            {resumoPromocaoItem.possuiPromocao ? (
-              <strong className="resumoValorPromocional">
-                <small>{formatarMoeda(resumoPromocaoItem.valorOriginal)}</small>
-                {formatarMoeda(valorItem)}
-              </strong>
-            ) : (
-              <strong>{formatarMoeda(valorItem)}</strong>
-            )}
-          </div>
+                        {resumoPromocaoItem.possuiPromocao && (
+                          <div>
+                            <span>Promoção</span>
+                            <strong>
+                              {resumoPromocaoItem.promocao?.titulo ||
+                                "Desconto aplicado"}
+                            </strong>
+                          </div>
+                        )}
 
-          {resumoPromocaoItem.possuiPromocao && (
-            <div>
-              <span>Promoção</span>
-              <strong>{resumoPromocaoItem.promocao?.titulo || 'Desconto aplicado'}</strong>
-            </div>
-          )}
+                        {resumoPromocaoItem.possuiPromocao &&
+                          resumoPromocaoItem.promocao?.descricao && (
+                            <div className="resumoPromocaoDescricao">
+                              <span>Descrição da promoção</span>
+                              <strong>
+                                {resumoPromocaoItem.promocao.descricao}
+                              </strong>
+                            </div>
+                          )}
 
-          {resumoPromocaoItem.possuiPromocao && resumoPromocaoItem.promocao?.descricao && (
-            <div className="resumoPromocaoDescricao">
-              <span>Descrição da promoção</span>
-              <strong>{resumoPromocaoItem.promocao.descricao}</strong>
-            </div>
-          )}
+                        {exigePrePagamentoItem && (
+                          <div>
+                            <span>Pagar agora</span>
+                            {valorPrePagamentoOriginalItem >
+                            valorPrePagamentoItem ? (
+                              <strong className="resumoValorPromocional">
+                                <small>
+                                  {formatarMoeda(valorPrePagamentoOriginalItem)}
+                                </small>
+                                {formatarMoeda(valorPrePagamentoItem)}
+                              </strong>
+                            ) : (
+                              <strong>
+                                {formatarMoeda(valorPrePagamentoItem)}
+                              </strong>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
-          {exigePrePagamentoItem && (
-            <div>
-              <span>Pagar agora</span>
-              {valorPrePagamentoOriginalItem > valorPrePagamentoItem ? (
-                <strong className="resumoValorPromocional">
-                  <small>{formatarMoeda(valorPrePagamentoOriginalItem)}</small>
-                  {formatarMoeda(valorPrePagamentoItem)}
-                </strong>
-              ) : (
-                <strong>{formatarMoeda(valorPrePagamentoItem)}</strong>
-              )}
-            </div>
-          )}
-        </div>
+                      {exigePrePagamentoItem && (
+                        <div className="resumoPrePagamentoBadge">
+                          Pré-pagamento obrigatório:{" "}
+                          {formatarMoeda(valorPrePagamentoItem)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
 
-        {exigePrePagamentoItem && (
-          <div className="resumoPrePagamentoBadge">
-            Pré-pagamento obrigatório: {formatarMoeda(valorPrePagamentoItem)}
-          </div>
-        )}
-      </div>
-    );
-  })}
+                <div className="resumoTotalCard">
+                  <div className="resumoTotalValores">
+                    <div>
+                      <span>Total dos serviços</span>
+                      <strong>{formatarMoeda(totalResumo)}</strong>
+                    </div>
 
-  <div className="resumoTotalCard">
-    <div className="resumoTotalValores">
-      <div>
-        <span>Total dos serviços</span>
-        <strong>{formatarMoeda(totalResumo)}</strong>
-      </div>
+                    {existePrePagamentoResumo && (
+                      <div>
+                        <span>Total pré-pagamento</span>
+                        <strong>
+                          {formatarMoeda(totalPrePagamentoResumo)}
+                        </strong>
+                      </div>
+                    )}
+                  </div>
 
-      {existePrePagamentoResumo && (
-        <div>
-          <span>Total pré-pagamento</span>
-          <strong>{formatarMoeda(totalPrePagamentoResumo)}</strong>
-        </div>
-      )}
-    </div>
-
-    <small>
-      {itensResumo.length} {itensResumo.length === 1 ? 'serviço selecionado' : 'serviços selecionados'}
-      {existePrePagamentoResumo
-        ? ' • Você pagará agora apenas o valor do pré-pagamento.'
-        : ''}
-    </small>
-  </div>
-</div>
+                  <small>
+                    {itensResumo.length}{" "}
+                    {itensResumo.length === 1
+                      ? "serviço selecionado"
+                      : "serviços selecionados"}
+                    {existePrePagamentoResumo
+                      ? " • Você pagará agora apenas o valor do pré-pagamento."
+                      : ""}
+                  </small>
+                </div>
+              </div>
 
               {existePrePagamentoResumo && (
                 <div className="policyBox">
-                  <strong>Existe serviço com pré-pagamento neste agendamento</strong>
-                  <span>Ao finalizar, você será direcionado para o pagamento seguro.</span>
-                  <span>Você pagará agora {formatarMoeda(totalPrePagamentoResumo)} referente ao pré-pagamento. O valor total dos serviços é {formatarMoeda(totalResumo)}.</span>
-                  <span>O valor pago não é reembolsável em caso de falta ou se o reagendamento/cancelamento não for solicitado com pelo menos 24h de antecedência.</span>
+                  <strong>
+                    Existe serviço com pré-pagamento neste agendamento
+                  </strong>
+                  <span>
+                    Ao finalizar, você será direcionado para o pagamento seguro.
+                  </span>
+                  <span>
+                    Você pagará agora {formatarMoeda(totalPrePagamentoResumo)}{" "}
+                    referente ao pré-pagamento. O valor total dos serviços é{" "}
+                    {formatarMoeda(totalResumo)}.
+                  </span>
+                  <span>
+                    O valor pago não é reembolsável em caso de falta ou se o
+                    reagendamento/cancelamento não for solicitado com pelo menos
+                    24h de antecedência.
+                  </span>
                 </div>
               )}
 
               <div className="wizardActions">
-  <button
-    className="outlineButton"
-    onClick={() => setEtapaAtual('horario')}
-  >
-    Voltar
-  </button>
+                <button
+                  className="outlineButton"
+                  onClick={() => setEtapaAtual("horario")}
+                >
+                  Voltar
+                </button>
 
-  <button
-    className="outlineButton"
-    onClick={adicionarServicoAoCarrinho}
-  >
-    + Adicionar outro serviço
-  </button>
+                <button
+                  className="outlineButton"
+                  onClick={iniciarAdicionarOutroServico}
+                >
+                  + Adicionar outro serviço
+                </button>
 
-  <button
-    className="primaryButton"
-    onClick={agendar}
-  >
-    {reagendamentoDireto
-      ? 'Confirmar reagendamento'
-      : existePrePagamentoResumo
-        ? 'Reservar e seguir para pagamento'
-        : 'Finalizar agendamento'}
-  </button>
-</div>
+                <button className="primaryButton" onClick={agendar}>
+                  {reagendamentoDireto
+                    ? "Confirmar reagendamento"
+                    : existePrePagamentoResumo
+                      ? "Reservar e seguir para pagamento"
+                      : "Finalizar agendamento"}
+                </button>
+              </div>
 
               <p className="security">
-                Seus dados serão usados apenas para identificação do agendamento e comunicação sobre o atendimento.
+                Seus dados serão usados apenas para identificação do agendamento
+                e comunicação sobre o atendimento.
               </p>
             </div>
           )}
         </section>
 
         <section className="benefits benefitsMinimal">
-  <div className="benefit benefitMinimal">
-    <span>⚡</span>
-    <strong>Seu tempo importa</strong>
-  </div>
+          <div className="benefit benefitMinimal">
+            <span>⚡</span>
+            <strong>Seu tempo importa</strong>
+          </div>
 
-  <div className="benefit benefitMinimal">
-    <span>🔒</span>
-    <strong>Seguro e confiável</strong>
-  </div>
+          <div className="benefit benefitMinimal">
+            <span>🔒</span>
+            <strong>Seguro e confiável</strong>
+          </div>
 
-  <div className="benefit benefitMinimal">
-    <span>💜</span>
-    <strong>Experiência premium</strong>
-  </div>
-</section>
+          <div className="benefit benefitMinimal">
+            <span>💜</span>
+            <strong>Experiência premium</strong>
+          </div>
+        </section>
 
-<footer className="footerBrand footerBrandPremium">
-  <span>✦</span>
-  <p>Agendado por</p>
-  <strong>Marc<span>aê</span></strong>
-  <span>✦</span>
-</footer>
-
+        <footer className="footerBrand footerBrandPremium">
+          <span>✦</span>
+          <p>Agendado por</p>
+          <strong>
+            Marc<span>aê</span>
+          </strong>
+          <span>✦</span>
+        </footer>
       </section>
+
+      {galeriaServicoAberta && (
+        <div
+          className="galeriaOverlay"
+          onClick={() => setGaleriaServicoAberta(null)}
+        >
+          <div className="galeriaModal" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="galeriaFechar"
+              onClick={() => setGaleriaServicoAberta(null)}
+              aria-label="Fechar galeria"
+            >
+              ✕
+            </button>
+
+            <div className="galeriaImagemFrame">
+              <img
+                src={galeriaServicoAberta[imagemGaleriaAtual]}
+                className="galeriaImagem"
+                alt="Imagem do serviço"
+              />
+            </div>
+
+            {galeriaServicoAberta.length > 1 && (
+              <div className="galeriaControles">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setImagemGaleriaAtual((prev) =>
+                      prev === 0 ? galeriaServicoAberta.length - 1 : prev - 1,
+                    )
+                  }
+                >
+                  ←
+                </button>
+
+                <span>
+                  {imagemGaleriaAtual + 1} / {galeriaServicoAberta.length}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setImagemGaleriaAtual((prev) =>
+                      prev === galeriaServicoAberta.length - 1 ? 0 : prev + 1,
+                    )
+                  }
+                >
+                  →
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <style jsx>{styles}</style>
     </main>
@@ -2724,6 +3343,35 @@ margin-right: auto;
     box-shadow: 0 0 0 4px var(--marcae-primary-soft), 0 20px 54px rgba(0, 0, 0, 0.28);
   }
 
+  .servicoPublicoCard.disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+    border-color: rgba(148, 163, 184, 0.18);
+    background: rgba(8, 11, 15, 0.38);
+    box-shadow: none;
+  }
+
+  .servicoPublicoCard.disabled:hover {
+    transform: none;
+    border-color: rgba(148, 163, 184, 0.18);
+    box-shadow: none;
+  }
+
+  .servicoJaAdicionadoBadge {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(15, 23, 42, 0.86);
+    color: rgba(226, 232, 240, 0.9);
+    font-size: 10px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
   .servicoPublicoImagemBox {
   position: relative;
   width: 78px;
@@ -2783,6 +3431,126 @@ margin-right: auto;
   font-weight: 800;
 
   backdrop-filter: blur(10px);
+}
+
+
+.galeriaOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(2, 6, 23, 0.94);
+  backdrop-filter: blur(12px);
+}
+
+.galeriaModal {
+  position: relative;
+  width: min(92vw, 420px);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.galeriaImagemFrame {
+  width: 100%;
+  max-height: 74vh;
+  border-radius: 24px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.58);
+}
+
+.galeriaImagem {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  max-height: 74vh;
+  object-fit: contain;
+  display: block;
+}
+
+.galeriaFechar {
+  position: absolute;
+  top: -14px;
+  right: -10px;
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(15, 23, 42, 0.96);
+  color: white;
+  font-size: 17px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+.galeriaControles {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.galeriaControles button {
+  width: 44px;
+  height: 38px;
+  border: none;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.galeriaControles span {
+  color: white;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+@media (max-width: 520px) {
+  .galeriaOverlay {
+    padding: 14px;
+    align-items: center;
+  }
+
+  .galeriaModal {
+    width: 94vw;
+    max-height: 86vh;
+  }
+
+  .galeriaImagemFrame {
+    max-height: 68vh;
+    border-radius: 22px;
+  }
+
+  .galeriaImagem {
+    max-height: 68vh;
+  }
+
+  .galeriaFechar {
+    top: 8px;
+    right: 8px;
+    background: rgba(2, 6, 23, 0.82);
+  }
 }
 
   .servicoPublicoInfo,

@@ -501,7 +501,7 @@ useEffect(() => {
                   </button>
 
                   {painelNotificacoesAberto && (
-                    <div style={notificationPanel}>
+                    <div className="marcae-notification-panel-mobile" style={notificationPanel}>
                       <div style={notificationPanelHeader}>
                         <div>
                           <strong style={notificationPanelTitle}>Notificações</strong>
@@ -524,7 +524,7 @@ useEffect(() => {
                           Nenhum novo agendamento desde que você abriu o painel.
                         </div>
                       ) : (
-                        <div style={notificationList}>
+                        <div className="marcae-notification-list-mobile" style={notificationList}>
                           {notificacoes.map((item) => (
                             <div key={item.id} style={notificationItem}>
                               <div style={notificationItemIcon}>📅</div>
@@ -777,6 +777,33 @@ useEffect(() => {
               padding: 8px !important;
               border-radius: 22px !important;
             }
+
+            .marcae-notification-panel-mobile {
+              position: fixed !important;
+              top: 86px !important;
+              left: 10px !important;
+              right: 10px !important;
+              width: auto !important;
+              max-width: none !important;
+              max-height: calc(100dvh - 170px) !important;
+              overflow: hidden !important;
+              z-index: 2500 !important;
+              border-radius: 22px !important;
+              padding: 12px !important;
+            }
+
+            .marcae-notification-list-mobile {
+              max-height: calc(100dvh - 285px) !important;
+              overflow-y: auto !important;
+              padding-right: 2px !important;
+            }
+
+            .marcae-notification-panel-mobile strong,
+            .marcae-notification-panel-mobile span {
+              max-width: 100% !important;
+              overflow-wrap: anywhere !important;
+            }
+
           }
 
           @media (max-width: 560px) {
@@ -791,9 +818,10 @@ useEffect(() => {
 }
 
 const layoutRoot: React.CSSProperties = {
-  minHeight: '100vh',
+  minHeight: '100dvh',
   position: 'relative',
-  overflow: 'hidden',
+  overflowX: 'hidden',
+  overflowY: 'visible',
   background: 'linear-gradient(135deg, var(--marcae-bg) 0%, var(--marcae-bg-soft) 48%, var(--marcae-sidebar) 100%)',
   color: 'var(--marcae-text)',
 };
@@ -836,7 +864,7 @@ const backgroundGlowThird: React.CSSProperties = {
 
 const layoutFlex: React.CSSProperties = {
   display: 'flex',
-  minHeight: '100vh',
+  minHeight: '100dvh',
   position: 'relative',
   zIndex: 2,
 };
@@ -992,6 +1020,10 @@ const userArrow: React.CSSProperties = { color: 'var(--marcae-muted)', fontSize:
 
 const mainWrapper: React.CSSProperties = {
   flex: 1,
+  minHeight: '100dvh',
+  overflowX: 'hidden',
+  overflowY: 'visible',
+  WebkitOverflowScrolling: 'touch',
   padding: '18px 22px 120px',
 };
 

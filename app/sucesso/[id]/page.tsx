@@ -1,6 +1,8 @@
-import type { CSSProperties } from 'react';
-import { prisma } from '@/lib/prisma';
-import { gerarTemaEmpresa } from '@/app/lib/theme';
+import type { CSSProperties } from "react";
+import { prisma } from "@/lib/prisma";
+import { gerarTemaEmpresa } from "@/app/lib/theme";
+
+export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{
@@ -40,10 +42,10 @@ async function buscarAgendamentosPorIds(ids: string[]) {
     include: agendamentoInclude,
     orderBy: [
       {
-        dataHoraInicio: 'asc',
+        dataHoraInicio: "asc",
       },
       {
-        createdAt: 'asc',
+        createdAt: "asc",
       },
     ],
   });
@@ -72,121 +74,109 @@ async function buscarAgendamentosDoComprovante(id: string, ids: string[]) {
     include: agendamentoInclude,
     orderBy: [
       {
-        dataHoraInicio: 'asc',
+        dataHoraInicio: "asc",
       },
       {
-        createdAt: 'asc',
+        createdAt: "asc",
       },
     ],
   });
 }
 
 function formatarData(data?: string | Date | null) {
-  if (!data) return '';
+  if (!data) return "";
 
-  return new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'full',
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "full",
   }).format(new Date(data));
 }
 
 function formatarHora(data?: string | Date | null) {
-  if (!data) return '';
+  if (!data) return "";
 
-  return new Intl.DateTimeFormat('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
+  return new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(new Date(data));
 }
 
 function formatarMoeda(valor?: number | string | null) {
-  return Number(valor || 0).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
+  return Number(valor || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
   });
 }
 
 function limparTelefone(telefone?: string | null) {
-  return String(telefone || '').replace(/\D/g, '');
+  return String(telefone || "").replace(/\D/g, "");
 }
 
 function formatarEndereco(empresaOuEndereco: any) {
-  if (!empresaOuEndereco) return '';
+  if (!empresaOuEndereco) return "";
 
   try {
     const dados =
-      typeof empresaOuEndereco === 'string'
+      typeof empresaOuEndereco === "string"
         ? JSON.parse(empresaOuEndereco)
         : empresaOuEndereco?.endereco
-          ? typeof empresaOuEndereco.endereco === 'string'
+          ? typeof empresaOuEndereco.endereco === "string"
             ? JSON.parse(empresaOuEndereco.endereco)
             : empresaOuEndereco.endereco
           : empresaOuEndereco;
 
-    const rua = dados?.rua || empresaOuEndereco?.rua || '';
-    const numero = dados?.numero || empresaOuEndereco?.numero || '';
-    const complemento = dados?.complemento || empresaOuEndereco?.complemento || '';
-    const cidade = dados?.cidade || empresaOuEndereco?.cidade || '';
-    const estado = dados?.estado || empresaOuEndereco?.estado || '';
-    const bairro = dados?.bairro || empresaOuEndereco?.bairro || '';
-    const cep = dados?.cep || empresaOuEndereco?.cep || '';
+    const rua = dados?.rua || empresaOuEndereco?.rua || "";
+    const numero = dados?.numero || empresaOuEndereco?.numero || "";
+    const complemento =
+      dados?.complemento || empresaOuEndereco?.complemento || "";
+    const cidade = dados?.cidade || empresaOuEndereco?.cidade || "";
+    const estado = dados?.estado || empresaOuEndereco?.estado || "";
+    const bairro = dados?.bairro || empresaOuEndereco?.bairro || "";
+    const cep = dados?.cep || empresaOuEndereco?.cep || "";
 
-    const partes = [
-  rua,
-  numero,
-  bairro,
-  complemento,
-].filter(Boolean);
-    const cidadeEstado = [cidade, estado].filter(Boolean).join(' - ');
+    const partes = [rua, numero, bairro, complemento].filter(Boolean);
+    const cidadeEstado = [cidade, estado].filter(Boolean).join(" - ");
 
-    return [
-  partes.join(', '),
-  cidadeEstado,
-  cep ? `CEP: ${cep}` : '',
-]
-  .filter(Boolean)
-  .join(' • ');
+    return [partes.join(", "), cidadeEstado, cep ? `CEP: ${cep}` : ""]
+      .filter(Boolean)
+      .join(" • ");
   } catch {
-    return '';
+    return "";
   }
 }
 
 function textoStatus(status?: string | null) {
-  if (!status) return 'Pendente';
+  if (!status) return "Pendente";
 
   const mapa: Record<string, string> = {
-    pendente: 'Pendente',
-    confirmado: 'Confirmado',
-    concluido: 'Concluído',
-    cancelado: 'Cancelado',
+    pendente: "Pendente",
+    confirmado: "Confirmado",
+    concluido: "Concluído",
+    cancelado: "Cancelado",
   };
 
   return mapa[status] || status;
 }
 
 function textoPagamento(status?: string | null, exigePrePagamento?: boolean) {
-  if (!exigePrePagamento) return 'Sem pré-pagamento';
-  if (!status) return 'Pendente';
+  if (!exigePrePagamento) return "Sem pré-pagamento";
+  if (!status) return "Pendente";
 
   const mapa: Record<string, string> = {
-    pendente: 'Pendente',
-    aguardando: 'Aguardando pagamento',
-    aprovado: 'Pago',
-    pago: 'Pago',
-    confirmado: 'Confirmado',
-    sem_pagamento: 'Sem pré-pagamento',
-    recusado: 'Recusado',
-    cancelado: 'Cancelado',
+    pendente: "Pendente",
+    aguardando: "Aguardando pagamento",
+    aprovado: "Pago",
+    pago: "Pago",
+    confirmado: "Confirmado",
+    sem_pagamento: "Sem pré-pagamento",
+    recusado: "Recusado",
+    cancelado: "Cancelado",
   };
 
   return mapa[status] || status;
 }
 
 function pagamentoFoiAprovado(status?: string | null) {
-  return (
-    status === 'aprovado' ||
-    status === 'pago' ||
-    status === 'confirmado'
-  );
+  return status === "aprovado" || status === "pago" || status === "confirmado";
 }
 
 function obterValorServico(item: any) {
@@ -200,11 +190,9 @@ function obterValorServico(item: any) {
 }
 
 function obterValorPrePagamento(item: any) {
-  const percentual =
-    Number(item?.servico?.percentualPrePagamento || 0);
+  const percentual = Number(item?.servico?.percentualPrePagamento || 0);
 
-  const valorFixo =
-    Number(item?.servico?.valorPrePagamento || 0);
+  const valorFixo = Number(item?.servico?.valorPrePagamento || 0);
 
   const valorServico = Number(obterValorServico(item));
 
@@ -220,23 +208,27 @@ function obterValorPrePagamento(item: any) {
 }
 
 function promocaoFoiAplicada(item: any) {
-  return Boolean(item?.promocaoId || item?.promocaoTitulo || Number(item?.valorEconomizado || 0) > 0);
+  return Boolean(
+    item?.promocaoId ||
+    item?.promocaoTitulo ||
+    Number(item?.valorEconomizado || 0) > 0,
+  );
 }
 
 function formatarTipoPromocao(tipo?: string | null) {
-  if (tipo === 'servico') return 'Desconto por serviço';
-  if (tipo === 'aniversariantes') return 'Promoção de aniversário';
-  if (tipo === 'geral') return 'Promoção geral';
+  if (tipo === "servico") return "Desconto por serviço";
+  if (tipo === "aniversariantes") return "Promoção de aniversário";
+  if (tipo === "geral") return "Promoção geral";
 
-  return 'Promoção aplicada';
+  return "Promoção aplicada";
 }
 
 function formatarDescontoPromocao(item: any) {
   const desconto = Number(item?.promocaoDesconto || 0);
 
-  if (!desconto) return '';
+  if (!desconto) return "";
 
-  if (item?.promocaoTipoDesconto === 'valor') {
+  if (item?.promocaoTipoDesconto === "valor") {
     return formatarMoeda(desconto);
   }
 
@@ -250,34 +242,38 @@ export default async function SucessoDetalhesPage({
   const { id } = await params;
   const query = await searchParams;
 
-  const ids =
-    query?.ids
-      ?.split(',')
-      .map((item) => item.trim())
-      .filter(Boolean) || [id];
+  const ids = query?.ids
+    ?.split(",")
+    .map((item) => item.trim())
+    .filter(Boolean) || [id];
 
   const agendamentos = await buscarAgendamentosDoComprovante(id, ids);
   const agendamento = agendamentos[0];
 
-  const nomeCliente = agendamento?.cliente?.nome || agendamento?.clienteNome || 'Cliente';
+  const nomeCliente =
+    agendamento?.cliente?.nome || agendamento?.clienteNome || "Cliente";
   const telefoneCliente =
-    agendamento?.cliente?.whatsapp || agendamento?.clienteWhatsapp || agendamento?.telefoneCliente || '';
+    agendamento?.cliente?.whatsapp ||
+    agendamento?.clienteWhatsapp ||
+    agendamento?.telefoneCliente ||
+    "";
 
-  const servico = agendamento?.servico?.nome || 'serviço';
-  const nomeEmpresa = agendamento?.empresa?.nome || 'Empresa';
-  const telefoneEmpresa = agendamento?.empresa?.telefone || agendamento?.empresa?.whatsapp || '';
+  const servico = agendamento?.servico?.nome || "serviço";
+  const nomeEmpresa = agendamento?.empresa?.nome || "Empresa";
+  const telefoneEmpresa =
+    agendamento?.empresa?.telefone || agendamento?.empresa?.whatsapp || "";
   const enderecoEmpresa = formatarEndereco(agendamento?.empresa);
 
   const data = agendamento?.dataHoraInicio
     ? formatarData(agendamento.dataHoraInicio)
-    : '';
+    : "";
 
   const hora = agendamento?.dataHoraInicio
     ? formatarHora(agendamento.dataHoraInicio)
-    : '';
+    : "";
 
   const existePrePagamento = agendamentos.some((item: any) =>
-    Boolean(item?.servico?.exigePrePagamento)
+    Boolean(item?.servico?.exigePrePagamento),
   );
 
   const todosPagamentosAprovados = agendamentos.every((item: any) => {
@@ -291,39 +287,40 @@ export default async function SucessoDetalhesPage({
   const agendamentoConfirmado = !existePrePagamento || todosPagamentosAprovados;
 
   const statusAgendamento = agendamentoConfirmado
-    ? 'Confirmado'
+    ? "Confirmado"
     : textoStatus(agendamento?.status);
 
   const statusPagamento = existePrePagamento
     ? todosPagamentosAprovados
-      ? 'Pago'
-      : 'Aguardando pagamento'
-    : 'Sem pré-pagamento';
+      ? "Pago"
+      : "Aguardando pagamento"
+    : "Sem pré-pagamento";
 
   const totalGeral = agendamentos.reduce((total: number, item: any) => {
     return total + Number(obterValorServico(item));
   }, 0);
 
-  const totalPrePagamento = agendamentos.reduce(
-    (total: number, item: any) => {
-      return total + Number(obterValorPrePagamento(item));
-    },
-    0
-  );
+  const totalPrePagamento = agendamentos.reduce((total: number, item: any) => {
+    return total + Number(obterValorPrePagamento(item));
+  }, 0);
 
   const linhasServicosWhatsapp = agendamentos
     .map((item: any, index: number) => {
-      const nomeServico = item?.servico?.nome || 'Serviço';
-      const nomeProfissional = item?.profissional?.nome || 'Profissional';
-      const dataItem = item?.dataHoraInicio ? formatarData(item.dataHoraInicio) : 'Data não informada';
-      const horaItem = item?.dataHoraInicio ? formatarHora(item.dataHoraInicio) : 'Horário não informado';
+      const nomeServico = item?.servico?.nome || "Serviço";
+      const nomeProfissional = item?.profissional?.nome || "Profissional";
+      const dataItem = item?.dataHoraInicio
+        ? formatarData(item.dataHoraInicio)
+        : "Data não informada";
+      const horaItem = item?.dataHoraInicio
+        ? formatarHora(item.dataHoraInicio)
+        : "Horário não informado";
       const pagamentoItem = textoPagamento(
         item?.statusPagamento,
-        Boolean(item?.servico?.exigePrePagamento)
+        Boolean(item?.servico?.exigePrePagamento),
       );
       const promocaoItem = promocaoFoiAplicada(item)
-        ? `\n🎁 Promoção: ${item.promocaoTitulo || formatarTipoPromocao(item.promocaoTipo)}${item.promocaoUsoUnicoCpf ? ' (1x por CPF)' : ''}`
-        : '';
+        ? `\n🎁 Promoção: ${item.promocaoTitulo || formatarTipoPromocao(item.promocaoTipo)}${item.promocaoUsoUnicoCpf ? " (1x por CPF)" : ""}`
+        : "";
 
       return (
         `${index + 1}. *${nomeServico}*\n` +
@@ -334,7 +331,7 @@ export default async function SucessoDetalhesPage({
         promocaoItem
       );
     })
-    .join('\n\n');
+    .join("\n\n");
 
   const mensagemWhatsapp = encodeURIComponent(
     `✨ *${nomeEmpresa}* confirma seu agendamento!\n\n` +
@@ -343,10 +340,10 @@ export default async function SucessoDetalhesPage({
       `${linhasServicosWhatsapp}\n\n` +
       `💰 *Total:* ${formatarMoeda(totalGeral)}\n` +
       `💳 *Status geral:* ${statusPagamento}\n\n` +
-      (enderecoEmpresa ? `📍 ${enderecoEmpresa}\n` : '') +
-      (telefoneEmpresa ? `📞 ${telefoneEmpresa}\n` : '') +
+      (enderecoEmpresa ? `📍 ${enderecoEmpresa}\n` : "") +
+      (telefoneEmpresa ? `📞 ${telefoneEmpresa}\n` : "") +
       `\nQualquer dúvida, é só responder por aqui 😉\n\n` +
-      `A gente te espera! ✨`
+      `A gente te espera! ✨`,
   );
 
   const telefoneLimpo = limparTelefone(telefoneCliente);
@@ -357,66 +354,107 @@ export default async function SucessoDetalhesPage({
   const googleAgendaTexto = encodeURIComponent(
     agendamentos.length > 1
       ? `${agendamentos.length} serviços - ${nomeEmpresa}`
-      : `${servico} - ${nomeEmpresa}`
+      : `${servico} - ${nomeEmpresa}`,
   );
 
   const googleAgendaDetalhes = encodeURIComponent(
     `Agendamento confirmado.\n\n` +
       `Cliente: ${nomeCliente}\n` +
       `Empresa: ${nomeEmpresa}\n` +
-      (telefoneEmpresa ? `Telefone: ${telefoneEmpresa}\n` : '') +
-      (enderecoEmpresa ? `Endereço: ${enderecoEmpresa}\n` : '') +
+      (telefoneEmpresa ? `Telefone: ${telefoneEmpresa}\n` : "") +
+      (enderecoEmpresa ? `Endereço: ${enderecoEmpresa}\n` : "") +
       `\nServiços:\n` +
       agendamentos
         .map((item: any, index: number) => {
-          return `${index + 1}. ${item?.servico?.nome || 'Serviço'} - ${item?.profissional?.nome || 'Profissional'} - ${formatarData(item?.dataHoraInicio)} às ${formatarHora(item?.dataHoraInicio)}`;
+          return `${index + 1}. ${item?.servico?.nome || "Serviço"} - ${item?.profissional?.nome || "Profissional"} - ${formatarData(item?.dataHoraInicio)} às ${formatarHora(item?.dataHoraInicio)}`;
         })
-        .join('\n') +
-      `\n\nPagamento: ${statusPagamento}`
+        .join("\n") +
+      `\n\nPagamento: ${statusPagamento}`,
   );
 
   const primeiroInicio = agendamentos[0]?.dataHoraInicio;
   const ultimoFim = agendamentos[agendamentos.length - 1]?.dataHoraFim;
 
   const inicioGoogle = primeiroInicio
-    ? new Date(primeiroInicio).toISOString().replace(/-|:|\.\d{3}/g, '')
-    : '';
+    ? new Date(primeiroInicio).toISOString().replace(/-|:|\.\d{3}/g, "")
+    : "";
 
   const fimGoogle = ultimoFim
-    ? new Date(ultimoFim).toISOString().replace(/-|:|\.\d{3}/g, '')
-    : '';
+    ? new Date(ultimoFim).toISOString().replace(/-|:|\.\d{3}/g, "")
+    : "";
 
   const linkGoogleAgenda =
     inicioGoogle && fimGoogle
       ? `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${googleAgendaTexto}&details=${googleAgendaDetalhes}&dates=${inicioGoogle}/${fimGoogle}`
-      : '';
+      : "";
 
   const instagramEmpresa =
-    agendamento?.empresa?.instagramUrl ||
-    agendamento?.empresa?.instagram ||
-    '';
+    agendamento?.empresa?.instagramUrl || agendamento?.empresa?.instagram || "";
 
   const instagramLink = instagramEmpresa
-    ? instagramEmpresa.startsWith('http')
+    ? instagramEmpresa.startsWith("http")
       ? instagramEmpresa
-      : `https://instagram.com/${instagramEmpresa.replace('@', '')}`
-    : '';
+      : `https://instagram.com/${instagramEmpresa.replace("@", "")}`
+    : "";
 
   const telefoneEmpresaLimpo = limparTelefone(telefoneEmpresa);
 
   const linkWhatsappEmpresa = telefoneEmpresaLimpo
     ? `https://wa.me/55${telefoneEmpresaLimpo}`
-    : '';
+    : "";
 
   if (!agendamento) {
     return (
-      <main className="page">
-        <div className="backgroundGrid" />
-        <section className="emptyState">
-          <div className="emptyIcon">!</div>
-          <h1>Comprovante não encontrado</h1>
-          <p>Não conseguimos carregar os detalhes deste agendamento.</p>
-          <strong>Marc<span>aê</span></strong>
+      <main
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+          background: "#070b16",
+          color: "#f8fafc",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        <section
+          style={{
+            width: "min(420px, 100%)",
+            borderRadius: 28,
+            padding: 28,
+            background: "rgba(15, 23, 42, 0.92)",
+            border: "1px solid rgba(148, 163, 184, 0.22)",
+            textAlign: "center",
+            boxShadow: "0 24px 80px rgba(0,0,0,0.35)",
+          }}
+        >
+          <div
+            style={{
+              width: 54,
+              height: 54,
+              borderRadius: 18,
+              display: "grid",
+              placeItems: "center",
+              margin: "0 auto 14px",
+              background: "rgba(168, 85, 247, 0.18)",
+              color: "#c084fc",
+              fontSize: 24,
+              fontWeight: 900,
+            }}
+          >
+            !
+          </div>
+
+          <h1 style={{ margin: "0 0 8px", fontSize: 24 }}>
+            Comprovante não encontrado
+          </h1>
+          <p style={{ margin: "0 0 18px", color: "#cbd5e1", lineHeight: 1.5 }}>
+            O reagendamento pode ter sido salvo, mas não conseguimos carregar o
+            comprovante por este link.
+          </p>
+          <strong>
+            Marc<span style={{ color: "#a855f7" }}>aê</span>
+          </strong>
         </section>
       </main>
     );
@@ -426,382 +464,490 @@ export default async function SucessoDetalhesPage({
 
   return (
     <main
-      className="page"
-      style={{
-        '--marcae-primary': tema.primary,
-        '--marcae-secondary': tema.secondary,
-        '--marcae-sidebar': tema.sidebar,
-        '--marcae-primary-soft': tema.primarySoft,
-        '--marcae-secondary-soft': tema.secondarySoft,
-        '--marcae-primary-medium': tema.primaryMedium,
-        '--marcae-secondary-medium': tema.secondaryMedium,
-        '--marcae-gradient': tema.gradient,
-        '--marcae-bg': tema.bg,
-        '--marcae-bg-soft': tema.bgSoft,
-        '--marcae-card': tema.card,
-        '--marcae-card-strong': tema.cardStrong,
-        '--marcae-border': tema.border,
-        '--marcae-text': tema.text,
-        '--marcae-muted': tema.muted,
-        '--marcae-glow': tema.glow,
-      } as CSSProperties}
+      id="comprovante"
+      className="sucessoPage"
+      style={
+        {
+          "--marcae-primary": tema.primary,
+          "--marcae-secondary": tema.secondary,
+          "--marcae-sidebar": tema.sidebar,
+          "--marcae-primary-soft": tema.primarySoft,
+          "--marcae-secondary-soft": tema.secondarySoft,
+          "--marcae-primary-medium": tema.primaryMedium,
+          "--marcae-secondary-medium": tema.secondaryMedium,
+          "--marcae-gradient": tema.gradient,
+          "--marcae-bg": tema.bg,
+          "--marcae-bg-soft": tema.bgSoft,
+          "--marcae-card": tema.card,
+          "--marcae-card-strong": tema.cardStrong,
+          "--marcae-border": tema.border,
+          "--marcae-text": tema.text,
+          "--marcae-muted": tema.muted,
+          "--marcae-glow": tema.glow,
+        } as CSSProperties
+      }
     >
-      <div className="backgroundGrid" />
-      <div className="orb orbOne" />
-      <div className="orb orbTwo" />
-      <div className="orb orbThree" />
+      <div className="sucessoScrollArea">
+        <div className="backgroundGrid" />
+        <div className="orb orbOne" />
+        <div className="orb orbTwo" />
+        <div className="orb orbThree" />
 
-      <section className="receiptShell">
-        <aside className="heroPanel">
-          <div className="brandPill">
-            <span>✦</span>
-            Marc<span>aê</span>
-          </div>
-
-          <div className="companyMark">
-            {agendamento?.empresa?.logoUrl ? (
-              <img src={agendamento.empresa.logoUrl} alt={nomeEmpresa} />
-            ) : (
-              <strong>{String(nomeEmpresa || 'M').charAt(0).toUpperCase()}</strong>
-            )}
-          </div>
-
-          <div className="heroCopy">
-            <div className={agendamentoConfirmado ? 'statusBadge confirmed' : 'statusBadge pending'}>
-              <span>{agendamentoConfirmado ? '✓' : '•'}</span>
-              {statusAgendamento}
+        <section className="receiptShell" data-receipt-shell="true">
+          <aside className="heroPanel">
+            <div className="brandPill">
+              <span>✦</span>
+              Marc<span>aê</span>
             </div>
 
-            <h1>
-              {agendamentoConfirmado
-                ? 'Reserva confirmada.'
-                : 'Reserva recebida.'}
-            </h1>
-
-            <p>
-              {agendamentoConfirmado
-                ? `Seu atendimento em ${nomeEmpresa} está garantido.`
-                : 'Seu atendimento foi criado e aguarda confirmação automática do pagamento.'}
-            </p>
-          </div>
-
-          <div className="heroStats">
-            <div>
-              <span>Serviços</span>
-              <strong>{agendamentos.length}</strong>
+            <div className="companyMark">
+              {agendamento?.empresa?.logoUrl ? (
+                <img src={agendamento.empresa.logoUrl} alt={nomeEmpresa} />
+              ) : (
+                <strong>
+                  {String(nomeEmpresa || "M")
+                    .charAt(0)
+                    .toUpperCase()}
+                </strong>
+              )}
             </div>
 
-            <div>
-              <span>Total</span>
-              <strong>{formatarMoeda(totalGeral)}</strong>
-            </div>
+            <div className="heroCopy">
+              <div
+                className={
+                  agendamentoConfirmado
+                    ? "statusBadge confirmed"
+                    : "statusBadge pending"
+                }
+              >
+                <span>{agendamentoConfirmado ? "✓" : "•"}</span>
+                {statusAgendamento}
+              </div>
 
-            <div>
-              <span>Pagamento</span>
-              <strong>{statusPagamento}</strong>
-            </div>
-          </div>
-
-          <div className="heroFooter">
-            <span>Comprovante digital</span>
-            <strong>{nomeEmpresa}</strong>
-          </div>
-        </aside>
-
-        <section className="contentPanel">
-          <header className="contentHeader">
-            <div>
-              <span className="eyebrow">
-                {agendamentos.length > 1
-                  ? 'Agendamento multi-serviço'
-                  : 'Agendamento online'}
-              </span>
-
-              <h2>
-                {agendamentos.length > 1
-                  ? `${agendamentos.length} serviços agendados`
-                  : servico}
-              </h2>
+              <h1>
+                {agendamentoConfirmado
+                  ? "Reserva confirmada."
+                  : "Reserva recebida."}
+              </h1>
 
               <p>
-                Olá, <strong>{nomeCliente}</strong>. Confira abaixo todos os detalhes da sua reserva.
+                {agendamentoConfirmado
+                  ? `Seu atendimento em ${nomeEmpresa} está garantido.`
+                  : "Seu atendimento foi criado e aguarda confirmação automática do pagamento."}
               </p>
             </div>
 
-            <div className={agendamentoConfirmado ? 'headerSeal confirmed' : 'headerSeal pending'}>
-              {agendamentoConfirmado ? 'Confirmado' : 'Pendente'}
-            </div>
-          </header>
-
-          <section className="summaryRibbon">
-            <div>
-              <span>Total dos serviços</span>
-              <strong>{formatarMoeda(totalGeral)}</strong>
-            </div>
-
-            {existePrePagamento && (
+            <div className="heroStats">
               <div>
-                <span>Valor pago agora</span>
-                <strong>{formatarMoeda(totalPrePagamento)}</strong>
+                <span>Serviços</span>
+                <strong>{agendamentos.length}</strong>
               </div>
-            )}
 
-            <div>
-              <span>Status geral</span>
-              <strong>{statusPagamento}</strong>
-            </div>
-          </section>
+              <div>
+                <span>Total</span>
+                <strong>{formatarMoeda(totalGeral)}</strong>
+              </div>
 
-          <section className="timelineSection">
-            <div className="sectionHeading">
-              <span>Agenda</span>
-              <strong>Serviços reservados</strong>
+              <div>
+                <span>Pagamento</span>
+                <strong>{statusPagamento}</strong>
+              </div>
             </div>
 
-            <div className="serviceTimeline">
-              {agendamentos.map((item: any, index: number) => {
-                const exigePrePagamentoItem = Boolean(item?.servico?.exigePrePagamento);
-                const statusPagamentoItem = textoPagamento(
-                  item?.statusPagamento,
-                  exigePrePagamentoItem
-                );
-                const valorServicoItem = obterValorServico(item);
-                const valorPrePagamentoItem = obterValorPrePagamento(item);
-                const possuiPromocaoAplicada = promocaoFoiAplicada(item);
-                const valorOriginalItem = Number(item?.valorOriginalServico || item?.servico?.valor || item?.servico?.preco || valorServicoItem || 0);
-                const valorEconomizadoItem = Number(item?.valorEconomizado || Math.max(valorOriginalItem - valorServicoItem, 0));
-                const descontoPromocaoItem = formatarDescontoPromocao(item);
+            <div className="heroFooter">
+              <span>Comprovante digital</span>
+              <strong>{nomeEmpresa}</strong>
+            </div>
+          </aside>
 
-                return (
-                  <article key={item.id} className="serviceCard">
-                    <div className="timelineDot">
-                      <span>{index + 1}</span>
-                    </div>
+          <section className="contentPanel">
+            <header className="contentHeader">
+              <div>
+                <span className="eyebrow">
+                  {agendamentos.length > 1
+                    ? "Agendamento multi-serviço"
+                    : "Agendamento online"}
+                </span>
 
-                    <div className="serviceBody">
-                      <div className="serviceTop">
-                        <div>
-                          <span className="serviceTag">Serviço {index + 1}</span>
-                          <h3>{item?.servico?.nome || 'Serviço'}</h3>
-                          <p>{formatarData(item?.dataHoraInicio)} às {formatarHora(item?.dataHoraInicio)}</p>
-                        </div>
+                <h2>
+                  {agendamentos.length > 1
+                    ? `${agendamentos.length} serviços agendados`
+                    : servico}
+                </h2>
 
-                        <div className="servicePriceBlock">
-                          {possuiPromocaoAplicada && valorOriginalItem > valorServicoItem && (
-                            <small>{formatarMoeda(valorOriginalItem)}</small>
-                          )}
-                          <strong className="servicePrice">{formatarMoeda(valorServicoItem)}</strong>
-                        </div>
+                <p>
+                  Olá, <strong>{nomeCliente}</strong>. Confira abaixo todos os
+                  detalhes da sua reserva.
+                </p>
+              </div>
+
+              <div
+                className={
+                  agendamentoConfirmado
+                    ? "headerSeal confirmed"
+                    : "headerSeal pending"
+                }
+              >
+                {agendamentoConfirmado ? "Confirmado" : "Pendente"}
+              </div>
+            </header>
+
+            <section className="summaryRibbon">
+              <div>
+                <span>Total dos serviços</span>
+                <strong>{formatarMoeda(totalGeral)}</strong>
+              </div>
+
+              {existePrePagamento && (
+                <div>
+                  <span>Valor pago agora</span>
+                  <strong>{formatarMoeda(totalPrePagamento)}</strong>
+                </div>
+              )}
+
+              <div>
+                <span>Status geral</span>
+                <strong>{statusPagamento}</strong>
+              </div>
+            </section>
+
+            <section className="timelineSection">
+              <div className="sectionHeading">
+                <span>Agenda</span>
+                <strong>Serviços reservados</strong>
+              </div>
+
+              <div className="serviceTimeline">
+                {agendamentos.map((item: any, index: number) => {
+                  const exigePrePagamentoItem = Boolean(
+                    item?.servico?.exigePrePagamento,
+                  );
+                  const statusPagamentoItem = textoPagamento(
+                    item?.statusPagamento,
+                    exigePrePagamentoItem,
+                  );
+                  const valorServicoItem = obterValorServico(item);
+                  const valorPrePagamentoItem = obterValorPrePagamento(item);
+                  const possuiPromocaoAplicada = promocaoFoiAplicada(item);
+                  const valorOriginalItem = Number(
+                    item?.valorOriginalServico ||
+                      item?.servico?.valor ||
+                      item?.servico?.preco ||
+                      valorServicoItem ||
+                      0,
+                  );
+                  const valorEconomizadoItem = Number(
+                    item?.valorEconomizado ||
+                      Math.max(valorOriginalItem - valorServicoItem, 0),
+                  );
+                  const descontoPromocaoItem = formatarDescontoPromocao(item);
+
+                  return (
+                    <article key={item.id} className="serviceCard">
+                      <div className="timelineDot">
+                        <span>{index + 1}</span>
                       </div>
 
-                      <div className="detailGrid">
-                        <div className="detailCard">
-                          <span className="detailIcon">👤</span>
+                      <div className="serviceBody">
+                        <div className="serviceTop">
                           <div>
-                            <small>Profissional</small>
-                            <strong>{item?.profissional?.nome || 'Profissional'}</strong>
+                            <span className="serviceTag">
+                              Serviço {index + 1}
+                            </span>
+                            <h3>{item?.servico?.nome || "Serviço"}</h3>
+                            <p>
+                              {formatarData(item?.dataHoraInicio)} às{" "}
+                              {formatarHora(item?.dataHoraInicio)}
+                            </p>
+                          </div>
+
+                          <div className="servicePriceBlock">
+                            {possuiPromocaoAplicada &&
+                              valorOriginalItem > valorServicoItem && (
+                                <small>
+                                  {formatarMoeda(valorOriginalItem)}
+                                </small>
+                              )}
+                            <strong className="servicePrice">
+                              {formatarMoeda(valorServicoItem)}
+                            </strong>
                           </div>
                         </div>
 
-                        <div className="detailCard">
-                          <span className="detailIcon">⏱</span>
-                          <div>
-                            <small>Duração</small>
-                            <strong>{item?.duracaoMin || item?.servico?.duracaoMin || 30} minutos</strong>
+                        <div className="detailGrid">
+                          <div className="detailCard">
+                            <span className="detailIcon">👤</span>
+                            <div>
+                              <small>Profissional</small>
+                              <strong>
+                                {item?.profissional?.nome || "Profissional"}
+                              </strong>
+                            </div>
                           </div>
+
+                          <div className="detailCard">
+                            <span className="detailIcon">⏱</span>
+                            <div>
+                              <small>Duração</small>
+                              <strong>
+                                {item?.duracaoMin ||
+                                  item?.servico?.duracaoMin ||
+                                  30}{" "}
+                                minutos
+                              </strong>
+                            </div>
+                          </div>
+
+                          <div className="detailCard">
+                            <span className="detailIcon">💳</span>
+                            <div>
+                              <small>Pagamento</small>
+                              <strong>{statusPagamentoItem}</strong>
+                            </div>
+                          </div>
+
+                          {exigePrePagamentoItem && (
+                            <div className="detailCard">
+                              <span className="detailIcon">◆</span>
+                              <div>
+                                <small>Pré-pagamento</small>
+                                <strong>
+                                  {formatarMoeda(valorPrePagamentoItem)}
+                                </strong>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
-                        <div className="detailCard">
-                          <span className="detailIcon">💳</span>
-                          <div>
-                            <small>Pagamento</small>
-                            <strong>{statusPagamentoItem}</strong>
+                        {possuiPromocaoAplicada && (
+                          <div className="promoNotice">
+                            <div className="promoNoticeHeader">
+                              <span>🎁 Promoção aplicada</span>
+                              <strong>
+                                {item?.promocaoTitulo ||
+                                  formatarTipoPromocao(item?.promocaoTipo)}
+                              </strong>
+                            </div>
+
+                            {item?.promocaoDescricao && (
+                              <p>{item.promocaoDescricao}</p>
+                            )}
+
+                            <div className="promoNoticeGrid">
+                              <div>
+                                <small>Tipo</small>
+                                <strong>
+                                  {formatarTipoPromocao(item?.promocaoTipo)}
+                                </strong>
+                              </div>
+
+                              {descontoPromocaoItem && (
+                                <div>
+                                  <small>Desconto</small>
+                                  <strong>{descontoPromocaoItem}</strong>
+                                </div>
+                              )}
+
+                              <div>
+                                <small>Economia</small>
+                                <strong>
+                                  {formatarMoeda(valorEconomizadoItem)}
+                                </strong>
+                              </div>
+                            </div>
+
+                            {item?.promocaoUsoUnicoCpf && (
+                              <div className="promoUsoUnico">
+                                🔒 Promoção válida apenas 1 vez por CPF.
+                              </div>
+                            )}
                           </div>
-                        </div>
+                        )}
 
                         {exigePrePagamentoItem && (
-                          <div className="detailCard">
-                            <span className="detailIcon">◆</span>
-                            <div>
-                              <small>Pré-pagamento</small>
-                              <strong>{formatarMoeda(valorPrePagamentoItem)}</strong>
-                            </div>
+                          <div className="policyNotice">
+                            <strong>Política de pré-pagamento</strong>
+                            <span>
+                              O valor pago não é reembolsável em caso de falta
+                              no dia do atendimento ou se o
+                              cancelamento/reagendamento não for solicitado com
+                              pelo menos 24 horas de antecedência.
+                            </span>
                           </div>
                         )}
                       </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
 
-                      {possuiPromocaoAplicada && (
-                        <div className="promoNotice">
-                          <div className="promoNoticeHeader">
-                            <span>🎁 Promoção aplicada</span>
-                            <strong>{item?.promocaoTitulo || formatarTipoPromocao(item?.promocaoTipo)}</strong>
-                          </div>
+            <section className="infoGrid">
+              <div className="infoTile">
+                <span>Cliente</span>
+                <strong>{nomeCliente}</strong>
+              </div>
 
-                          {item?.promocaoDescricao && (
-                            <p>{item.promocaoDescricao}</p>
-                          )}
+              <div className="infoTile">
+                <span>Empresa</span>
+                <strong>{nomeEmpresa}</strong>
+              </div>
 
-                          <div className="promoNoticeGrid">
-                            <div>
-                              <small>Tipo</small>
-                              <strong>{formatarTipoPromocao(item?.promocaoTipo)}</strong>
-                            </div>
+              <div className="infoTile">
+                <span>Primeiro horário</span>
+                <strong>{data}</strong>
+              </div>
 
-                            {descontoPromocaoItem && (
-                              <div>
-                                <small>Desconto</small>
-                                <strong>{descontoPromocaoItem}</strong>
-                              </div>
-                            )}
+              <div className="infoTile">
+                <span>Início</span>
+                <strong>{hora}</strong>
+              </div>
 
-                            <div>
-                              <small>Economia</small>
-                              <strong>{formatarMoeda(valorEconomizadoItem)}</strong>
-                            </div>
-                          </div>
+              {telefoneEmpresa && (
+                <div className="infoTile">
+                  <span>WhatsApp da empresa</span>
+                  <strong>{telefoneEmpresa}</strong>
+                </div>
+              )}
 
-                          {item?.promocaoUsoUnicoCpf && (
-                            <div className="promoUsoUnico">
-                              🔒 Promoção válida apenas 1 vez por CPF.
-                            </div>
-                          )}
-                        </div>
-                      )}
+              {enderecoEmpresa && (
+                <div className="infoTile">
+                  <span>Local do atendimento</span>
 
-                      {exigePrePagamentoItem && (
-                        <div className="policyNotice">
-                          <strong>Política de pré-pagamento</strong>
-                          <span>
-                            O valor pago não é reembolsável em caso de falta no dia do atendimento
-                            ou se o cancelamento/reagendamento não for solicitado com pelo menos
-                            24 horas de antecedência.
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
+                  <strong>{enderecoEmpresa}</strong>
 
-          <section className="infoGrid">
-            <div className="infoTile">
-              <span>Cliente</span>
-              <strong>{nomeCliente}</strong>
-            </div>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoEmpresa)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mapsButton"
+                  >
+                    📍 Abrir rota
+                  </a>
+                </div>
+              )}
+            </section>
 
-            <div className="infoTile">
-              <span>Empresa</span>
-              <strong>{nomeEmpresa}</strong>
-            </div>
-
-            <div className="infoTile">
-              <span>Primeiro horário</span>
-              <strong>{data}</strong>
-            </div>
-
-            <div className="infoTile">
-              <span>Início</span>
-              <strong>{hora}</strong>
-            </div>
-
-            {telefoneEmpresa && (
-  <div className="infoTile">
-    <span>WhatsApp da empresa</span>
-    <strong>{telefoneEmpresa}</strong>
-  </div>
-)}
-
-            {enderecoEmpresa && (
-  <div className="infoTile">
-    <span>Local do atendimento</span>
-
-    <strong>{enderecoEmpresa}</strong>
-
-    <a
-      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoEmpresa)}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="mapsButton"
-    >
-      📍 Abrir rota
-    </a>
-  </div>
-)}
-          </section>
-
-          <section className="actions">
-            <a
-  href={linkWhatsapp}
-  target="_blank"
-  rel="noopener noreferrer"
-  className="actionButton whatsapp"
->
-  Enviar confirmação no WhatsApp
-</a>
-
-            {linkGoogleAgenda && (
+            <section className="actions">
               <a
-                href={linkGoogleAgenda}
+                href={linkWhatsapp}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="actionButton calendar"
+                className="actionButton whatsapp"
               >
-                Adicionar ao Google Agenda
+                Enviar confirmação no WhatsApp
               </a>
-            )}
-          </section>
 
-          <section className="socialCard">
-            <div>
-              <span>Experiência premium</span>
-              <strong>Gostou da experiência?</strong>
-              <p>Acompanhe a empresa ou fale direto pelo WhatsApp quando precisar.</p>
-            </div>
-
-            <div className="socialActions">
-              {instagramLink && (
-                <a href={instagramLink} target="_blank" rel="noopener noreferrer">
-                  Instagram
+              {linkGoogleAgenda && (
+                <a
+                  href={linkGoogleAgenda}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="actionButton calendar"
+                >
+                  Adicionar ao Google Agenda
                 </a>
               )}
+            </section>
 
-              {linkWhatsappEmpresa && (
-                <a href={linkWhatsappEmpresa} target="_blank" rel="noopener noreferrer">
-                  WhatsApp da empresa
-                </a>
-              )}
-            </div>
+            <section className="socialCard">
+              <div>
+                <span>Experiência premium</span>
+                <strong>Gostou da experiência?</strong>
+                <p>
+                  Acompanhe a empresa ou fale direto pelo WhatsApp quando
+                  precisar.
+                </p>
+              </div>
+
+              <div className="socialActions">
+                {instagramLink && (
+                  <a
+                    href={instagramLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Instagram
+                  </a>
+                )}
+
+                {linkWhatsappEmpresa && (
+                  <a
+                    href={linkWhatsappEmpresa}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    WhatsApp da empresa
+                  </a>
+                )}
+              </div>
+            </section>
+
+            <footer className="poweredBy">
+              <span>Agendado por</span>
+              <strong>
+                Marc<span>aê</span>
+              </strong>
+            </footer>
           </section>
-
-          <footer className="poweredBy">
-            <span>Agendado por</span>
-            <strong>Marc<span>aê</span></strong>
-          </footer>
         </section>
-      </section>
+      </div>
 
       <style>{`
+        :global(html) {
+          scroll-behavior: auto !important;
+          background: #070b16;
+        }
+
+        :global(body) {
+          margin: 0;
+          background: #070b16;
+          overflow-x: hidden;
+          overflow-y: auto;
+          scroll-behavior: auto !important;
+        }
+
         * {
           box-sizing: border-box;
         }
 
-        .page {
-          position: relative;
-          min-height: 100vh;
-          overflow: hidden;
-          background:
-            radial-gradient(circle at 15% 8%, var(--marcae-primary-soft), transparent 30%),
-            radial-gradient(circle at 88% 18%, var(--marcae-secondary-soft), transparent 28%),
-            radial-gradient(circle at 50% 100%, var(--marcae-primary-soft), transparent 34%),
-            linear-gradient(135deg, var(--marcae-bg) 0%, var(--marcae-bg-soft) 44%, var(--marcae-sidebar) 100%);
-          color: var(--marcae-text);
+        .sucessoPage {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  background:
+    radial-gradient(circle at 15% 8%, var(--marcae-primary-soft), transparent 30%),
+    radial-gradient(circle at 88% 18%, var(--marcae-secondary-soft), transparent 28%),
+    radial-gradient(circle at 50% 100%, var(--marcae-primary-soft), transparent 34%),
+    linear-gradient(
+      135deg,
+      var(--marcae-bg) 0%,
+      var(--marcae-bg-soft) 44%,
+      var(--marcae-sidebar) 100%
+    );
+
+  color: var(--marcae-text);
+  font-family: Arial, sans-serif;
+}
+
+        .sucessoScrollArea {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+          width: 100%;
+          height: 100%;
+          overflow-x: hidden;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior-y: contain;
           display: flex;
           justify-content: center;
-          align-items: center;
+          align-items: flex-start;
           padding: 28px 20px 40px;
-          font-family: Arial, sans-serif;
+          scroll-behavior: auto;
         }
 
         .backgroundGrid {
@@ -818,7 +964,6 @@ export default async function SucessoDetalhesPage({
         .orb {
           position: absolute;
           border-radius: 999px;
-          filter: blur(22px);
           opacity: 0.72;
           pointer-events: none;
         }
@@ -857,14 +1002,24 @@ export default async function SucessoDetalhesPage({
           align-items: stretch;
         }
 
+        .receiptShell,
         .heroPanel,
-        .contentPanel,
-        .emptyState {
-          border: 1px solid rgba(237, 233, 255, 0.12);
-          background: linear-gradient(145deg, rgba(17, 20, 37, 0.86), rgba(8, 11, 15, 0.86));
-          box-shadow: 0 34px 90px rgba(0, 0, 0, 0.5);
-          backdrop-filter: blur(22px);
+        .contentPanel {
+          visibility: visible !important;
+          opacity: 1 !important;
         }
+
+        .receiptShell {
+          margin: 0 auto;
+        }
+
+        .heroPanel,
+.contentPanel,
+.emptyState {
+  border: 1px solid rgba(237, 233, 255, 0.12);
+  background: rgba(17, 20, 37, 0.96);
+  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.5);
+}
 
         .heroPanel {
           min-height: auto;
@@ -874,8 +1029,7 @@ export default async function SucessoDetalhesPage({
           flex-direction: column;
           justify-content: space-between;
           overflow: hidden;
-          position: sticky;
-          top: 28px;
+          position: relative;
         }
 
         .heroPanel::before {
@@ -1549,8 +1703,7 @@ export default async function SucessoDetalhesPage({
         }
 
                 @media (min-width: 981px) {
-  .page {
-    width: 100%;
+  .sucessoScrollArea {
     justify-content: center;
     align-items: flex-start;
     padding: 28px 20px 40px;
@@ -1570,7 +1723,7 @@ export default async function SucessoDetalhesPage({
 }
 
         @media (max-width: 980px) {
-          .page {
+          .sucessoScrollArea {
             align-items: flex-start;
             padding: 18px;
           }
@@ -1601,8 +1754,14 @@ export default async function SucessoDetalhesPage({
         }
 
         @media (max-width: 640px) {
-          .page {
+          .sucessoScrollArea {
+            align-items: flex-start;
+            justify-content: flex-start;
             padding: 12px;
+          }
+
+          .receiptShell {
+            width: 100%;
           }
 
           .heroPanel,
