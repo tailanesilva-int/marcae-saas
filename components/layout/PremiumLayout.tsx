@@ -348,8 +348,66 @@ useEffect(() => {
   storageKey,
 ]);
 
+
+  useEffect(() => {
+    const SESSION_TIMEOUT = 1000 * 60 * 60;
+
+    function validarSessao() {
+      const ultimoAcesso = localStorage.getItem('marcae_ultimo_acesso');
+
+      if (!ultimoAcesso) {
+        localStorage.setItem('marcae_ultimo_acesso', Date.now().toString());
+        return;
+      }
+
+      const agora = Date.now();
+      const diferenca = agora - Number(ultimoAcesso);
+
+      if (diferenca > SESSION_TIMEOUT) {
+        localStorage.removeItem('empresaLogada');
+        localStorage.removeItem('usuarioEmpresa');
+        localStorage.removeItem('marcae_ultimo_acesso');
+
+        window.location.href = '/login';
+        return;
+      }
+
+      localStorage.setItem('marcae_ultimo_acesso', agora.toString());
+    }
+
+    validarSessao();
+
+    const interval = setInterval(validarSessao, 60000);
+
+    const atualizarAtividade = () => {
+      localStorage.setItem('marcae_ultimo_acesso', Date.now().toString());
+    };
+
+    window.addEventListener('click', atualizarAtividade);
+    window.addEventListener('keydown', atualizarAtividade);
+    window.addEventListener('mousemove', atualizarAtividade);
+    window.addEventListener('scroll', atualizarAtividade);
+    window.addEventListener('touchstart', atualizarAtividade);
+
+    return () => {
+      clearInterval(interval);
+
+      window.removeEventListener('click', atualizarAtividade);
+      window.removeEventListener('keydown', atualizarAtividade);
+      window.removeEventListener('mousemove', atualizarAtividade);
+      window.removeEventListener('scroll', atualizarAtividade);
+      window.removeEventListener('touchstart', atualizarAtividade);
+    };
+  }, []);
+
   function ativo(href: string) {
     return pathname === href;
+  }
+
+  function sair() {
+    localStorage.removeItem('empresaLogada');
+    localStorage.removeItem('usuarioEmpresa');
+    window.location.href = '/login';
   }
 
   return (
@@ -432,6 +490,11 @@ useEffect(() => {
             <div style={{ flex: 1 }} />
 
             <div style={sidebarBottom}>
+              <button type="button" onClick={sair} style={logoutSidebarButton}>
+                <span>🚪</span>
+                <span>Sair</span>
+              </button>
+
               <div style={userCard}>
                 <div style={userAvatar}>
                   {(usuario?.nome || 'U').charAt(0).toUpperCase()}
@@ -668,6 +731,14 @@ useEffect(() => {
                   );
                 })}
               </nav>
+
+              <button
+                type="button"
+                onClick={sair}
+                style={logoutMobileDrawerButton}
+              >
+                🚪 Sair do sistema
+              </button>
 
               <div style={mobileDrawerUser}>
                 <div style={userAvatar}>
@@ -991,6 +1062,36 @@ const activeGlow: React.CSSProperties = {
 };
 
 const sidebarBottom: React.CSSProperties = { display: 'grid', gap: 16 };
+
+const logoutSidebarButton: React.CSSProperties = {
+  width: '100%',
+  height: 50,
+  borderRadius: 18,
+  border: '1px solid rgba(239,68,68,.20)',
+  background: 'rgba(239,68,68,.08)',
+  color: '#fca5a5',
+  fontWeight: 900,
+  fontSize: 14,
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 10,
+  transition: '.2s',
+};
+
+const logoutMobileDrawerButton: React.CSSProperties = {
+  width: '100%',
+  minHeight: 52,
+  borderRadius: 16,
+  border: '1px solid rgba(239,68,68,.20)',
+  background: 'rgba(239,68,68,.08)',
+  color: '#fca5a5',
+  fontWeight: 900,
+  fontSize: 14,
+  cursor: 'pointer',
+  marginTop: 14,
+};
 
 const userCard: React.CSSProperties = {
   display: 'flex',

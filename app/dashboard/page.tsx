@@ -212,7 +212,8 @@ setPromocoesAtivas(promocoesValidas);
 }
 
   function sair() {
-    localStorage.clear();
+    localStorage.removeItem('empresaLogada');
+    localStorage.removeItem('usuarioEmpresa');
     window.location.href = '/login';
   }
 
@@ -2875,6 +2876,10 @@ const comissoesPeriodoEstimadas = agendamentosSemanaPrevisaoValidos.reduce(
 
             <button onClick={abrirModalReagendamento} style={heroButtonPrimaryPremium}>
               Gerenciar operação
+            </button>
+
+            <button onClick={sair} style={heroButtonDangerPremium}>
+              🚪 Sair
             </button>
           </div>
         </div>
