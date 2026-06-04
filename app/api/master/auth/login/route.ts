@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 
 const MASTER_COOKIE_NAME = 'marcae_master_token';
-const TEMPO_SESSAO_MS = 1000 * 60 * 60 * 8;
+const TEMPO_SESSAO_MS = 1000 * 60 * 60;
 
 function normalizarEmail(email: string) {
   return String(email || '').trim().toLowerCase();

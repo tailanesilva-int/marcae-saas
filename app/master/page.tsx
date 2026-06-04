@@ -874,6 +874,23 @@ const payload = {
     });
   }
 
+  async function sairMaster() {
+    const confirmar = window.confirm("Deseja sair do painel Master?");
+
+    if (!confirmar) return;
+
+    try {
+      await fetch("/api/master/auth/logout", {
+        method: "POST",
+        cache: "no-store",
+      });
+    } catch (error) {
+      console.error("Erro ao sair do painel Master:", error);
+    } finally {
+      window.location.href = "/master/login";
+    }
+  }
+
   const empresasFiltradas = useMemo(() => {
     if (!busca) return empresas;
 
@@ -939,6 +956,10 @@ const payload = {
 
           <button style={styles.btnCadastrar} onClick={abrirCadastro}>
             + Cadastrar empresa
+          </button>
+
+          <button type="button" style={styles.btnSairMaster} onClick={sairMaster}>
+            Sair
           </button>
 
           <div style={styles.cardHighlight}>
@@ -2716,6 +2737,18 @@ const styles: Record<string, any> = {
     boxShadow: "0 18px 42px rgba(168,85,247,0.20)",
     minHeight: 64,
     minWidth: 220,
+  },
+  btnSairMaster: {
+    border: "1px solid rgba(248, 113, 113, 0.42)",
+    background: "linear-gradient(135deg, rgba(127,29,29,0.94), rgba(185,28,28,0.82))",
+    color: "#ffffff",
+    borderRadius: 18,
+    padding: "16px 20px",
+    fontWeight: 900,
+    cursor: "pointer",
+    boxShadow: "0 18px 42px rgba(239,68,68,0.18)",
+    minHeight: 64,
+    minWidth: 110,
   },
 
   modalComunicacao: {
