@@ -6766,6 +6766,7 @@ const mobileInsightIcon: React.CSSProperties = {
   background: 'rgba(255,255,255,0.06)',
 };
 
+
 /* Constantes antigas mantidas para compatibilidade com blocos existentes do arquivo */
 const header: React.CSSProperties = {};
 const gridCards: React.CSSProperties = {};

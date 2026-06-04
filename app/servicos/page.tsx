@@ -20,6 +20,7 @@ export default function ServicosPage() {
   const [form, setForm] = useState({
     nome: '',
     descricao: '',
+    recomendacoesPreAtendimento: '',
     duracaoMin: 30,
     capacidadeSimultanea: 1,
     valor: '',
@@ -81,6 +82,7 @@ export default function ServicosPage() {
       empresaId: empresa.id,
       nome: form.nome,
       descricao: form.descricao,
+      recomendacoesPreAtendimento: form.recomendacoesPreAtendimento,
       duracaoMin: Math.max(Number(form.duracaoMin || 30), 5),
       capacidadeSimultanea: normalizarCapacidadeSimultanea(form.capacidadeSimultanea),
       valor: form.valor,
@@ -100,6 +102,7 @@ export default function ServicosPage() {
     setForm({
       nome: '',
       descricao: '',
+      recomendacoesPreAtendimento: '',
       duracaoMin: 30,
       capacidadeSimultanea: 1,
       valor: '',
@@ -120,6 +123,7 @@ export default function ServicosPage() {
     setForm({
       nome: servico.nome || '',
       descricao: servico.descricao || '',
+      recomendacoesPreAtendimento: servico.recomendacoesPreAtendimento || '',
       duracaoMin: servico.duracaoMin || 30,
       capacidadeSimultanea: normalizarCapacidadeSimultanea(servico.capacidadeSimultanea),
       valor: String(servico.valor || ''),
@@ -237,6 +241,7 @@ export default function ServicosPage() {
           empresaId: empresa.id,
           nome: servico.nome,
           descricao: servico.descricao || '',
+          recomendacoesPreAtendimento: servico.recomendacoesPreAtendimento || '',
           duracaoMin: Math.max(Number(servico.duracaoMin || 30), 5),
           capacidadeSimultanea: normalizarCapacidadeSimultanea(servico.capacidadeSimultanea),
           valor: servico.valor,
@@ -382,6 +387,7 @@ const servicosFiltrados = servicos.filter((servico) => {
   const textoBusca = [
     servico.nome,
     servico.descricao,
+    servico.recomendacoesPreAtendimento,
     servico.valor,
     servico.duracaoMin,
     servico.capacidadeSimultanea,
@@ -1044,6 +1050,24 @@ const servicosFiltrados = servicos.filter((servico) => {
                     />
                   </div>
 
+                  <div style={{ ...campo, gridColumn: '1 / -1' }}>
+                    <label style={label}>Recomendações antes do atendimento</label>
+                    <textarea
+                      style={{ ...input, minHeight: 104, resize: 'vertical' }}
+                      value={form.recomendacoesPreAtendimento}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          recomendacoesPreAtendimento: e.target.value,
+                        })
+                      }
+                      placeholder="Ex.: Evite exposição ao sol 24h antes do procedimento. Venha com a pele limpa e sem maquiagem."
+                    />
+                    <span style={hint}>
+                      Essas recomendações aparecerão para a cliente no agendador público e no comprovante.
+                    </span>
+                  </div>
+
                   <div className="servicos-imagens-box-mobile" style={imagensServicoBox}>
                     <div style={imagensServicoHeader}>
                       <div>
@@ -1348,6 +1372,12 @@ const servicosFiltrados = servicos.filter((servico) => {
                         <p style={servicoDescricaoCompacta}>
                           {s.descricao || 'Sem descrição cadastrada'}
                         </p>
+
+                        {s.recomendacoesPreAtendimento && (
+                          <p style={servicoRecomendacaoCompacta}>
+                            ⚠️ {s.recomendacoesPreAtendimento}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -2662,6 +2692,18 @@ const servicoDescricaoCompacta: CSSProperties = {
   overflow: 'hidden',
 };
 
+
+const servicoRecomendacaoCompacta: CSSProperties = {
+  margin: '8px 0 0',
+  color: '#fde68a',
+  fontSize: 12,
+  fontWeight: 800,
+  lineHeight: 1.45,
+  display: '-webkit-box',
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: 'vertical',
+  overflow: 'hidden',
+};
 const servicoCompactoValorLinha: CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',

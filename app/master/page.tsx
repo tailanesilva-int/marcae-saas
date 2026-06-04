@@ -98,6 +98,37 @@ type ConfiguracaoPlanos = {
   valorPlanoPremium: string;
 };
 
+type AvisoSistema = {
+  id: string;
+  titulo: string;
+  mensagem: string;
+  tipo: string;
+  ativo: boolean;
+  empresaId?: string | null;
+  dataInicio?: string | null;
+  dataFim?: string | null;
+  empresa?: {
+    id: string;
+    nome: string;
+    slug: string;
+  } | null;
+};
+
+type FormAvisoSistema = {
+  id: string;
+  titulo: string;
+  mensagem: string;
+  tipo: string;
+  ativo: boolean;
+  empresaId: string;
+  dataInicio: string;
+  dataFim: string;
+};
+
+type ConfiguracaoMarcae = {
+  whatsappSuporte: string;
+};
+
 const formInicial: FormEmpresa = {
   nome: "",
   slug: "",
@@ -111,6 +142,17 @@ const formInicial: FormEmpresa = {
   observacoesInternas: "",
   plano: "basico",
   valorMensalPersonalizado: "0",
+};
+
+const formAvisoInicial: FormAvisoSistema = {
+  id: "",
+  titulo: "",
+  mensagem: "",
+  tipo: "informativo",
+  ativo: true,
+  empresaId: "",
+  dataInicio: "",
+  dataFim: "",
 };
 
 export default function MasterPage() {
@@ -174,9 +216,24 @@ const [configuracaoPlanos, setConfiguracaoPlanos] =
 const [salvandoConfiguracaoPlanos, setSalvandoConfiguracaoPlanos] =
   useState(false);
 
+const [avisosSistema, setAvisosSistema] = useState<AvisoSistema[]>([]);
+const [formAvisoSistema, setFormAvisoSistema] =
+  useState<FormAvisoSistema>(formAvisoInicial);
+const [salvandoAvisoSistema, setSalvandoAvisoSistema] = useState(false);
+const [excluindoAvisoSistemaId, setExcluindoAvisoSistemaId] = useState("");
+const [configuracaoMarcae, setConfiguracaoMarcae] =
+  useState<ConfiguracaoMarcae>({
+    whatsappSuporte: "",
+  });
+const [salvandoConfiguracaoMarcae, setSalvandoConfiguracaoMarcae] =
+  useState(false);
+const [modalComunicacaoAberto, setModalComunicacaoAberto] = useState(false);
+
   useEffect(() => {
     carregar();
     carregarConfiguracaoPlanos();
+    carregarAvisosSistema();
+    carregarConfiguracaoMarcae();
   }, []);
 
   function atualizarConfiguracaoPlano(campo: keyof ConfiguracaoPlanos, valor: string) {
@@ -246,6 +303,194 @@ const [salvandoConfiguracaoPlanos, setSalvandoConfiguracaoPlanos] =
       setMensagem(error?.message || "Erro ao salvar preços dos planos.");
     } finally {
       setSalvandoConfiguracaoPlanos(false);
+    }
+  }
+
+
+  function atualizarFormAvisoSistema(campo: keyof FormAvisoSistema, valor: any) {
+    setFormAvisoSistema((atual) => ({
+      ...atual,
+      [campo]: valor,
+    }));
+  }
+
+  function limparFormAvisoSistema() {
+    setFormAvisoSistema(formAvisoInicial);
+  }
+
+  async function carregarAvisosSistema() {
+    try {
+      const res = await fetch("/api/master/avisos", {
+        cache: "no-store",
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Erro ao carregar avisos do sistema.");
+      }
+
+      setAvisosSistema(data?.avisos || []);
+    } catch (error) {
+      console.error(error);
+      setMensagem("Erro ao carregar avisos do sistema.");
+    }
+  }
+
+  async function carregarConfiguracaoMarcae() {
+    try {
+      const res = await fetch("/api/master/configuracoes/marcae", {
+        cache: "no-store",
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Erro ao carregar configuração Marcaê.");
+      }
+
+      setConfiguracaoMarcae({
+        whatsappSuporte: data?.configuracao?.whatsappSuporte || "",
+      });
+    } catch (error) {
+      console.error(error);
+      setMensagem("Erro ao carregar configuração de suporte Marcaê.");
+    }
+  }
+
+  async function salvarConfiguracaoMarcae() {
+    try {
+      setSalvandoConfiguracaoMarcae(true);
+      setMensagem("");
+
+      const res = await fetch("/api/master/configuracoes/marcae", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          whatsappSuporte: configuracaoMarcae.whatsappSuporte,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Erro ao salvar suporte Marcaê.");
+      }
+
+      setConfiguracaoMarcae({
+        whatsappSuporte: data?.configuracao?.whatsappSuporte || "",
+      });
+
+      setMensagem("WhatsApp de suporte Marcaê atualizado com sucesso.");
+    } catch (error: any) {
+      console.error(error);
+      setMensagem(error?.message || "Erro ao salvar suporte Marcaê.");
+    } finally {
+      setSalvandoConfiguracaoMarcae(false);
+    }
+  }
+
+  async function salvarAvisoSistema(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    try {
+      setSalvandoAvisoSistema(true);
+      setMensagem("");
+
+      const payload = {
+        titulo: formAvisoSistema.titulo,
+        mensagem: formAvisoSistema.mensagem,
+        tipo: formAvisoSistema.tipo,
+        ativo: formAvisoSistema.ativo,
+        empresaId: formAvisoSistema.empresaId || null,
+        dataInicio: formAvisoSistema.dataInicio || null,
+        dataFim: formAvisoSistema.dataFim || null,
+      };
+
+      const res = await fetch("/api/master/avisos", {
+        method: formAvisoSistema.id ? "PATCH" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...payload,
+          id: formAvisoSistema.id || undefined,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Erro ao salvar aviso do sistema.");
+      }
+
+      setMensagem(
+        formAvisoSistema.id
+          ? "Aviso atualizado com sucesso."
+          : "Aviso criado com sucesso."
+      );
+
+      limparFormAvisoSistema();
+      await carregarAvisosSistema();
+    } catch (error: any) {
+      console.error(error);
+      setMensagem(error?.message || "Erro ao salvar aviso do sistema.");
+    } finally {
+      setSalvandoAvisoSistema(false);
+    }
+  }
+
+  function editarAvisoSistema(aviso: AvisoSistema) {
+    setFormAvisoSistema({
+      id: aviso.id,
+      titulo: aviso.titulo || "",
+      mensagem: aviso.mensagem || "",
+      tipo: aviso.tipo || "informativo",
+      ativo: aviso.ativo !== false,
+      empresaId: aviso.empresaId || "",
+      dataInicio: aviso.dataInicio ? String(aviso.dataInicio).slice(0, 10) : "",
+      dataFim: aviso.dataFim ? String(aviso.dataFim).slice(0, 10) : "",
+    });
+
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  async function excluirAvisoSistema(avisoId: string) {
+    const confirmar = window.confirm(
+      "Deseja realmente excluir este aviso do sistema?"
+    );
+
+    if (!confirmar) return;
+
+    try {
+      setExcluindoAvisoSistemaId(avisoId);
+      setMensagem("");
+
+      const res = await fetch(`/api/master/avisos?id=${encodeURIComponent(avisoId)}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Erro ao excluir aviso do sistema.");
+      }
+
+      if (formAvisoSistema.id === avisoId) {
+        limparFormAvisoSistema();
+      }
+
+      setMensagem("Aviso excluído com sucesso.");
+      await carregarAvisosSistema();
+    } catch (error: any) {
+      console.error(error);
+      setMensagem(error?.message || "Erro ao excluir aviso do sistema.");
+    } finally {
+      setExcluindoAvisoSistemaId("");
     }
   }
 
@@ -684,6 +929,14 @@ const payload = {
         </div>
 
         <div style={styles.headerActions}>
+          <button
+            type="button"
+            style={styles.btnComunicacaoTopo}
+            onClick={() => setModalComunicacaoAberto(true)}
+          >
+            🔔 Informativos Marcaê
+          </button>
+
           <button style={styles.btnCadastrar} onClick={abrirCadastro}>
             + Cadastrar empresa
           </button>
@@ -805,6 +1058,259 @@ const payload = {
           </div>
         </div>
       </section>
+
+      {modalComunicacaoAberto && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalComunicacao}>
+            <div style={styles.modalHeader}>
+              <div>
+                <div style={styles.configPlanosBadge}>Comunicação Marcaê</div>
+                <h2 style={styles.modalTitle}>Avisos do sistema e suporte oficial</h2>
+                <p style={styles.modalSubtitle}>
+                  Configure os avisos que aparecem no painel das empresas e o WhatsApp oficial do suporte Marcaê.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                style={styles.btnFechar}
+                onClick={() => setModalComunicacaoAberto(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={styles.comunicacaoGrid}>
+
+          <form onSubmit={salvarAvisoSistema} style={styles.avisoFormCard}>
+            <div style={styles.avisoFormHeader}>
+              <div>
+                <strong style={styles.avisoFormTitle}>
+                  {formAvisoSistema.id ? "Editar aviso" : "Novo aviso"}
+                </strong>
+                <p style={styles.avisoFormSubtitle}>
+                  O aviso aparecerá no botão “Avisos” do painel administrativo da cliente.
+                </p>
+              </div>
+
+              {formAvisoSistema.id && (
+                <button
+                  type="button"
+                  style={styles.btn}
+                  onClick={limparFormAvisoSistema}
+                >
+                  Limpar edição
+                </button>
+              )}
+            </div>
+
+            <div style={styles.formGrid}>
+              <div style={styles.field}>
+                <label style={styles.label}>Título do aviso *</label>
+                <input
+                  style={styles.formInput}
+                  value={formAvisoSistema.titulo}
+                  onChange={(e) =>
+                    atualizarFormAvisoSistema("titulo", e.target.value)
+                  }
+                  placeholder="Ex.: Novo recurso disponível"
+                  required
+                />
+              </div>
+
+              <div style={styles.field}>
+                <label style={styles.label}>Tipo</label>
+                <select
+                  style={styles.formInput}
+                  value={formAvisoSistema.tipo}
+                  onChange={(e) =>
+                    atualizarFormAvisoSistema("tipo", e.target.value)
+                  }
+                >
+                  <option value="informativo">Informativo</option>
+                  <option value="novidade">Novidade</option>
+                  <option value="alerta">Alerta</option>
+                  <option value="manutencao">Manutenção</option>
+                </select>
+              </div>
+
+              <div style={styles.field}>
+                <label style={styles.label}>Exibir para</label>
+                <select
+                  style={styles.formInput}
+                  value={formAvisoSistema.empresaId}
+                  onChange={(e) =>
+                    atualizarFormAvisoSistema("empresaId", e.target.value)
+                  }
+                >
+                  <option value="">Todas as empresas</option>
+                  {empresas.map((empresa) => (
+                    <option key={empresa.id} value={empresa.id}>
+                      {empresa.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={styles.field}>
+                <label style={styles.label}>Status</label>
+                <select
+                  style={styles.formInput}
+                  value={formAvisoSistema.ativo ? "ativo" : "inativo"}
+                  onChange={(e) =>
+                    atualizarFormAvisoSistema("ativo", e.target.value === "ativo")
+                  }
+                >
+                  <option value="ativo">Ativo</option>
+                  <option value="inativo">Inativo</option>
+                </select>
+              </div>
+
+              <div style={styles.field}>
+                <label style={styles.label}>Início</label>
+                <input
+                  type="date"
+                  style={styles.formInput}
+                  value={formAvisoSistema.dataInicio}
+                  onChange={(e) =>
+                    atualizarFormAvisoSistema("dataInicio", e.target.value)
+                  }
+                />
+              </div>
+
+              <div style={styles.field}>
+                <label style={styles.label}>Fim opcional</label>
+                <input
+                  type="date"
+                  style={styles.formInput}
+                  value={formAvisoSistema.dataFim}
+                  onChange={(e) =>
+                    atualizarFormAvisoSistema("dataFim", e.target.value)
+                  }
+                />
+              </div>
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Mensagem *</label>
+              <textarea
+                style={styles.textarea}
+                value={formAvisoSistema.mensagem}
+                onChange={(e) =>
+                  atualizarFormAvisoSistema("mensagem", e.target.value)
+                }
+                placeholder="Escreva o comunicado que será exibido no painel da cliente."
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              style={{
+                ...styles.btnCadastrar,
+                width: "100%",
+                opacity: salvandoAvisoSistema ? 0.7 : 1,
+                cursor: salvandoAvisoSistema ? "not-allowed" : "pointer",
+              }}
+              disabled={salvandoAvisoSistema}
+            >
+              {salvandoAvisoSistema
+                ? "Salvando aviso..."
+                : formAvisoSistema.id
+                ? "Atualizar aviso"
+                : "Publicar aviso"}
+            </button>
+          </form>
+
+          <div style={styles.suporteCard}>
+            <strong style={styles.avisoFormTitle}>Suporte Marcaê</strong>
+            <p style={styles.avisoFormSubtitle}>
+              Este WhatsApp será usado no botão fixo “Suporte Marcaê” do painel administrativo da cliente.
+            </p>
+
+            <label style={styles.label}>WhatsApp do suporte</label>
+            <input
+              style={styles.formInput}
+              value={configuracaoMarcae.whatsappSuporte}
+              onChange={(e) =>
+                setConfiguracaoMarcae({
+                  whatsappSuporte: e.target.value,
+                })
+              }
+              placeholder="5575999999999"
+            />
+
+            <button
+              type="button"
+              style={{
+                ...styles.btnSalvarPrecoPlanos,
+                width: "100%",
+                marginTop: 14,
+                opacity: salvandoConfiguracaoMarcae ? 0.7 : 1,
+              }}
+              onClick={salvarConfiguracaoMarcae}
+              disabled={salvandoConfiguracaoMarcae}
+            >
+              {salvandoConfiguracaoMarcae ? "Salvando..." : "Salvar suporte"}
+            </button>
+
+            <div style={styles.avisosLista}>
+              <strong style={styles.avisoFormTitle}>Avisos cadastrados</strong>
+
+              {avisosSistema.length === 0 ? (
+                <div style={styles.emptyMini}>Nenhum aviso cadastrado.</div>
+              ) : (
+                avisosSistema.map((aviso) => (
+                  <div key={aviso.id} style={styles.avisoItem}>
+                    <div style={styles.avisoItemTop}>
+                      <span style={styles.avisoTipo}>{labelTipoAviso(aviso.tipo)}</span>
+                      <span
+                        style={{
+                          ...styles.avisoStatus,
+                          background: aviso.ativo ? "#065f46" : "#7f1d1d",
+                          color: aviso.ativo ? "#d1fae5" : "#fecaca",
+                        }}
+                      >
+                        {aviso.ativo ? "Ativo" : "Inativo"}
+                      </span>
+                    </div>
+
+                    <strong style={styles.avisoItemTitulo}>{aviso.titulo}</strong>
+                    <p style={styles.avisoItemMensagem}>{aviso.mensagem}</p>
+
+                    <div style={styles.small}>
+                      Exibição: {aviso.empresa?.nome || "Todas as empresas"}
+                    </div>
+
+                    <div style={styles.avisoItemActions}>
+                      <button
+                        type="button"
+                        style={styles.btn}
+                        onClick={() => editarAvisoSistema(aviso)}
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        type="button"
+                        style={styles.btnRed}
+                        disabled={excluindoAvisoSistemaId === aviso.id}
+                        onClick={() => excluirAvisoSistema(aviso.id)}
+                      >
+                        {excluindoAvisoSistemaId === aviso.id
+                          ? "Excluindo..."
+                          : "Excluir"}
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={styles.panel}>
         <div style={styles.panelHeader}>
@@ -1627,6 +2133,17 @@ function formatarDataHora(data?: string | null) {
   });
 }
 
+
+function labelTipoAviso(tipo?: string | null) {
+  const normalizado = String(tipo || "informativo").toLowerCase();
+
+  if (normalizado === "novidade") return "Novidade";
+  if (normalizado === "alerta") return "Alerta";
+  if (normalizado === "manutencao") return "Manutenção";
+
+  return "Informativo";
+}
+
 function formatarMoeda(valor?: string | number | null) {
   return Number(valor || 0).toLocaleString("pt-BR", {
     style: "currency",
@@ -2188,6 +2705,30 @@ const styles: Record<string, any> = {
     fontWeight: 700,
     fontSize: "12px",
   },
+  btnComunicacaoTopo: {
+    border: "1px solid rgba(168,85,247,0.55)",
+    background: "linear-gradient(135deg, rgba(15,23,42,0.96), rgba(88,28,135,0.45))",
+    color: "#ffffff",
+    borderRadius: 18,
+    padding: "16px 22px",
+    fontWeight: 900,
+    cursor: "pointer",
+    boxShadow: "0 18px 42px rgba(168,85,247,0.20)",
+    minHeight: 64,
+    minWidth: 220,
+  },
+
+  modalComunicacao: {
+    width: "min(1180px, calc(100vw - 32px))",
+    maxHeight: "calc(100vh - 40px)",
+    overflowY: "auto",
+    background: "linear-gradient(145deg, rgba(15,23,42,0.98), rgba(2,6,23,0.98))",
+    border: "1px solid rgba(148,163,184,0.22)",
+    borderRadius: 28,
+    padding: 26,
+    boxShadow: "0 40px 120px rgba(0,0,0,0.55)",
+  },
+
   modalOverlay: {
     position: "fixed",
     inset: 0,

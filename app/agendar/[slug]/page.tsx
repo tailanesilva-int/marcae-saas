@@ -2118,6 +2118,13 @@ setTimeout(() => {
                       Você está reagendando um atendimento aberto desse serviço.
                     </small>
                   )}
+
+                  {servicoSelecionado.recomendacoesPreAtendimento && (
+                    <div className="recommendationBox">
+                      <strong>⚠️ Recomendações antes do atendimento</strong>
+                      <p>{servicoSelecionado.recomendacoesPreAtendimento}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -3257,6 +3264,31 @@ margin-right: auto;
     display: flex;
     flex-direction: column;
     gap: 6px;
+  }
+
+  .recommendationBox {
+    margin-top: 12px;
+    padding: 13px 14px;
+    border-radius: 16px;
+    background: rgba(245, 158, 11, 0.10);
+    border: 1px solid rgba(245, 158, 11, 0.24);
+    color: #fef3c7;
+  }
+
+  .recommendationBox strong {
+    display: block;
+    color: #fbbf24;
+    font-size: 12px;
+    font-weight: 950;
+    margin-bottom: 7px;
+  }
+
+  .recommendationBox p {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre-line;
   }
 
   .dangerBox {

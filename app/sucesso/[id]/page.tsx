@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { prisma } from "@/lib/prisma";
 import { gerarTemaEmpresa } from "@/app/lib/theme";
+import BotaoDownloadComprovante from "@/components/comprovante/BotaoDownloadComprovante";
 
 export const dynamic = "force-dynamic";
 
@@ -764,6 +765,13 @@ export default async function SucessoDetalhesPage({
                           </div>
                         )}
 
+                        {item?.servico?.recomendacoesPreAtendimento && (
+                          <div className="recommendationNotice">
+                            <strong>⚠️ Recomendações importantes</strong>
+                            <span>{item.servico.recomendacoesPreAtendimento}</span>
+                          </div>
+                        )}
+
                         {exigePrePagamentoItem && (
                           <div className="policyNotice">
                             <strong>Política de pré-pagamento</strong>
@@ -829,26 +837,28 @@ export default async function SucessoDetalhesPage({
             </section>
 
             <section className="actions">
-              <a
-                href={linkWhatsapp}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="actionButton whatsapp"
-              >
-                Enviar confirmação no WhatsApp
-              </a>
+  <a
+    href={linkWhatsapp}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="actionButton whatsapp"
+  >
+    Enviar confirmação no WhatsApp
+  </a>
 
-              {linkGoogleAgenda && (
-                <a
-                  href={linkGoogleAgenda}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="actionButton calendar"
-                >
-                  Adicionar ao Google Agenda
-                </a>
-              )}
-            </section>
+  {linkGoogleAgenda && (
+    <a
+      href={linkGoogleAgenda}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="actionButton calendar"
+    >
+      Adicionar ao Google Agenda
+    </a>
+  )}
+
+  <BotaoDownloadComprovante />
+</section>
 
             <section className="socialCard">
               <div>
@@ -1430,6 +1440,28 @@ export default async function SucessoDetalhesPage({
           color: #ffedd5;
         }
 
+        .recommendationNotice {
+          margin-top: 12px;
+          border-radius: 18px;
+          background: rgba(245, 158, 11, 0.08);
+          border: 1px solid rgba(245, 158, 11, 0.22);
+          color: #fed7aa;
+          padding: 13px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          font-size: 13px;
+          line-height: 1.55;
+        }
+
+        .recommendationNotice strong {
+          color: #ffedd5;
+        }
+
+        .recommendationNotice span {
+          white-space: pre-line;
+        }
+
 
         .promoNotice {
           margin-top: 16px;
@@ -1600,6 +1632,21 @@ export default async function SucessoDetalhesPage({
           background: linear-gradient(135deg, var(--marcae-primary), var(--marcae-secondary));
           box-shadow: 0 18px 36px var(--marcae-primary-soft);
         }
+
+.actionButton.download {
+  background: linear-gradient(
+    135deg,
+    #0f172a,
+    #1e293b
+  );
+
+  border: 1px solid rgba(255,255,255,0.12);
+
+  box-shadow:
+    0 18px 36px rgba(15, 23, 42, 0.35);
+
+  cursor: pointer;
+}
 
         .socialCard {
           border-radius: 28px;

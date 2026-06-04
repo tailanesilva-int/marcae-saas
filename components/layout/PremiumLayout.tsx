@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-import { gerarTemaEmpresa } from '@/app/lib/theme';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { gerarTemaEmpresa } from "@/app/lib/theme";
 
 type Props = {
   children: React.ReactNode;
@@ -11,22 +11,31 @@ type Props = {
   usuario?: any;
 };
 
+type AvisoSistemaMarcae = {
+  id: string;
+  titulo: string;
+  mensagem: string;
+  tipo?: string | null;
+  criadoEm?: string | null;
+  createdAt?: string | null;
+};
+
 const menu = [
-  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/agenda', label: 'Agenda', icon: '📅' },
-  { href: '/clientes', label: 'Clientes', icon: '👥' },
-  { href: '/servicos', label: 'Serviços', icon: '✂️' },
-  { href: '/profissionais', label: 'Profissionais', icon: '🧑‍💼' },
-  { href: '/promocoes', label: 'Promoções', icon: '🔥' },
-  { href: '/financeiro', label: 'Financeiro', icon: '💳' },
-  { href: '/comissoes', label: 'Comissões', icon: '💰' },
-  { href: '/relatorios', label: 'Relatórios', icon: '📈' },
-  { href: '/planos', label: 'Planos', icon: '💎' },
-  { href: '/configuracoes', label: 'Configurações', icon: '⚙️' },
+  { href: "/dashboard", label: "Dashboard", icon: "📊" },
+  { href: "/agenda", label: "Agenda", icon: "📅" },
+  { href: "/clientes", label: "Clientes", icon: "👥" },
+  { href: "/servicos", label: "Serviços", icon: "✂️" },
+  { href: "/profissionais", label: "Profissionais", icon: "🧑‍💼" },
+  { href: "/promocoes", label: "Promoções", icon: "🔥" },
+  { href: "/financeiro", label: "Financeiro", icon: "💳" },
+  { href: "/comissoes", label: "Comissões", icon: "💰" },
+  { href: "/relatorios", label: "Relatórios", icon: "📈" },
+  { href: "/planos", label: "Planos", icon: "💎" },
+  { href: "/configuracoes", label: "Configurações", icon: "⚙️" },
 ];
 
-  var audioGlobalLiberado = false;
-  var audioGlobalContext: AudioContext | null = null;
+var audioGlobalLiberado = false;
+var audioGlobalContext: AudioContext | null = null;
 
 export default function PremiumLayout({ children, empresa, usuario }: Props) {
   const pathname = usePathname();
@@ -35,8 +44,16 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
   const [quantidadeNotificacoes, setQuantidadeNotificacoes] = useState(0);
   const [notificacoes, setNotificacoes] = useState<any[]>([]);
   const [animandoSino, setAnimandoSino] = useState(false);
-  const [painelNotificacoesAberto, setPainelNotificacoesAberto] = useState(false);
+  const [painelNotificacoesAberto, setPainelNotificacoesAberto] =
+    useState(false);
   const [notificacoesCarregadas, setNotificacoesCarregadas] = useState(false);
+  const [avisosMarcae, setAvisosMarcae] = useState<AvisoSistemaMarcae[]>([]);
+  const [painelAvisosMarcaeAberto, setPainelAvisosMarcaeAberto] =
+    useState(false);
+  const [avisoMarcaeSelecionado, setAvisoMarcaeSelecionado] =
+    useState<AvisoSistemaMarcae | null>(null);
+  const [avisosLidos, setAvisosLidos] = useState<string[]>([]);
+  const [whatsappSuporteMarcae, setWhatsappSuporteMarcae] = useState("");
 
   const ultimoCheckRef = useRef<string | null>(null);
   const notificacoesIdsRef = useRef<Set<string>>(new Set());
@@ -47,106 +64,179 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
   const corPrimaria = tema.primary;
   const corSecundaria = tema.secondary;
   const corSidebar = tema.sidebar;
-  const storageKey = `marcae_notificacoes_${empresa?.id || 'global'}`;
+  const storageKey = `marcae_notificacoes_${empresa?.id || "global"}`;
+  const avisosLidosStorageKey = `marcae_avisos_lidos_${empresa?.id || "global"}`;
 
   const cssVars = {
-    '--marcae-primary': tema.primary,
-    '--marcae-primary-soft': tema.primarySoft,
-    '--marcae-primary-medium': tema.primaryMedium,
-    '--marcae-primary-strong': tema.primaryStrong,
-    '--marcae-secondary': tema.secondary,
-    '--marcae-secondary-soft': tema.secondarySoft,
-    '--marcae-secondary-medium': tema.secondaryMedium,
-    '--marcae-secondary-strong': tema.secondaryStrong,
-    '--marcae-sidebar': tema.sidebar,
-    '--marcae-sidebar-soft': tema.sidebarSoft,
-    '--marcae-sidebar-medium': tema.sidebarMedium,
-    '--marcae-bg': tema.bg,
-    '--marcae-bg-soft': tema.bgSoft,
-    '--marcae-card': tema.card,
-    '--marcae-card-strong': tema.cardStrong,
-    '--marcae-border': tema.border,
-    '--marcae-text': tema.text,
-    '--marcae-muted': tema.muted,
-    '--marcae-success': tema.success,
-    '--marcae-danger': tema.danger,
-    '--marcae-warning': tema.warning,
-    '--marcae-gradient': tema.gradient,
-    '--marcae-gradient-soft': tema.gradientSoft,
-    '--marcae-glow': tema.glow,
+    "--marcae-primary": tema.primary,
+    "--marcae-primary-soft": tema.primarySoft,
+    "--marcae-primary-medium": tema.primaryMedium,
+    "--marcae-primary-strong": tema.primaryStrong,
+    "--marcae-secondary": tema.secondary,
+    "--marcae-secondary-soft": tema.secondarySoft,
+    "--marcae-secondary-medium": tema.secondaryMedium,
+    "--marcae-secondary-strong": tema.secondaryStrong,
+    "--marcae-sidebar": tema.sidebar,
+    "--marcae-sidebar-soft": tema.sidebarSoft,
+    "--marcae-sidebar-medium": tema.sidebarMedium,
+    "--marcae-bg": tema.bg,
+    "--marcae-bg-soft": tema.bgSoft,
+    "--marcae-card": tema.card,
+    "--marcae-card-strong": tema.cardStrong,
+    "--marcae-border": tema.border,
+    "--marcae-text": tema.text,
+    "--marcae-muted": tema.muted,
+    "--marcae-success": tema.success,
+    "--marcae-danger": tema.danger,
+    "--marcae-warning": tema.warning,
+    "--marcae-gradient": tema.gradient,
+    "--marcae-gradient-soft": tema.gradientSoft,
+    "--marcae-glow": tema.glow,
   } as React.CSSProperties;
-
 
   useEffect(() => {
     setMobileMenuAberto(false);
     setPainelNotificacoesAberto(false);
+    setPainelAvisosMarcaeAberto(false);
+    setAvisoMarcaeSelecionado(null);
   }, [pathname]);
 
-useEffect(() => {
-  if (!empresa?.id) return;
+  useEffect(() => {
+    if (!empresa?.id) return;
 
-  setNotificacoesCarregadas(false);
+    try {
+      const dados = localStorage.getItem(avisosLidosStorageKey);
 
-  try {
-    const dadosSalvos = localStorage.getItem(storageKey);
+      if (dados) {
+        const parsed = JSON.parse(dados);
 
-    notificacoesIdsRef.current = new Set();
+        if (Array.isArray(parsed)) {
+          setAvisosLidos(parsed);
+        }
+      } else {
+        setAvisosLidos([]);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar avisos lidos:", error);
+      setAvisosLidos([]);
+    }
+  }, [empresa?.id, avisosLidosStorageKey]);
 
-    if (dadosSalvos) {
-      const parsed = JSON.parse(dadosSalvos);
+  useEffect(() => {
+    if (!empresa?.id) return;
 
-      if (Array.isArray(parsed?.notificacoes)) {
-        setNotificacoes(parsed.notificacoes);
+    let cancelado = false;
 
-        parsed.notificacoes.forEach((item: any) => {
-          if (item?.id) {
-            notificacoesIdsRef.current.add(item.id);
-          }
-        });
+    async function carregarComunicacaoMarcae() {
+      try {
+        const [resAvisos, resConfiguracao] = await Promise.all([
+          fetch(`/api/admin/avisos?empresaId=${empresa.id}`, {
+            cache: "no-store",
+          }),
+          fetch("/api/master/configuracoes/marcae", { cache: "no-store" }),
+        ]);
+
+        const dataAvisos = await resAvisos.json().catch(() => null);
+        const dataConfiguracao = await resConfiguracao.json().catch(() => null);
+
+        if (cancelado) return;
+
+        if (resAvisos.ok && dataAvisos?.success) {
+          setAvisosMarcae(
+            Array.isArray(dataAvisos.avisos) ? dataAvisos.avisos : [],
+          );
+        } else {
+          setAvisosMarcae([]);
+        }
+
+        if (resConfiguracao.ok && dataConfiguracao?.success) {
+          setWhatsappSuporteMarcae(
+            dataConfiguracao?.configuracao?.whatsappSuporte || "",
+          );
+        } else {
+          setWhatsappSuporteMarcae("");
+        }
+      } catch (error) {
+        if (!cancelado) {
+          console.error("Erro ao carregar comunicação Marcaê:", error);
+          setAvisosMarcae([]);
+          setWhatsappSuporteMarcae("");
+        }
+      }
+    }
+
+    carregarComunicacaoMarcae();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [empresa?.id]);
+
+  useEffect(() => {
+    if (!empresa?.id) return;
+
+    setNotificacoesCarregadas(false);
+
+    try {
+      const dadosSalvos = localStorage.getItem(storageKey);
+
+      notificacoesIdsRef.current = new Set();
+
+      if (dadosSalvos) {
+        const parsed = JSON.parse(dadosSalvos);
+
+        if (Array.isArray(parsed?.notificacoes)) {
+          setNotificacoes(parsed.notificacoes);
+
+          parsed.notificacoes.forEach((item: any) => {
+            if (item?.id) {
+              notificacoesIdsRef.current.add(item.id);
+            }
+          });
+        } else {
+          setNotificacoes([]);
+        }
+
+        if (typeof parsed?.quantidade === "number") {
+          setQuantidadeNotificacoes(parsed.quantidade);
+        } else {
+          setQuantidadeNotificacoes(0);
+        }
+
+        if (parsed?.ultimoCheck) {
+          ultimoCheckRef.current = parsed.ultimoCheck;
+        } else {
+          ultimoCheckRef.current = null;
+        }
       } else {
         setNotificacoes([]);
-      }
-
-      if (typeof parsed?.quantidade === 'number') {
-        setQuantidadeNotificacoes(parsed.quantidade);
-      } else {
         setQuantidadeNotificacoes(0);
-      }
-
-      if (parsed?.ultimoCheck) {
-        ultimoCheckRef.current = parsed.ultimoCheck;
-      } else {
         ultimoCheckRef.current = null;
       }
-    } else {
+    } catch (error) {
+      console.error("Erro ao carregar notificações salvas:", error);
+
       setNotificacoes([]);
       setQuantidadeNotificacoes(0);
       ultimoCheckRef.current = null;
+      notificacoesIdsRef.current = new Set();
+    } finally {
+      setNotificacoesCarregadas(true);
     }
-  } catch (error) {
-    console.error('Erro ao carregar notificações salvas:', error);
+  }, [empresa?.id, storageKey]);
 
-    setNotificacoes([]);
-    setQuantidadeNotificacoes(0);
-    ultimoCheckRef.current = null;
-    notificacoesIdsRef.current = new Set();
-  } finally {
-    setNotificacoesCarregadas(true);
-  }
-}, [empresa?.id, storageKey]);
-
-useEffect(() => {
-    if (typeof window !== 'undefined') {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
       audioLiberadoRef.current =
-        sessionStorage.getItem('marcae_audio_notificacoes_liberado') === 'true';
+        sessionStorage.getItem("marcae_audio_notificacoes_liberado") === "true";
     }
 
     const liberarAudio = () => {
       audioLiberadoRef.current = true;
-audioGlobalLiberado = true;
+      audioGlobalLiberado = true;
 
       try {
-        sessionStorage.setItem('marcae_audio_notificacoes_liberado', 'true');
+        sessionStorage.setItem("marcae_audio_notificacoes_liberado", "true");
 
         const AudioContextClass =
           window.AudioContext || (window as any).webkitAudioContext;
@@ -155,102 +245,93 @@ audioGlobalLiberado = true;
           audioContextRef.current = new AudioContextClass();
         }
 
-        if (audioContextRef.current?.state === 'suspended') {
+        if (audioContextRef.current?.state === "suspended") {
           audioContextRef.current.resume().catch(() => {});
         }
       } catch (error) {
-        console.warn('Áudio de notificação ainda não liberado:', error);
+        console.warn("Áudio de notificação ainda não liberado:", error);
       }
     };
 
-    window.addEventListener('click', liberarAudio);
-    window.addEventListener('touchstart', liberarAudio);
-    window.addEventListener('keydown', liberarAudio);
+    window.addEventListener("click", liberarAudio);
+    window.addEventListener("touchstart", liberarAudio);
+    window.addEventListener("keydown", liberarAudio);
 
     return () => {
-      window.removeEventListener('click', liberarAudio);
-      window.removeEventListener('touchstart', liberarAudio);
-      window.removeEventListener('keydown', liberarAudio);
+      window.removeEventListener("click", liberarAudio);
+      window.removeEventListener("touchstart", liberarAudio);
+      window.removeEventListener("keydown", liberarAudio);
     };
   }, []);
 
   function tocarSomNotificacao() {
-  if (!audioLiberadoRef.current && !audioGlobalLiberado) return;
+    if (!audioLiberadoRef.current && !audioGlobalLiberado) return;
 
-  try {
-    const AudioContextClass =
-      window.AudioContext || (window as any).webkitAudioContext;
+    try {
+      const AudioContextClass =
+        window.AudioContext || (window as any).webkitAudioContext;
 
-    const contexto =
-  audioContextRef.current ||
-  audioGlobalContext ||
-  new AudioContextClass();
+      const contexto =
+        audioContextRef.current ||
+        audioGlobalContext ||
+        new AudioContextClass();
 
-audioContextRef.current = contexto;
-audioGlobalContext = contexto;
+      audioContextRef.current = contexto;
+      audioGlobalContext = contexto;
 
-    if (contexto.state === 'suspended') {
-      contexto.resume().catch(() => {});
+      if (contexto.state === "suspended") {
+        contexto.resume().catch(() => {});
+      }
+
+      const tocarBeep = (
+        frequencia: number,
+        inicio: number,
+        duracao: number,
+        volume: number,
+      ) => {
+        const oscilador = contexto.createOscillator();
+        const ganho = contexto.createGain();
+
+        oscilador.type = "sine";
+
+        oscilador.frequency.setValueAtTime(
+          frequencia,
+          contexto.currentTime + inicio,
+        );
+
+        ganho.gain.setValueAtTime(0.0001, contexto.currentTime + inicio);
+
+        ganho.gain.exponentialRampToValueAtTime(
+          volume,
+          contexto.currentTime + inicio + 0.015,
+        );
+
+        ganho.gain.exponentialRampToValueAtTime(
+          0.0001,
+          contexto.currentTime + inicio + duracao,
+        );
+
+        oscilador.connect(ganho);
+        ganho.connect(contexto.destination);
+
+        oscilador.start(contexto.currentTime + inicio);
+
+        oscilador.stop(contexto.currentTime + inicio + duracao);
+      };
+
+      tocarBeep(660, 0, 0.07, 0.22);
+      tocarBeep(880, 0.11, 0.07, 0.2);
+      tocarBeep(1040, 0.23, 0.12, 0.18);
+    } catch (error) {
+      console.warn("Não foi possível tocar o som da notificação:", error);
     }
-
-    const tocarBeep = (
-      frequencia: number,
-      inicio: number,
-      duracao: number,
-      volume: number
-    ) => {
-      const oscilador = contexto.createOscillator();
-      const ganho = contexto.createGain();
-
-      oscilador.type = 'sine';
-
-      oscilador.frequency.setValueAtTime(
-        frequencia,
-        contexto.currentTime + inicio
-      );
-
-      ganho.gain.setValueAtTime(
-        0.0001,
-        contexto.currentTime + inicio
-      );
-
-      ganho.gain.exponentialRampToValueAtTime(
-        volume,
-        contexto.currentTime + inicio + 0.015
-      );
-
-      ganho.gain.exponentialRampToValueAtTime(
-        0.0001,
-        contexto.currentTime + inicio + duracao
-      );
-
-      oscilador.connect(ganho);
-      ganho.connect(contexto.destination);
-
-      oscilador.start(contexto.currentTime + inicio);
-
-      oscilador.stop(
-        contexto.currentTime + inicio + duracao
-      );
-    };
-
-    tocarBeep(660, 0, 0.07, 0.22);
-tocarBeep(880, 0.11, 0.07, 0.2);
-tocarBeep(1040, 0.23, 0.12, 0.18);
-
-  } catch (error) {
-    console.warn(
-      'Não foi possível tocar o som da notificação:',
-      error
-    );
   }
-}
   useEffect(() => {
     if (!empresa?.id || !notificacoesCarregadas) return;
 
-if (!ultimoCheckRef.current) {
-  ultimoCheckRef.current = new Date().toISOString();
-}
+    if (!ultimoCheckRef.current) {
+      ultimoCheckRef.current = new Date().toISOString();
+    }
 
     let cancelado = false;
 
@@ -261,14 +342,14 @@ if (!ultimoCheckRef.current) {
         });
 
         if (ultimoCheckRef.current) {
-          params.set('ultimoCheck', ultimoCheckRef.current);
+          params.set("ultimoCheck", ultimoCheckRef.current);
         }
 
         const response = await fetch(
           `/api/notificacoes/agendamentos?${params.toString()}`,
           {
-            cache: 'no-store',
-          }
+            cache: "no-store",
+          },
         );
 
         const data = await response.json();
@@ -291,27 +372,24 @@ if (!ultimoCheckRef.current) {
         ultimoCheckRef.current = data.serverNow || new Date().toISOString();
 
         if (novosRecebidos.length > 0) {
-  setQuantidadeNotificacoes((prev) => prev + novosRecebidos.length);
+          setQuantidadeNotificacoes((prev) => prev + novosRecebidos.length);
 
-  setNotificacoes((prev) => [
-    ...novosRecebidos,
-    ...prev,
-  ].slice(0, 12));
+          setNotificacoes((prev) => [...novosRecebidos, ...prev].slice(0, 12));
 
-  setAnimandoSino(true);
+          setAnimandoSino(true);
 
-  setTimeout(() => {
-    setAnimandoSino(false);
-  }, 1800);
+          setTimeout(() => {
+            setAnimandoSino(false);
+          }, 1800);
 
-  novosRecebidos.forEach((item: any, index: number) => {
-    setTimeout(() => {
-      tocarSomNotificacao();
-    }, index * 450);
-  });
-}
+          novosRecebidos.forEach((item: any, index: number) => {
+            setTimeout(() => {
+              tocarSomNotificacao();
+            }, index * 450);
+          });
+        }
       } catch (error) {
-        console.error('Erro ao verificar notificações:', error);
+        console.error("Erro ao verificar notificações:", error);
       }
     }
 
@@ -325,38 +403,37 @@ if (!ultimoCheckRef.current) {
     };
   }, [empresa?.id, notificacoesCarregadas]);
 
-useEffect(() => {
-  if (!empresa?.id || !notificacoesCarregadas) return;
+  useEffect(() => {
+    if (!empresa?.id || !notificacoesCarregadas) return;
 
-  try {
-    localStorage.setItem(
-      storageKey,
-      JSON.stringify({
-        notificacoes,
-        quantidade: quantidadeNotificacoes,
-        ultimoCheck: ultimoCheckRef.current,
-      })
-    );
-  } catch (error) {
-    console.error('Erro ao salvar notificações:', error);
-  }
-}, [
-  empresa?.id,
-  notificacoes,
-  quantidadeNotificacoes,
-  notificacoesCarregadas,
-  storageKey,
-]);
-
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          notificacoes,
+          quantidade: quantidadeNotificacoes,
+          ultimoCheck: ultimoCheckRef.current,
+        }),
+      );
+    } catch (error) {
+      console.error("Erro ao salvar notificações:", error);
+    }
+  }, [
+    empresa?.id,
+    notificacoes,
+    quantidadeNotificacoes,
+    notificacoesCarregadas,
+    storageKey,
+  ]);
 
   useEffect(() => {
     const SESSION_TIMEOUT = 1000 * 60 * 60;
 
     function validarSessao() {
-      const ultimoAcesso = localStorage.getItem('marcae_ultimo_acesso');
+      const ultimoAcesso = localStorage.getItem("marcae_ultimo_acesso");
 
       if (!ultimoAcesso) {
-        localStorage.setItem('marcae_ultimo_acesso', Date.now().toString());
+        localStorage.setItem("marcae_ultimo_acesso", Date.now().toString());
         return;
       }
 
@@ -364,15 +441,15 @@ useEffect(() => {
       const diferenca = agora - Number(ultimoAcesso);
 
       if (diferenca > SESSION_TIMEOUT) {
-        localStorage.removeItem('empresaLogada');
-        localStorage.removeItem('usuarioEmpresa');
-        localStorage.removeItem('marcae_ultimo_acesso');
+        localStorage.removeItem("empresaLogada");
+        localStorage.removeItem("usuarioEmpresa");
+        localStorage.removeItem("marcae_ultimo_acesso");
 
-        window.location.href = '/login';
+        window.location.href = "/login";
         return;
       }
 
-      localStorage.setItem('marcae_ultimo_acesso', agora.toString());
+      localStorage.setItem("marcae_ultimo_acesso", agora.toString());
     }
 
     validarSessao();
@@ -380,23 +457,23 @@ useEffect(() => {
     const interval = setInterval(validarSessao, 60000);
 
     const atualizarAtividade = () => {
-      localStorage.setItem('marcae_ultimo_acesso', Date.now().toString());
+      localStorage.setItem("marcae_ultimo_acesso", Date.now().toString());
     };
 
-    window.addEventListener('click', atualizarAtividade);
-    window.addEventListener('keydown', atualizarAtividade);
-    window.addEventListener('mousemove', atualizarAtividade);
-    window.addEventListener('scroll', atualizarAtividade);
-    window.addEventListener('touchstart', atualizarAtividade);
+    window.addEventListener("click", atualizarAtividade);
+    window.addEventListener("keydown", atualizarAtividade);
+    window.addEventListener("mousemove", atualizarAtividade);
+    window.addEventListener("scroll", atualizarAtividade);
+    window.addEventListener("touchstart", atualizarAtividade);
 
     return () => {
       clearInterval(interval);
 
-      window.removeEventListener('click', atualizarAtividade);
-      window.removeEventListener('keydown', atualizarAtividade);
-      window.removeEventListener('mousemove', atualizarAtividade);
-      window.removeEventListener('scroll', atualizarAtividade);
-      window.removeEventListener('touchstart', atualizarAtividade);
+      window.removeEventListener("click", atualizarAtividade);
+      window.removeEventListener("keydown", atualizarAtividade);
+      window.removeEventListener("mousemove", atualizarAtividade);
+      window.removeEventListener("scroll", atualizarAtividade);
+      window.removeEventListener("touchstart", atualizarAtividade);
     };
   }, []);
 
@@ -405,9 +482,45 @@ useEffect(() => {
   }
 
   function sair() {
-    localStorage.removeItem('empresaLogada');
-    localStorage.removeItem('usuarioEmpresa');
-    window.location.href = '/login';
+    localStorage.removeItem("empresaLogada");
+    localStorage.removeItem("usuarioEmpresa");
+    window.location.href = "/login";
+  }
+
+  function abrirSuporteMarcae() {
+    const numero = String(whatsappSuporteMarcae || "").replace(/\D/g, "");
+
+    if (!numero) {
+      alert(
+        "WhatsApp de suporte Marcaê ainda não configurado no painel master.",
+      );
+      return;
+    }
+
+    const texto = encodeURIComponent(
+      `Olá, equipe Marcaê! Preciso de suporte no sistema. Empresa: ${empresa?.nome || ""}`,
+    );
+
+    window.open(`https://wa.me/${numero}?text=${texto}`, "_blank");
+  }
+
+  function marcarAvisoComoLido(avisoId: string) {
+    try {
+      const atualizados = [...new Set([...avisosLidos, avisoId])];
+
+      setAvisosLidos(atualizados);
+
+      localStorage.setItem(avisosLidosStorageKey, JSON.stringify(atualizados));
+    } catch (error) {
+      console.error("Erro ao salvar aviso lido:", error);
+    }
+  }
+
+  function labelTipoAvisoMarcae(tipo?: string | null) {
+    if (tipo === "novidade") return "Novidade";
+    if (tipo === "alerta") return "Alerta";
+    if (tipo === "manutencao") return "Manutenção";
+    return "Informativo";
   }
 
   return (
@@ -431,16 +544,20 @@ useEffect(() => {
                   {empresa?.logoUrl || empresa?.logo || empresa?.imagemUrl ? (
                     <img
                       src={empresa.logoUrl || empresa.logo || empresa.imagemUrl}
-                      alt={empresa?.nome || 'Marcaê'}
+                      alt={empresa?.nome || "Marcaê"}
                       style={logoImage}
                     />
                   ) : (
-                    <span>{empresa?.nome?.charAt(0)?.toUpperCase() || 'M'}</span>
+                    <span>
+                      {empresa?.nome?.charAt(0)?.toUpperCase() || "M"}
+                    </span>
                   )}
                 </div>
 
                 <div>
-                  <strong style={empresaNome}>{empresa?.nome || 'Marcaê'}</strong>
+                  <strong style={empresaNome}>
+                    {empresa?.nome || "Marcaê"}
+                  </strong>
                   <span style={empresaPlano}>SaaS Premium Enterprise</span>
                 </div>
               </div>
@@ -451,10 +568,13 @@ useEffect(() => {
                   <span>Sistema operacional ativo</span>
                 </div>
 
-                <strong style={empresaStatusTitle}>Gestão inteligente do negócio</strong>
+                <strong style={empresaStatusTitle}>
+                  Gestão inteligente do negócio
+                </strong>
 
                 <p style={empresaStatusText}>
-                  Analytics, financeiro, agenda, CRM e automações em um único painel.
+                  Analytics, financeiro, agenda, CRM e automações em um único
+                  painel.
                 </p>
               </div>
             </div>
@@ -471,12 +591,14 @@ useEffect(() => {
                       ...menuItem,
                       background: isActive
                         ? `linear-gradient(135deg, ${corPrimaria}, ${corSecundaria})`
-                        : 'rgba(255,255,255,0.02)',
+                        : "rgba(255,255,255,0.02)",
                       border: isActive
                         ? `1px solid ${corPrimaria}66`
-                        : '1px solid rgba(255,255,255,0.04)',
-                      color: isActive ? '#fff' : '#cbd5e1',
-                      boxShadow: isActive ? `0 18px 35px ${corPrimaria}40` : 'none',
+                        : "1px solid rgba(255,255,255,0.04)",
+                      color: isActive ? "#fff" : "#cbd5e1",
+                      boxShadow: isActive
+                        ? `0 18px 35px ${corPrimaria}40`
+                        : "none",
                     }}
                   >
                     <span style={menuIcon}>{item.icon}</span>
@@ -490,6 +612,20 @@ useEffect(() => {
             <div style={{ flex: 1 }} />
 
             <div style={sidebarBottom}>
+              <button
+                type="button"
+                onClick={abrirSuporteMarcae}
+                style={supportSidebarButton}
+              >
+                <span style={supportSidebarIcon}>💬</span>
+                <span>
+                  <strong style={supportSidebarTitle}>Suporte Marcaê</strong>
+                  <small style={supportSidebarText}>
+                    Fale com nossa equipe
+                  </small>
+                </span>
+              </button>
+
               <button type="button" onClick={sair} style={logoutSidebarButton}>
                 <span>🚪</span>
                 <span>Sair</span>
@@ -497,12 +633,14 @@ useEffect(() => {
 
               <div style={userCard}>
                 <div style={userAvatar}>
-                  {(usuario?.nome || 'U').charAt(0).toUpperCase()}
+                  {(usuario?.nome || "U").charAt(0).toUpperCase()}
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <strong style={userName}>{usuario?.nome || 'Usuário'}</strong>
-                  <span style={userRole}>{usuario?.perfil || 'Administrador'}</span>
+                  <strong style={userName}>{usuario?.nome || "Usuário"}</strong>
+                  <span style={userRole}>
+                    {usuario?.perfil || "Administrador"}
+                  </span>
                 </div>
 
                 <span style={userArrow}>›</span>
@@ -534,107 +672,125 @@ useEffect(() => {
               </div>
 
               <div className="marcae-topbar-actions" style={topbarActions}>
-                <div style={{ position: 'relative' }}>
+                <div style={{ position: "relative" }}>
                   <button
                     type="button"
                     onClick={() => {
-                      setPainelNotificacoesAberto((aberto) => !aberto);
-                      setQuantidadeNotificacoes(0);
+                      setPainelAvisosMarcaeAberto((aberto) => !aberto);
+                      setAvisoMarcaeSelecionado(null);
                     }}
-                    style={{
-                      ...topbarIconButton,
-                      position: 'relative',
-                      transform: animandoSino ? 'scale(1.08) rotate(-8deg)' : 'scale(1)',
-                      transition: '.25s',
-                      boxShadow: animandoSino
-                        ? `0 0 30px ${corPrimaria}99`
-                        : 'none',
-                    }}
-                    title="Notificações de novos agendamentos"
+                    style={avisosTopbarButton}
+                    title="Avisos e informativos do Marcaê"
                   >
-                    🔔
+                    <span>🔔</span>
+                    <strong>Avisos</strong>
 
-                    {quantidadeNotificacoes > 0 && (
+                    {avisosMarcae.filter((a) => !avisosLidos.includes(a.id)).length > 0 && (
                       <div style={notificationBadge}>
-                        {quantidadeNotificacoes > 99
-                          ? '99+'
-                          : quantidadeNotificacoes}
+                        {avisosMarcae.filter((a) => !avisosLidos.includes(a.id)).length > 99
+                          ? "99+"
+                          : avisosMarcae.filter((a) => !avisosLidos.includes(a.id)).length}
                       </div>
                     )}
                   </button>
 
-                  {painelNotificacoesAberto && (
-                    <div className="marcae-notification-panel-mobile" style={notificationPanel}>
+                  {painelAvisosMarcaeAberto && (
+                    <div
+                      className="marcae-aviso-panel-mobile"
+                      style={avisoMarcaePanel}
+                    >
                       <div style={notificationPanelHeader}>
                         <div>
-                          <strong style={notificationPanelTitle}>Notificações</strong>
+                          <strong style={notificationPanelTitle}>
+                            Avisos e Informativos
+                          </strong>
                           <span style={notificationPanelSub}>
-                            Novos agendamentos recebidos
+                            Comunicados oficiais do Marcaê
                           </span>
                         </div>
 
                         <button
                           type="button"
-                          onClick={() => setPainelNotificacoesAberto(false)}
+                          onClick={() => {
+                            setPainelAvisosMarcaeAberto(false);
+                            setAvisoMarcaeSelecionado(null);
+                          }}
                           style={notificationCloseButton}
                         >
                           ×
                         </button>
                       </div>
 
-                      {notificacoes.length === 0 ? (
+                      {avisoMarcaeSelecionado ? (
+                        <div style={avisoMarcaeNota}>
+                          <button
+                            type="button"
+                            onClick={() => setAvisoMarcaeSelecionado(null)}
+                            style={avisoMarcaeVoltar}
+                          >
+                            ← Voltar para avisos
+                          </button>
+
+                          <div style={avisoMarcaeNotaBadge}>
+                            {labelTipoAvisoMarcae(avisoMarcaeSelecionado.tipo)}
+                          </div>
+
+                          <h3 style={avisoMarcaeNotaTitulo}>
+                            {avisoMarcaeSelecionado.titulo}
+                          </h3>
+
+                          <p style={avisoMarcaeNotaMensagem}>
+                            {avisoMarcaeSelecionado.mensagem}
+                          </p>
+
+                          <div style={avisoMarcaeNotaRodape}>
+                            Comunicado oficial Marcaê
+                          </div>
+                        </div>
+                      ) : avisosMarcae.length === 0 ? (
                         <div style={notificationEmpty}>
-                          Nenhum novo agendamento desde que você abriu o painel.
+                          Nenhum aviso disponível no momento.
                         </div>
                       ) : (
-                        <div className="marcae-notification-list-mobile" style={notificationList}>
-                          {notificacoes.map((item) => (
-                            <div key={item.id} style={notificationItem}>
-                              <div style={notificationItemIcon}>📅</div>
+                        <div
+                          className="marcae-aviso-list-mobile"
+                          style={notificationList}
+                        >
+                          {avisosMarcae.map((aviso) => (
+                            <button
+                              key={aviso.id}
+                              type="button"
+                              style={avisoMarcaeItem}
+                              onClick={() => {
+                                setAvisoMarcaeSelecionado(aviso);
+                                marcarAvisoComoLido(aviso.id);
+                              }}
+                              title="Abrir aviso completo"
+                            >
+                              <div style={avisoMarcaeItemIcon}>📣</div>
 
-                              <div style={{ flex: 1 }}>
+                              <div style={avisoMarcaeItemContent}>
+                                <div style={avisoMarcaeItemTop}>
+                                  <span>
+                                    {labelTipoAvisoMarcae(aviso.tipo)}
+                                  </span>
+                                  <small>Clique para ler</small>
+                                </div>
+
                                 <strong style={notificationItemTitle}>
-                                  {item.cliente?.nome ||
-                                    item.nomeCliente ||
-                                    item.clienteNome ||
-                                    'Novo cliente'}
+                                  {aviso.titulo}
                                 </strong>
 
-                                <span style={notificationItemText}>
-                                  {item.servico?.nome || 'Serviço'} ·{' '}
-                                  {item.profissional?.nome || 'Sem profissional'}
-                                </span>
-
-                                <span style={notificationItemDate}>
-                                  {item.dataHoraInicio
-                                    ? new Date(item.dataHoraInicio).toLocaleString('pt-BR', {
-                                        day: '2-digit',
-                                        month: '2-digit',
-                                        year: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                      })
-                                    : 'Horário não informado'}
+                                <span style={avisoMarcaeResumo}>
+                                  {aviso.mensagem}
                                 </span>
                               </div>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       )}
                     </div>
                   )}
-                </div>
-                <button style={topbarIconButton}>💬</button>
-
-                <div className="marcae-empresa-mini-card" style={empresaMiniCard}>
-                  <div style={empresaMiniAvatar}>
-                    {empresa?.nome?.charAt(0)?.toUpperCase() || 'M'}
-                  </div>
-
-                  <div>
-                    <strong style={empresaMiniNome}>{empresa?.nome || 'Marcaê'}</strong>
-                    <span style={empresaMiniPlano}>Premium</span>
-                  </div>
                 </div>
               </div>
             </header>
@@ -667,18 +823,22 @@ useEffect(() => {
                   >
                     {empresa?.logoUrl || empresa?.logo || empresa?.imagemUrl ? (
                       <img
-                        src={empresa.logoUrl || empresa.logo || empresa.imagemUrl}
-                        alt={empresa?.nome || 'Marcaê'}
+                        src={
+                          empresa.logoUrl || empresa.logo || empresa.imagemUrl
+                        }
+                        alt={empresa?.nome || "Marcaê"}
                         style={logoImage}
                       />
                     ) : (
-                      <span>{empresa?.nome?.charAt(0)?.toUpperCase() || 'M'}</span>
+                      <span>
+                        {empresa?.nome?.charAt(0)?.toUpperCase() || "M"}
+                      </span>
                     )}
                   </div>
 
                   <div>
                     <strong style={{ ...empresaNome, fontSize: 18 }}>
-                      {empresa?.nome || 'Marcaê'}
+                      {empresa?.nome || "Marcaê"}
                     </strong>
                     <span style={empresaPlano}>Menu administrativo</span>
                   </div>
@@ -717,12 +877,14 @@ useEffect(() => {
                         ...mobileDrawerItem,
                         background: isActive
                           ? `linear-gradient(135deg, ${corPrimaria}, ${corSecundaria})`
-                          : 'rgba(255,255,255,0.035)',
+                          : "rgba(255,255,255,0.035)",
                         border: isActive
                           ? `1px solid ${corPrimaria}66`
-                          : '1px solid rgba(255,255,255,0.06)',
-                        color: isActive ? '#fff' : '#cbd5e1',
-                        boxShadow: isActive ? `0 14px 32px ${corPrimaria}33` : 'none',
+                          : "1px solid rgba(255,255,255,0.06)",
+                        color: isActive ? "#fff" : "#cbd5e1",
+                        boxShadow: isActive
+                          ? `0 14px 32px ${corPrimaria}33`
+                          : "none",
                       }}
                     >
                       <span style={menuIcon}>{item.icon}</span>
@@ -734,6 +896,14 @@ useEffect(() => {
 
               <button
                 type="button"
+                onClick={abrirSuporteMarcae}
+                style={supportMobileDrawerButton}
+              >
+                💬 Suporte Marcaê
+              </button>
+
+              <button
+                type="button"
                 onClick={sair}
                 style={logoutMobileDrawerButton}
               >
@@ -742,12 +912,14 @@ useEffect(() => {
 
               <div style={mobileDrawerUser}>
                 <div style={userAvatar}>
-                  {(usuario?.nome || 'U').charAt(0).toUpperCase()}
+                  {(usuario?.nome || "U").charAt(0).toUpperCase()}
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <strong style={userName}>{usuario?.nome || 'Usuário'}</strong>
-                  <span style={userRole}>{usuario?.perfil || 'Administrador'}</span>
+                  <strong style={userName}>{usuario?.nome || "Usuário"}</strong>
+                  <span style={userRole}>
+                    {usuario?.perfil || "Administrador"}
+                  </span>
                 </div>
               </div>
             </aside>
@@ -765,14 +937,15 @@ useEffect(() => {
                 onClick={() => {
                   setMobileMenuAberto(false);
                   setPainelNotificacoesAberto(false);
+                  setAvisoMarcaeSelecionado(null);
                 }}
                 style={{
                   ...mobileMenuItem,
                   background: isActive
                     ? `linear-gradient(135deg, ${corPrimaria}, ${corSecundaria})`
-                    : 'transparent',
-                  color: isActive ? '#fff' : '#94a3b8',
-                  boxShadow: isActive ? `0 10px 30px ${corPrimaria}55` : 'none',
+                    : "transparent",
+                  color: isActive ? "#fff" : "#94a3b8",
+                  boxShadow: isActive ? `0 10px 30px ${corPrimaria}55` : "none",
                 }}
               >
                 <span style={{ fontSize: 18 }}>{item.icon}</span>
@@ -849,6 +1022,7 @@ useEffect(() => {
               border-radius: 22px !important;
             }
 
+            .marcae-aviso-panel-mobile,
             .marcae-notification-panel-mobile {
               position: fixed !important;
               top: 86px !important;
@@ -863,18 +1037,20 @@ useEffect(() => {
               padding: 12px !important;
             }
 
+            .marcae-aviso-list-mobile,
             .marcae-notification-list-mobile {
               max-height: calc(100dvh - 285px) !important;
               overflow-y: auto !important;
               padding-right: 2px !important;
             }
 
+            .marcae-aviso-panel-mobile strong,
+            .marcae-aviso-panel-mobile span,
             .marcae-notification-panel-mobile strong,
             .marcae-notification-panel-mobile span {
               max-width: 100% !important;
               overflow-wrap: anywhere !important;
             }
-
           }
 
           @media (max-width: 560px) {
@@ -889,54 +1065,55 @@ useEffect(() => {
 }
 
 const layoutRoot: React.CSSProperties = {
-  minHeight: '100dvh',
-  position: 'relative',
-  overflowX: 'hidden',
-  overflowY: 'visible',
-  background: 'linear-gradient(135deg, var(--marcae-bg) 0%, var(--marcae-bg-soft) 48%, var(--marcae-sidebar) 100%)',
-  color: 'var(--marcae-text)',
+  minHeight: "100dvh",
+  position: "relative",
+  overflowX: "hidden",
+  overflowY: "visible",
+  background:
+    "linear-gradient(135deg, var(--marcae-bg) 0%, var(--marcae-bg-soft) 48%, var(--marcae-sidebar) 100%)",
+  color: "var(--marcae-text)",
 };
 
 const backgroundGlowPrimary: React.CSSProperties = {
-  position: 'fixed',
+  position: "fixed",
   top: -300,
   left: -180,
   width: 700,
   height: 700,
-  borderRadius: '50%',
-  background: 'var(--marcae-primary-soft)',
-  filter: 'blur(140px)',
-  pointerEvents: 'none',
+  borderRadius: "50%",
+  background: "var(--marcae-primary-soft)",
+  filter: "blur(140px)",
+  pointerEvents: "none",
 };
 
 const backgroundGlowSecondary: React.CSSProperties = {
-  position: 'fixed',
+  position: "fixed",
   top: -200,
   right: -160,
   width: 620,
   height: 620,
-  borderRadius: '50%',
-  background: 'var(--marcae-secondary-soft)',
-  filter: 'blur(130px)',
-  pointerEvents: 'none',
+  borderRadius: "50%",
+  background: "var(--marcae-secondary-soft)",
+  filter: "blur(130px)",
+  pointerEvents: "none",
 };
 
 const backgroundGlowThird: React.CSSProperties = {
-  position: 'fixed',
+  position: "fixed",
   bottom: -260,
-  left: '35%',
+  left: "35%",
   width: 580,
   height: 580,
-  borderRadius: '50%',
-  background: 'var(--marcae-secondary-soft)',
-  filter: 'blur(150px)',
-  pointerEvents: 'none',
+  borderRadius: "50%",
+  background: "var(--marcae-secondary-soft)",
+  filter: "blur(150px)",
+  pointerEvents: "none",
 };
 
 const layoutFlex: React.CSSProperties = {
-  display: 'flex',
-  minHeight: '100dvh',
-  position: 'relative',
+  display: "flex",
+  minHeight: "100dvh",
+  position: "relative",
   zIndex: 2,
 };
 
@@ -944,23 +1121,25 @@ const sidebarStyle: React.CSSProperties = {
   width: 300,
   margin: 18,
   padding: 22,
-  display: 'flex',
-  flexDirection: 'column',
-  position: 'sticky',
+  display: "flex",
+  flexDirection: "column",
+  position: "sticky",
   top: 18,
-  height: 'calc(100vh - 36px)',
+  height: "calc(100vh - 36px)",
   borderRadius: 32,
-  background: 'linear-gradient(180deg, var(--marcae-sidebar-soft), rgba(2,6,23,0.96))',
-  border: '1px solid var(--marcae-border)',
-  backdropFilter: 'blur(24px)',
-  boxShadow: '0 30px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04)',
+  background:
+    "linear-gradient(180deg, var(--marcae-sidebar-soft), rgba(2,6,23,0.96))",
+  border: "1px solid var(--marcae-border)",
+  backdropFilter: "blur(24px)",
+  boxShadow:
+    "0 30px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04)",
 };
 
 const sidebarTop: React.CSSProperties = { marginBottom: 24 };
 
 const brandRow: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
+  display: "flex",
+  alignItems: "center",
   gap: 16,
   marginBottom: 22,
 };
@@ -969,48 +1148,48 @@ const logoBox: React.CSSProperties = {
   width: 68,
   height: 68,
   borderRadius: 22,
-  overflow: 'hidden',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
+  overflow: "hidden",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
   fontSize: 26,
   fontWeight: 900,
-  color: '#fff',
+  color: "#fff",
 };
 
 const logoImage: React.CSSProperties = {
-  width: '100%',
-  height: '100%',
-  objectFit: 'cover',
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
 };
 
 const empresaNome: React.CSSProperties = {
-  display: 'block',
-  color: '#fff',
+  display: "block",
+  color: "#fff",
   fontSize: 22,
   fontWeight: 900,
-  letterSpacing: '-0.03em',
+  letterSpacing: "-0.03em",
 };
 
 const empresaPlano: React.CSSProperties = {
-  color: 'var(--marcae-muted)',
+  color: "var(--marcae-muted)",
   fontSize: 13,
   fontWeight: 700,
 };
 
 const empresaStatusCard: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.03)',
-  border: '1px solid var(--marcae-border)',
+  background: "rgba(255,255,255,0.03)",
+  border: "1px solid var(--marcae-border)",
   borderRadius: 24,
   padding: 18,
 };
 
 const empresaStatusHeader: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
+  display: "flex",
+  alignItems: "center",
   gap: 8,
   marginBottom: 12,
-  color: '#dbeafe',
+  color: "#dbeafe",
   fontSize: 12,
   fontWeight: 800,
 };
@@ -1018,235 +1197,474 @@ const empresaStatusHeader: React.CSSProperties = {
 const onlineDot: React.CSSProperties = {
   width: 10,
   height: 10,
-  borderRadius: '50%',
-  background: 'var(--marcae-success)',
-  boxShadow: '0 0 18px var(--marcae-success)',
+  borderRadius: "50%",
+  background: "var(--marcae-success)",
+  boxShadow: "0 0 18px var(--marcae-success)",
 };
 
 const empresaStatusTitle: React.CSSProperties = {
-  display: 'block',
-  color: '#fff',
+  display: "block",
+  color: "#fff",
   fontSize: 15,
   marginBottom: 8,
 };
 
 const empresaStatusText: React.CSSProperties = {
-  color: 'var(--marcae-muted)',
+  color: "var(--marcae-muted)",
   fontSize: 13,
   lineHeight: 1.6,
   margin: 0,
 };
 
-const navGrid: React.CSSProperties = { display: 'grid', gap: 10 };
+const navGrid: React.CSSProperties = { display: "grid", gap: 10 };
 
 const menuItem: React.CSSProperties = {
-  position: 'relative',
-  display: 'flex',
-  alignItems: 'center',
+  position: "relative",
+  display: "flex",
+  alignItems: "center",
   gap: 14,
-  padding: '14px 16px',
+  padding: "14px 16px",
   borderRadius: 20,
-  textDecoration: 'none',
-  overflow: 'hidden',
+  textDecoration: "none",
+  overflow: "hidden",
   fontWeight: 800,
-  transition: '.25s',
+  transition: ".25s",
 };
 
 const menuIcon: React.CSSProperties = { fontSize: 18 };
 
 const activeGlow: React.CSSProperties = {
-  position: 'absolute',
+  position: "absolute",
   inset: 0,
-  background: 'rgba(255,255,255,0.06)',
-  pointerEvents: 'none',
+  background: "rgba(255,255,255,0.06)",
+  pointerEvents: "none",
 };
 
-const sidebarBottom: React.CSSProperties = { display: 'grid', gap: 16 };
+const sidebarBottom: React.CSSProperties = { display: "grid", gap: 14 };
+
+const supportSidebarButton: React.CSSProperties = {
+  width: "100%",
+  minHeight: 64,
+  borderRadius: 20,
+  border: "1px solid rgba(168,85,247,0.55)",
+  background:
+    "linear-gradient(135deg, rgba(88,28,135,0.34), rgba(15,23,42,0.96))",
+  color: "#fff",
+  fontWeight: 900,
+  fontSize: 13,
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  padding: "12px 14px",
+  textAlign: "left",
+  boxShadow: "0 18px 36px rgba(168,85,247,0.18)",
+};
+
+const supportSidebarIcon: React.CSSProperties = {
+  width: 38,
+  height: 38,
+  borderRadius: 14,
+  background: "rgba(168,85,247,0.20)",
+  border: "1px solid rgba(168,85,247,0.36)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+  fontSize: 18,
+};
+
+const supportSidebarTitle: React.CSSProperties = {
+  display: "block",
+  color: "#fff",
+  fontSize: 13,
+  fontWeight: 950,
+};
+
+const supportSidebarText: React.CSSProperties = {
+  display: "block",
+  color: "#c4b5fd",
+  fontSize: 11,
+  fontWeight: 800,
+  marginTop: 2,
+};
+
+const supportMobileDrawerButton: React.CSSProperties = {
+  width: "100%",
+  minHeight: 52,
+  borderRadius: 16,
+  border: "1px solid rgba(168,85,247,0.50)",
+  background:
+    "linear-gradient(135deg, rgba(88,28,135,0.42), rgba(15,23,42,0.96))",
+  color: "#fff",
+  fontWeight: 950,
+  fontSize: 14,
+  cursor: "pointer",
+  marginTop: 14,
+};
 
 const logoutSidebarButton: React.CSSProperties = {
-  width: '100%',
+  width: "100%",
   height: 50,
   borderRadius: 18,
-  border: '1px solid rgba(239,68,68,.20)',
-  background: 'rgba(239,68,68,.08)',
-  color: '#fca5a5',
+  border: "1px solid rgba(239,68,68,.20)",
+  background: "rgba(239,68,68,.08)",
+  color: "#fca5a5",
   fontWeight: 900,
   fontSize: 14,
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
   gap: 10,
-  transition: '.2s',
+  transition: ".2s",
 };
 
 const logoutMobileDrawerButton: React.CSSProperties = {
-  width: '100%',
+  width: "100%",
   minHeight: 52,
   borderRadius: 16,
-  border: '1px solid rgba(239,68,68,.20)',
-  background: 'rgba(239,68,68,.08)',
-  color: '#fca5a5',
+  border: "1px solid rgba(239,68,68,.20)",
+  background: "rgba(239,68,68,.08)",
+  color: "#fca5a5",
   fontWeight: 900,
   fontSize: 14,
-  cursor: 'pointer',
+  cursor: "pointer",
   marginTop: 14,
 };
 
 const userCard: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
+  display: "flex",
+  alignItems: "center",
   gap: 14,
   padding: 16,
   borderRadius: 22,
-  background: 'rgba(255,255,255,0.03)',
-  border: '1px solid var(--marcae-border)',
+  background: "rgba(255,255,255,0.03)",
+  border: "1px solid var(--marcae-border)",
 };
 
 const userAvatar: React.CSSProperties = {
   width: 46,
   height: 46,
-  borderRadius: '50%',
-  background: 'var(--marcae-gradient)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  color: '#fff',
+  borderRadius: "50%",
+  background: "var(--marcae-gradient)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: "#fff",
   fontWeight: 900,
 };
 
-const userName: React.CSSProperties = { display: 'block', color: '#fff', fontSize: 14 };
-const userRole: React.CSSProperties = { color: 'var(--marcae-muted)', fontSize: 12 };
-const userArrow: React.CSSProperties = { color: 'var(--marcae-muted)', fontSize: 20 };
+const userName: React.CSSProperties = {
+  display: "block",
+  color: "#fff",
+  fontSize: 14,
+};
+const userRole: React.CSSProperties = {
+  color: "var(--marcae-muted)",
+  fontSize: 12,
+};
+const userArrow: React.CSSProperties = {
+  color: "var(--marcae-muted)",
+  fontSize: 20,
+};
 
 const mainWrapper: React.CSSProperties = {
   flex: 1,
-  minHeight: '100dvh',
-  overflowX: 'hidden',
-  overflowY: 'visible',
-  WebkitOverflowScrolling: 'touch',
-  padding: '18px 22px 120px',
+  minHeight: "100dvh",
+  overflowX: "hidden",
+  overflowY: "visible",
+  WebkitOverflowScrolling: "touch",
+  padding: "18px 22px 120px",
 };
 
 const topbar: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
+  display: "flex",
+  justifyContent: "space-between",
   gap: 20,
-  alignItems: 'center',
+  alignItems: "center",
   marginBottom: 22,
-  position: 'sticky',
+  position: "sticky",
   top: 18,
   zIndex: 500,
   padding: 18,
   borderRadius: 28,
-  background: 'rgba(5,10,25,0.72)',
-  border: '1px solid var(--marcae-border)',
-  backdropFilter: 'blur(24px)',
+  background: "rgba(5,10,25,0.72)",
+  border: "1px solid var(--marcae-border)",
+  backdropFilter: "blur(24px)",
 };
 
 const topbarSearch: React.CSSProperties = {
   flex: 1,
-  display: 'flex',
-  alignItems: 'center',
+  display: "flex",
+  alignItems: "center",
   gap: 12,
-  padding: '14px 18px',
+  padding: "14px 18px",
   borderRadius: 20,
-  background: 'rgba(255,255,255,0.04)',
-  border: '1px solid var(--marcae-border)',
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid var(--marcae-border)",
 };
 
-const searchIcon: React.CSSProperties = { color: 'var(--marcae-muted)', fontSize: 18 };
+const searchIcon: React.CSSProperties = {
+  color: "var(--marcae-muted)",
+  fontSize: 18,
+};
 
 const searchInput: React.CSSProperties = {
   flex: 1,
-  background: 'transparent',
-  border: 'none',
-  outline: 'none',
-  color: '#fff',
+  background: "transparent",
+  border: "none",
+  outline: "none",
+  color: "#fff",
   fontSize: 14,
 };
 
 const shortcutBadge: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.06)',
-  border: '1px solid var(--marcae-border)',
+  background: "rgba(255,255,255,0.06)",
+  border: "1px solid var(--marcae-border)",
   borderRadius: 12,
-  padding: '6px 10px',
-  color: 'var(--marcae-muted)',
+  padding: "6px 10px",
+  color: "var(--marcae-muted)",
   fontSize: 12,
   fontWeight: 800,
 };
 
 const topbarActions: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
+  display: "flex",
+  alignItems: "center",
   gap: 14,
+};
+
+const avisosTopbarButton: React.CSSProperties = {
+  position: "relative",
+  minWidth: 118,
+  height: 48,
+  borderRadius: 18,
+  border: "1px solid rgba(168,85,247,0.45)",
+  background:
+    "linear-gradient(135deg, rgba(15,23,42,0.96), rgba(88,28,135,0.34))",
+  color: "#fff",
+  cursor: "pointer",
+  fontSize: 14,
+  fontWeight: 950,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 9,
+  padding: "0 18px",
+  boxShadow: "0 14px 34px rgba(168,85,247,0.18)",
+};
+
+const avisoMarcaePanel: React.CSSProperties = {
+  position: "absolute",
+  top: 60,
+  right: 0,
+  width: 420,
+  maxWidth: "calc(100vw - 32px)",
+  borderRadius: 24,
+  padding: 16,
+  background: "rgba(5,10,25,0.97)",
+  border: "1px solid var(--marcae-border)",
+  boxShadow: "0 30px 80px rgba(0,0,0,0.55)",
+  backdropFilter: "blur(24px)",
+  zIndex: 2200,
+  overflow: "hidden",
+};
+
+const avisoMarcaeItem: React.CSSProperties = {
+  width: "100%",
+  display: "flex",
+  gap: 12,
+  padding: 14,
+  borderRadius: 18,
+  background:
+    "linear-gradient(135deg, rgba(255,255,255,0.05), rgba(168,85,247,0.10))",
+  border: "1px solid var(--marcae-border)",
+  cursor: "pointer",
+  textAlign: "left",
+  color: "#fff",
+  minWidth: 0,
+  overflow: "hidden",
+};
+
+const avisoMarcaeItemContent: React.CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+  overflow: "hidden",
+};
+
+const avisoMarcaeResumo: React.CSSProperties = {
+  display: "-webkit-box",
+  marginTop: 4,
+  color: "#cbd5e1",
+  fontSize: 12,
+  fontWeight: 700,
+  lineHeight: 1.45,
+  overflow: "hidden",
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: "vertical",
+  wordBreak: "break-word",
+  overflowWrap: "anywhere",
+};
+
+const avisoMarcaeNota: React.CSSProperties = {
+  marginTop: 12,
+  padding: 18,
+  borderRadius: 20,
+  background:
+    "linear-gradient(135deg, rgba(255,255,255,0.06), rgba(168,85,247,0.12))",
+  border: "1px solid var(--marcae-border)",
+  maxHeight: 430,
+  overflowY: "auto",
+  overflowX: "hidden",
+};
+
+const avisoMarcaeVoltar: React.CSSProperties = {
+  border: "1px solid var(--marcae-border)",
+  background: "rgba(255,255,255,0.05)",
+  color: "#c4b5fd",
+  borderRadius: 999,
+  padding: "8px 12px",
+  fontSize: 12,
+  fontWeight: 900,
+  cursor: "pointer",
+  marginBottom: 14,
+};
+
+const avisoMarcaeNotaBadge: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  borderRadius: 999,
+  padding: "6px 10px",
+  background: "rgba(168,85,247,0.18)",
+  color: "#d8b4fe",
+  fontSize: 11,
+  fontWeight: 950,
+  textTransform: "uppercase",
+  letterSpacing: "0.07em",
+  marginBottom: 12,
+};
+
+const avisoMarcaeNotaTitulo: React.CSSProperties = {
+  margin: "0 0 12px",
+  color: "#fff",
+  fontSize: 20,
+  fontWeight: 950,
+  lineHeight: 1.15,
+  letterSpacing: "-0.03em",
+  wordBreak: "break-word",
+  overflowWrap: "anywhere",
+};
+
+const avisoMarcaeNotaMensagem: React.CSSProperties = {
+  margin: 0,
+  color: "#e5e7eb",
+  fontSize: 14,
+  fontWeight: 650,
+  lineHeight: 1.75,
+  whiteSpace: "pre-wrap",
+  wordBreak: "break-word",
+  overflowWrap: "anywhere",
+};
+
+const avisoMarcaeNotaRodape: React.CSSProperties = {
+  marginTop: 18,
+  paddingTop: 14,
+  borderTop: "1px solid var(--marcae-border)",
+  color: "var(--marcae-muted)",
+  fontSize: 12,
+  fontWeight: 800,
+};
+
+const avisoMarcaeItemIcon: React.CSSProperties = {
+  width: 38,
+  height: 38,
+  borderRadius: 14,
+  background: "rgba(168,85,247,0.22)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+};
+
+const avisoMarcaeItemTop: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 10,
+  marginBottom: 6,
+  color: "#c084fc",
+  fontSize: 11,
+  fontWeight: 950,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
 };
 
 const topbarIconButton: React.CSSProperties = {
   width: 48,
   height: 48,
   borderRadius: 18,
-  border: '1px solid var(--marcae-border)',
-  background: 'rgba(255,255,255,0.04)',
-  color: '#fff',
-  cursor: 'pointer',
+  border: "1px solid var(--marcae-border)",
+  background: "rgba(255,255,255,0.04)",
+  color: "#fff",
+  cursor: "pointer",
   fontSize: 18,
 };
 
 const notificationBadge: React.CSSProperties = {
-  position: 'absolute',
+  position: "absolute",
   top: -6,
   right: -6,
   minWidth: 24,
   height: 24,
   borderRadius: 999,
-  background: '#ef4444',
-  color: '#fff',
+  background: "#ef4444",
+  color: "#fff",
   fontSize: 11,
   fontWeight: 900,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '0 6px',
-  border: '2px solid rgba(5,10,25,0.95)',
-  boxShadow: '0 0 18px rgba(239,68,68,0.65)',
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "0 6px",
+  border: "2px solid rgba(5,10,25,0.95)",
+  boxShadow: "0 0 18px rgba(239,68,68,0.65)",
 };
 
 const notificationPanel: React.CSSProperties = {
-  position: 'absolute',
+  position: "absolute",
   top: 60,
   right: 0,
   width: 360,
-  maxWidth: 'calc(100vw - 32px)',
+  maxWidth: "calc(100vw - 32px)",
   borderRadius: 24,
   padding: 16,
-  background: 'rgba(5,10,25,0.96)',
-  border: '1px solid var(--marcae-border)',
-  boxShadow: '0 30px 80px rgba(0,0,0,0.55)',
-  backdropFilter: 'blur(24px)',
+  background: "rgba(5,10,25,0.96)",
+  border: "1px solid var(--marcae-border)",
+  boxShadow: "0 30px 80px rgba(0,0,0,0.55)",
+  backdropFilter: "blur(24px)",
   zIndex: 2000,
 };
 
 const notificationPanelHeader: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'flex-start',
-  justifyContent: 'space-between',
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
   gap: 12,
   paddingBottom: 12,
-  borderBottom: '1px solid var(--marcae-border)',
+  borderBottom: "1px solid var(--marcae-border)",
 };
 
 const notificationPanelTitle: React.CSSProperties = {
-  display: 'block',
-  color: '#fff',
+  display: "block",
+  color: "#fff",
   fontSize: 15,
   fontWeight: 900,
 };
 
 const notificationPanelSub: React.CSSProperties = {
-  display: 'block',
+  display: "block",
   marginTop: 4,
-  color: 'var(--marcae-muted)',
+  color: "var(--marcae-muted)",
   fontSize: 12,
   fontWeight: 700,
 };
@@ -1255,151 +1673,162 @@ const notificationCloseButton: React.CSSProperties = {
   width: 30,
   height: 30,
   borderRadius: 999,
-  border: '1px solid var(--marcae-border)',
-  background: 'rgba(255,255,255,0.04)',
-  color: '#fff',
-  cursor: 'pointer',
+  border: "1px solid var(--marcae-border)",
+  background: "rgba(255,255,255,0.04)",
+  color: "#fff",
+  cursor: "pointer",
   fontSize: 18,
   lineHeight: 1,
 };
 
 const notificationEmpty: React.CSSProperties = {
   padding: 18,
-  color: 'var(--marcae-muted)',
+  color: "var(--marcae-muted)",
   fontSize: 13,
   lineHeight: 1.5,
 };
 
 const notificationList: React.CSSProperties = {
-  display: 'grid',
+  display: "grid",
   gap: 10,
   marginTop: 12,
   maxHeight: 380,
-  overflowY: 'auto',
+  overflowY: "auto",
+  overflowX: "hidden",
 };
 
 const notificationItem: React.CSSProperties = {
-  display: 'flex',
+  display: "flex",
   gap: 12,
   padding: 12,
   borderRadius: 18,
-  background: 'rgba(255,255,255,0.04)',
-  border: '1px solid var(--marcae-border)',
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid var(--marcae-border)",
 };
 
 const notificationItemIcon: React.CSSProperties = {
   width: 38,
   height: 38,
   borderRadius: 14,
-  background: 'var(--marcae-gradient)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
+  background: "var(--marcae-gradient)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
   flexShrink: 0,
 };
 
 const notificationItemTitle: React.CSSProperties = {
-  display: 'block',
-  color: '#fff',
+  display: "block",
+  color: "#fff",
   fontSize: 13,
   fontWeight: 900,
+  lineHeight: 1.25,
+  wordBreak: "break-word",
+  overflowWrap: "anywhere",
 };
 
 const notificationItemText: React.CSSProperties = {
-  display: 'block',
+  display: "block",
   marginTop: 4,
-  color: '#cbd5e1',
+  color: "#cbd5e1",
   fontSize: 12,
   fontWeight: 700,
 };
 
 const notificationItemDate: React.CSSProperties = {
-  display: 'block',
+  display: "block",
   marginTop: 4,
-  color: 'var(--marcae-muted)',
+  color: "var(--marcae-muted)",
   fontSize: 11,
   fontWeight: 700,
 };
 
 const empresaMiniCard: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
+  display: "flex",
+  alignItems: "center",
   gap: 12,
-  padding: '10px 14px',
+  padding: "10px 14px",
   borderRadius: 20,
-  background: 'rgba(255,255,255,0.04)',
-  border: '1px solid var(--marcae-border)',
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid var(--marcae-border)",
 };
 
 const empresaMiniAvatar: React.CSSProperties = {
   width: 40,
   height: 40,
-  borderRadius: '50%',
-  background: 'var(--marcae-gradient)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
+  borderRadius: "50%",
+  background: "var(--marcae-gradient)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
   fontWeight: 900,
-  color: '#fff',
+  color: "#fff",
 };
 
-const empresaMiniNome: React.CSSProperties = { display: 'block', color: '#fff', fontSize: 13 };
-const empresaMiniPlano: React.CSSProperties = { color: 'var(--marcae-muted)', fontSize: 11 };
+const empresaMiniNome: React.CSSProperties = {
+  display: "block",
+  color: "#fff",
+  fontSize: 13,
+};
+const empresaMiniPlano: React.CSSProperties = {
+  color: "var(--marcae-muted)",
+  fontSize: 11,
+};
 
 const mainContent: React.CSSProperties = {
-  position: 'relative',
+  position: "relative",
   zIndex: 1,
 };
-
 
 const mobileMenuButton: React.CSSProperties = {
   width: 48,
   height: 48,
   borderRadius: 18,
-  border: '1px solid var(--marcae-border)',
-  background: 'rgba(255,255,255,0.04)',
-  color: '#fff',
-  cursor: 'pointer',
+  border: "1px solid var(--marcae-border)",
+  background: "rgba(255,255,255,0.04)",
+  color: "#fff",
+  cursor: "pointer",
   fontSize: 22,
-  alignItems: 'center',
-  justifyContent: 'center',
+  alignItems: "center",
+  justifyContent: "center",
   flexShrink: 0,
 };
 
 const mobileOverlay: React.CSSProperties = {
-  position: 'fixed',
+  position: "fixed",
   inset: 0,
   zIndex: 3000,
-  display: 'flex',
-  justifyContent: 'flex-start',
+  display: "flex",
+  justifyContent: "flex-start",
 };
 
 const mobileOverlayBackdrop: React.CSSProperties = {
-  position: 'absolute',
+  position: "absolute",
   inset: 0,
-  border: 'none',
-  background: 'rgba(2,6,23,0.72)',
-  backdropFilter: 'blur(10px)',
-  cursor: 'pointer',
+  border: "none",
+  background: "rgba(2,6,23,0.72)",
+  backdropFilter: "blur(10px)",
+  cursor: "pointer",
 };
 
 const mobileDrawer: React.CSSProperties = {
-  position: 'relative',
-  width: 'min(390px, calc(100vw - 28px))',
-  height: 'calc(100vh - 24px)',
+  position: "relative",
+  width: "min(390px, calc(100vw - 28px))",
+  height: "calc(100vh - 24px)",
   margin: 12,
   padding: 18,
   borderRadius: 28,
-  background: 'linear-gradient(180deg, var(--marcae-sidebar-soft), rgba(2,6,23,0.98))',
-  border: '1px solid var(--marcae-border)',
-  boxShadow: '0 34px 90px rgba(0,0,0,0.62)',
-  overflowY: 'auto',
+  background:
+    "linear-gradient(180deg, var(--marcae-sidebar-soft), rgba(2,6,23,0.98))",
+  border: "1px solid var(--marcae-border)",
+  boxShadow: "0 34px 90px rgba(0,0,0,0.62)",
+  overflowY: "auto",
 };
 
 const mobileDrawerHeader: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'flex-start',
-  justifyContent: 'space-between',
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
   gap: 12,
   marginBottom: 16,
 };
@@ -1408,76 +1837,76 @@ const mobileDrawerClose: React.CSSProperties = {
   width: 42,
   height: 42,
   borderRadius: 16,
-  border: '1px solid var(--marcae-border)',
-  background: 'rgba(255,255,255,0.05)',
-  color: '#fff',
-  cursor: 'pointer',
+  border: "1px solid var(--marcae-border)",
+  background: "rgba(255,255,255,0.05)",
+  color: "#fff",
+  cursor: "pointer",
   fontSize: 24,
   lineHeight: 1,
   flexShrink: 0,
 };
 
 const mobileDrawerStatus: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.035)',
-  border: '1px solid var(--marcae-border)',
+  background: "rgba(255,255,255,0.035)",
+  border: "1px solid var(--marcae-border)",
   borderRadius: 22,
   padding: 14,
   marginBottom: 16,
 };
 
 const mobileDrawerNav: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
   gap: 10,
   paddingBottom: 18,
 };
 
 const mobileDrawerItem: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
+  display: "flex",
+  alignItems: "center",
   gap: 10,
-  padding: '13px 12px',
+  padding: "13px 12px",
   borderRadius: 18,
-  textDecoration: 'none',
+  textDecoration: "none",
   fontSize: 13,
   fontWeight: 900,
   minHeight: 50,
 };
 
 const mobileDrawerUser: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
+  display: "flex",
+  alignItems: "center",
   gap: 12,
   padding: 14,
   borderRadius: 20,
-  background: 'rgba(255,255,255,0.04)',
-  border: '1px solid var(--marcae-border)',
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid var(--marcae-border)",
 };
 
 const mobileMenu: React.CSSProperties = {
-  position: 'fixed',
+  position: "fixed",
   left: 12,
   right: 12,
   bottom: 12,
-  display: 'none',
-  gridTemplateColumns: 'repeat(5, 1fr)',
+  display: "none",
+  gridTemplateColumns: "repeat(5, 1fr)",
   gap: 10,
   padding: 12,
   borderRadius: 26,
-  background: 'rgba(5,10,25,0.88)',
-  border: '1px solid var(--marcae-border)',
-  backdropFilter: 'blur(24px)',
+  background: "rgba(5,10,25,0.88)",
+  border: "1px solid var(--marcae-border)",
+  backdropFilter: "blur(24px)",
   zIndex: 999,
 };
 
 const mobileMenuItem: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
   gap: 6,
-  padding: '10px 6px',
+  padding: "10px 6px",
   borderRadius: 18,
-  textDecoration: 'none',
+  textDecoration: "none",
   fontSize: 11,
   fontWeight: 800,
 };

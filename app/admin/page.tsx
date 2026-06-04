@@ -16,10 +16,32 @@ type PermissoesUsuario = {
   financeiro?: boolean;
 };
 
+type AvisoSistema = {
+  id: string;
+  titulo: string;
+  mensagem: string;
+  tipo: string;
+  ativo: boolean;
+  empresaId?: string | null;
+  dataInicio?: string | null;
+  dataFim?: string | null;
+  createdAt?: string | null;
+};
+
+type ConfiguracaoMarcae = {
+  whatsappSuporte: string;
+};
+
 export default function AdminPage() {
   const [empresa, setEmpresa] = useState<any>(null);
   const [usuario, setUsuario] = useState<any>(null);
   const [financeiro, setFinanceiro] = useState<any>(null);
+  const [avisosSistema, setAvisosSistema] = useState<AvisoSistema[]>([]);
+  const [avisosAberto, setAvisosAberto] = useState(false);
+  const [configuracaoMarcae, setConfiguracaoMarcae] =
+    useState<ConfiguracaoMarcae>({
+      whatsappSuporte: "",
+    });
 
   const [salvando, setSalvando] = useState(false);
   const [salvandoEmpresa, setSalvandoEmpresa] = useState(false);
@@ -134,6 +156,95 @@ export default function AdminPage() {
     }
   }
 
+  async function carregarAvisosSistema(empresaId: string) {
+    try {
+      const res = await fetch(`/api/admin/avisos?empresaId=${empresaId}`, {
+        cache: 'no-store',
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        console.warn('Avisos do sistema não encontrados:', data?.error || res.status);
+        return;
+      }
+
+      setAvisosSistema(data?.avisos || []);
+    } catch (error) {
+      console.error('Erro ao carregar avisos do sistema:', error);
+    }
+  }
+
+  async function carregarConfiguracaoMarcae() {
+    try {
+      const res = await fetch('/api/master/configuracoes/marcae', {
+        cache: 'no-store',
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        console.warn('Configuração Marcaê não encontrada:', data?.error || res.status);
+        return;
+      }
+
+      setConfiguracaoMarcae({
+        whatsappSuporte: data?.configuracao?.whatsappSuporte || '',
+      });
+    } catch (error) {
+      console.error('Erro ao carregar suporte Marcaê:', error);
+    }
+  }
+
+  function normalizarWhatsapp(numero?: string | null) {
+    return String(numero || '').replace(/\D/g, '');
+  }
+
+  function abrirSuporteMarcae() {
+    const numero = normalizarWhatsapp(configuracaoMarcae.whatsappSuporte);
+
+    if (!numero) {
+      alert('O WhatsApp de suporte Marcaê ainda não foi configurado.');
+      return;
+    }
+
+    const mensagem = encodeURIComponent(
+      `Olá, equipe Marcaê! Preciso de suporte no sistema. Empresa: ${empresa?.nome || ''}`
+    );
+
+    window.open(`https://wa.me/${numero}?text=${mensagem}`, '_blank');
+  }
+
+  function labelTipoAviso(tipo?: string | null) {
+    const normalizado = String(tipo || 'informativo').toLowerCase();
+
+    if (normalizado === 'novidade') return 'Novidade';
+    if (normalizado === 'alerta') return 'Alerta';
+    if (normalizado === 'manutencao') return 'Manutenção';
+
+    return 'Informativo';
+  }
+
+  function iconeTipoAviso(tipo?: string | null) {
+    const normalizado = String(tipo || 'informativo').toLowerCase();
+
+    if (normalizado === 'novidade') return '✨';
+    if (normalizado === 'alerta') return '⚠️';
+    if (normalizado === 'manutencao') return '🛠️';
+
+    return '🔔';
+  }
+
+  function formatarDataAviso(data?: string | null) {
+    if (!data) return 'Hoje';
+
+    return new Date(data).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  }
+
   useEffect(() => {
     async function carregarDadosAtualizados() {
       const empresaStorage = localStorage.getItem('empresaLogada');
@@ -165,6 +276,9 @@ export default function AdminPage() {
 
         setEmpresa(empresaSincronizada);
         localStorage.setItem('empresaLogada', JSON.stringify(empresaSincronizada));
+
+        carregarAvisosSistema(empresaSincronizada.id);
+        carregarConfiguracaoMarcae();
 
         setDadosEmpresa({
           nome: empresaSincronizada.nome || '',
@@ -628,6 +742,21 @@ export default function AdminPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#f1f5f9', padding: 30 }}>
       <div style={{ maxWidth: 1320, margin: '0 auto' }}>
+        <div style={topoAvisosSuporteAdmin}>
+          <button
+            type="button"
+            style={botaoAvisosAdmin}
+            onClick={() => setAvisosAberto(true)}
+          >
+            <span style={iconeBotaoAvisos}>🔔</span>
+            <span>Avisos</span>
+
+            {avisosSistema.length > 0 && (
+              <strong style={badgeQuantidadeAvisos}>{avisosSistema.length}</strong>
+            )}
+          </button>
+        </div>
+
         <header
   style={{
     background: 'linear-gradient(135deg, #4f46e5, #9333ea)',
@@ -1358,6 +1487,68 @@ export default function AdminPage() {
             </button>
           </div>
         </section>
+
+        <button
+          type="button"
+          style={botaoSuporteMarcae}
+          onClick={abrirSuporteMarcae}
+        >
+          <span style={iconeSuporteMarcae}>💬</span>
+          <span>
+            <strong>Suporte Marcaê</strong>
+            <small>Fale com nossa equipe</small>
+          </span>
+        </button>
+
+        {avisosAberto && (
+          <div style={modalAvisosOverlay} onClick={() => setAvisosAberto(false)}>
+            <div style={modalAvisosCard} onClick={(event) => event.stopPropagation()}>
+              <div style={modalAvisosHeader}>
+                <div>
+                  <strong style={modalAvisosTitulo}>Avisos e Informativos</strong>
+                  <p style={modalAvisosSubtitulo}>
+                    Comunicados oficiais enviados pela equipe Marcaê.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  style={botaoFecharAvisos}
+                  onClick={() => setAvisosAberto(false)}
+                >
+                  ×
+                </button>
+              </div>
+
+              {avisosSistema.length === 0 ? (
+                <div style={avisosVazio}>
+                  <strong>Nenhum aviso no momento.</strong>
+                  <span>Quando houver novidades, manutenção ou comunicados, eles aparecerão aqui.</span>
+                </div>
+              ) : (
+                <div style={listaAvisosAdmin}>
+                  {avisosSistema.map((aviso) => (
+                    <article key={aviso.id} style={cardAvisoAdmin}>
+                      <div style={cardAvisoTopo}>
+                        <span style={tipoAvisoAdmin}>
+                          {iconeTipoAviso(aviso.tipo)} {labelTipoAviso(aviso.tipo)}
+                        </span>
+
+                        <small style={dataAvisoAdmin}>
+                          {formatarDataAviso(aviso.createdAt || aviso.dataInicio)}
+                        </small>
+                      </div>
+
+                      <strong style={tituloAvisoAdmin}>{aviso.titulo}</strong>
+                      <p style={mensagemAvisoAdmin}>{aviso.mensagem}</p>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
     </main>
   );
@@ -2529,4 +2720,205 @@ const linkAgendamentoBotaoVermelho = {
 
 const qrPrintAreaCompacto = {
   display: 'none',
+};
+
+
+
+const topoAvisosSuporteAdmin = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  marginBottom: 18,
+};
+
+const botaoAvisosAdmin = {
+  position: 'relative' as const,
+  minHeight: 46,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 10,
+  border: '1px solid rgba(124, 58, 237, 0.35)',
+  background: 'linear-gradient(135deg, #111827, #1e1b4b)',
+  color: '#fff',
+  borderRadius: 16,
+  padding: '0 18px',
+  fontWeight: 950,
+  cursor: 'pointer',
+  boxShadow: '0 16px 34px rgba(15,23,42,0.18)',
+};
+
+const iconeBotaoAvisos = {
+  width: 26,
+  height: 26,
+  borderRadius: 10,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'rgba(124, 58, 237, 0.2)',
+};
+
+const badgeQuantidadeAvisos = {
+  position: 'absolute' as const,
+  top: -8,
+  right: -8,
+  minWidth: 22,
+  height: 22,
+  borderRadius: 999,
+  background: '#ef4444',
+  color: '#fff',
+  fontSize: 11,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: '2px solid #fff',
+};
+
+const botaoSuporteMarcae = {
+  position: 'fixed' as const,
+  left: 24,
+  bottom: 24,
+  zIndex: 60,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 12,
+  border: '1px solid rgba(168, 85, 247, 0.72)',
+  background: 'linear-gradient(135deg, #0f172a, #2e1065)',
+  color: '#fff',
+  borderRadius: 20,
+  padding: '14px 18px',
+  cursor: 'pointer',
+  boxShadow: '0 22px 50px rgba(88, 28, 135, 0.35)',
+};
+
+const iconeSuporteMarcae = {
+  width: 42,
+  height: 42,
+  borderRadius: 16,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'rgba(34, 197, 94, 0.14)',
+  border: '1px solid rgba(34, 197, 94, 0.32)',
+  fontSize: 20,
+};
+
+const modalAvisosOverlay = {
+  position: 'fixed' as const,
+  inset: 0,
+  zIndex: 100,
+  background: 'rgba(2, 6, 23, 0.72)',
+  backdropFilter: 'blur(8px)',
+  display: 'flex',
+  justifyContent: 'flex-end',
+  alignItems: 'flex-start',
+  padding: 24,
+};
+
+const modalAvisosCard = {
+  width: 'min(440px, 100%)',
+  maxHeight: 'calc(100vh - 48px)',
+  overflowY: 'auto' as const,
+  borderRadius: 26,
+  background: 'linear-gradient(180deg, #0f172a, #020617)',
+  border: '1px solid rgba(148, 163, 184, 0.22)',
+  boxShadow: '0 30px 90px rgba(0,0,0,0.45)',
+  padding: 20,
+};
+
+const modalAvisosHeader = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  gap: 16,
+  alignItems: 'flex-start',
+  marginBottom: 18,
+};
+
+const modalAvisosTitulo = {
+  display: 'block',
+  color: '#fff',
+  fontSize: 18,
+  fontWeight: 950,
+};
+
+const modalAvisosSubtitulo = {
+  margin: '6px 0 0',
+  color: '#94a3b8',
+  fontSize: 13,
+  lineHeight: 1.45,
+};
+
+const botaoFecharAvisos = {
+  width: 34,
+  height: 34,
+  borderRadius: 12,
+  border: '1px solid rgba(148, 163, 184, 0.2)',
+  background: 'rgba(15, 23, 42, 0.9)',
+  color: '#fff',
+  fontSize: 22,
+  lineHeight: 1,
+  cursor: 'pointer',
+};
+
+const avisosVazio = {
+  display: 'grid',
+  gap: 6,
+  padding: 20,
+  borderRadius: 18,
+  background: 'rgba(15, 23, 42, 0.78)',
+  border: '1px dashed rgba(148, 163, 184, 0.24)',
+  color: '#cbd5e1',
+};
+
+const listaAvisosAdmin = {
+  display: 'grid',
+  gap: 12,
+};
+
+const cardAvisoAdmin = {
+  borderRadius: 20,
+  padding: 16,
+  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.88), rgba(15, 23, 42, 0.92))',
+  border: '1px solid rgba(148, 163, 184, 0.18)',
+};
+
+const cardAvisoTopo = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  gap: 10,
+  alignItems: 'center',
+  marginBottom: 10,
+};
+
+const tipoAvisoAdmin = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '6px 10px',
+  borderRadius: 999,
+  background: 'rgba(124, 58, 237, 0.2)',
+  color: '#d8b4fe',
+  fontSize: 11,
+  fontWeight: 950,
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.04em',
+};
+
+const dataAvisoAdmin = {
+  color: '#94a3b8',
+  fontWeight: 800,
+};
+
+const tituloAvisoAdmin = {
+  display: 'block',
+  color: '#fff',
+  fontSize: 15,
+  fontWeight: 950,
+  marginBottom: 6,
+};
+
+const mensagemAvisoAdmin = {
+  margin: 0,
+  color: '#cbd5e1',
+  fontSize: 13,
+  lineHeight: 1.55,
+  whiteSpace: 'pre-wrap' as const,
 };
