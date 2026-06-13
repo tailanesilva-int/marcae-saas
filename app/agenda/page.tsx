@@ -28,6 +28,7 @@ export default function AgendaPage() {
   const [eventoSelecionado, setEventoSelecionado] = useState<any>(null);
   const [pesquisa, setPesquisa] = useState('');
   const [dataFiltroAgenda, setDataFiltroAgenda] = useState('');
+  const [mostrarSemanaMobile, setMostrarSemanaMobile] = useState(false);
 
   const [modoReagendamento, setModoReagendamento] = useState(false);
   const [novaDataReagendamento, setNovaDataReagendamento] = useState('');
@@ -1005,6 +1006,23 @@ function removerAgendamentosDuplicadosAgenda(lista: any[]) {
             color: #fff !important;
           }
 
+          .agenda-drawer-responsive small {
+            display: block;
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            line-height: 1.15;
+          }
+
+          .agenda-drawer-responsive strong {
+            display: block;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            line-height: 1.18;
+          }
+
           @media (max-width: 900px) {
             .desktop-calendar {
               display: none;
@@ -1646,6 +1664,151 @@ function removerAgendamentosDuplicadosAgenda(lista: any[]) {
             }
           }
 
+          @media (max-width: 900px) {
+            .agenda-header-info-grid-responsive {
+              display: none !important;
+            }
+
+            .agenda-metricas-responsive > div {
+              min-height: 74px !important;
+              padding: 9px !important;
+              border-radius: 15px !important;
+              gap: 3px !important;
+            }
+
+            .agenda-metricas-responsive > div > div:first-child {
+              width: auto !important;
+              height: auto !important;
+            }
+
+            .agenda-metricas-responsive strong {
+              font-size: 20px !important;
+              line-height: 1 !important;
+              white-space: nowrap !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+            }
+
+            .agenda-metricas-responsive small {
+              font-size: 10px !important;
+              line-height: 1.1 !important;
+              margin-top: 0 !important;
+            }
+
+            .agenda-toolbar-responsive {
+              margin-bottom: 8px !important;
+            }
+
+            .agenda-periodo-responsive {
+              min-height: 28px !important;
+              font-size: 10.5px !important;
+              padding: 6px 8px !important;
+            }
+
+            .agenda-mobile-card-responsive {
+              padding: 9px !important;
+              border-radius: 15px !important;
+              gap: 6px !important;
+            }
+
+            .agenda-mobile-hora-responsive {
+              font-size: 16px !important;
+            }
+          }
+
+
+          @media (max-width: 900px) {
+            .agenda-header-responsive {
+              padding: 10px 12px !important;
+              border-radius: 18px !important;
+              margin-bottom: 8px !important;
+            }
+
+            .agenda-logo-responsive {
+              display: none !important;
+            }
+
+            .agenda-titulo-responsive {
+              font-size: 21px !important;
+              line-height: 1 !important;
+            }
+
+            .agenda-header-conteudo-responsive {
+              gap: 8px !important;
+            }
+
+            .agenda-header-mini-button-responsive {
+              height: 38px !important;
+              border-radius: 14px !important;
+              padding: 0 12px !important;
+            }
+
+            .agenda-metricas-responsive {
+              display: none !important;
+            }
+
+            .agenda-toolbar-responsive {
+              padding: 9px !important;
+              border-radius: 18px !important;
+              gap: 8px !important;
+            }
+
+            .agenda-toolbar-responsive > div:first-child {
+              gap: 7px !important;
+            }
+
+            .agenda-toolbar-responsive > div:first-child button {
+              min-height: 38px !important;
+              padding: 0 10px !important;
+              border-radius: 13px !important;
+              font-size: 11px !important;
+            }
+
+            .agenda-busca-compacta-responsive,
+            .agenda-data-compacta-responsive {
+              height: 40px !important;
+              border-radius: 13px !important;
+            }
+
+            .agenda-periodo-responsive {
+              display: none !important;
+            }
+
+            .agenda-mobile-dia-card-responsive {
+              margin-bottom: 8px !important;
+              padding: 8px !important;
+              border-radius: 16px !important;
+            }
+
+            .agenda-mobile-dias-scroller-responsive > button {
+              min-height: 50px !important;
+              flex-basis: 48px !important;
+              min-width: 48px !important;
+              border-radius: 13px !important;
+            }
+
+            .agenda-mobile-card-responsive {
+              padding: 8px !important;
+              border-radius: 14px !important;
+              gap: 5px !important;
+              min-height: 78px !important;
+            }
+
+            .agenda-mobile-hora-responsive {
+              font-size: 15px !important;
+            }
+
+            .agenda-mobile-card-rodape-responsive {
+              margin-top: 3px !important;
+            }
+
+            .agenda-mobile-card-rodape-responsive span,
+            .agenda-mobile-card-rodape-responsive strong {
+              font-size: 11px !important;
+            }
+          }
+
+
         `}</style>
 
         <main className="agenda-page-responsive" style={page}>
@@ -1676,7 +1839,7 @@ function removerAgendamentosDuplicadosAgenda(lista: any[]) {
 
                   <div style={headerTituloBoxCompacto}>
                     <h1 className="agenda-titulo-responsive" style={tituloHeaderCompacto}>Agenda</h1>
-                    <span style={subtituloHeaderCompacto}>Operacional</span>
+                    <span style={subtituloHeaderCompacto}>{formatarDataCurta(dataFiltroAgenda)} • {metricasMobileDiaSelecionado.agendamentos} agendamentos</span>
                   </div>
                 </div>
 
@@ -1720,13 +1883,13 @@ function removerAgendamentosDuplicadosAgenda(lista: any[]) {
               </div>
             </header>
             <section className="agenda-metricas-responsive" style={metricasGrid}>
-              <MetricCard titulo="Hoje" valor={String(metricas.hoje)} descricao="Agendamentos do dia" icone="📅" cor={corPrimaria} />
-              <MetricCard titulo="Concluídos" valor={String(metricas.concluidos)} descricao="Atendimentos finalizados na semana" icone="✅" cor="#22c55e" />
-              <MetricCard titulo="Cancelados" valor={String(metricas.cancelados)} descricao="Registros cancelados na semana" icone="🚫" cor="#ef4444" />
+              <MetricCard titulo="Hoje" valor={String(metricas.hoje)} descricao="Agenda" icone="📅" cor={corPrimaria} />
+              <MetricCard titulo="Concluídos" valor={String(metricas.concluidos)} descricao="Semana" icone="✅" cor="#22c55e" />
+              <MetricCard titulo="Cancelados" valor={String(metricas.cancelados)} descricao="Semana" icone="🚫" cor="#ef4444" />
               <MetricCard
-  titulo="Recebido na semana"
+  titulo="Recebido"
   valor={dinheiro(metricas.faturamento)}
-  descricao="Somente pagamentos realmente recebidos"
+  descricao="Semana"
   icone="💰"
   cor="#f59e0b"
 />
@@ -1756,7 +1919,7 @@ function removerAgendamentosDuplicadosAgenda(lista: any[]) {
                   }}
                   style={botaoFiltroRapidoAgenda}
                 >
-                  7 dias
+                  Semana
                 </button>
 
                 <button
@@ -1768,14 +1931,15 @@ function removerAgendamentosDuplicadosAgenda(lista: any[]) {
                   }}
                   style={botaoFiltroRapidoAgenda}
                 >
-                  30 dias
+                  Mês
                 </button>
 
                 <button
                   type="button"
+                  onClick={() => setMostrarSemanaMobile(!mostrarSemanaMobile)}
                   style={botaoFiltroRapidoAgenda}
                 >
-                  ⚙️ Filtros
+                  {mostrarSemanaMobile ? 'Ocultar' : 'Calendário'}
                 </button>
               </div>
 
@@ -1839,7 +2003,7 @@ function removerAgendamentosDuplicadosAgenda(lista: any[]) {
               </div>
 
               <div className="agenda-periodo-responsive" style={periodoAgendaTextoCompacto}>
-                Semana de {formatarDataFiltro(inicioSemanaAgenda)} até {formatarDataFiltro(fimSemanaAgenda)}
+                Semana • {formatarDataCurta(inicioSemanaAgenda)} a {formatarDataCurta(fimSemanaAgenda)}
               </div>
             </section>
 
@@ -2040,6 +2204,7 @@ const eventosDia = eventosFiltrados
 </section>
 
             <section className="mobile-lista" style={mobileLista}>
+              {mostrarSemanaMobile && (
               <div className="agenda-mobile-dia-card-responsive" style={mobileAgendaDiaCard}>
                 <div style={mobileAgendaDiaTopo}>
                   <button
@@ -2134,6 +2299,8 @@ const eventosDia = eventosFiltrados
                 </div>
               </div>
 
+              )}
+
               {eventosMobileDiaSelecionado.length === 0 ? (
                 <div style={emptyState}>
                   <strong>Nenhum atendimento neste dia</strong>
@@ -2224,11 +2391,15 @@ const eventosDia = eventosFiltrados
           {eventoSelecionado && (
             <div className="agenda-drawer-overlay-responsive" style={drawerOverlay} onClick={() => setEventoSelecionado(null)}>
               <aside className="agenda-drawer-responsive" style={drawer} onClick={(e) => e.stopPropagation()}>
-                <div style={drawerHeader}>
-                  <div>
+                <div style={drawerHeaderCompacto}>
+                  <div style={drawerHeaderTextoCompacto}>
                     <span style={sectionEyebrow}>Detalhes do atendimento</span>
-                    <h2 className="agenda-drawer-title-responsive" style={drawerTitle}>Agendamento</h2>
-                    <p style={drawerSubtitle}>Informações operacionais e financeiras.</p>
+                    <h2 className="agenda-drawer-title-responsive" style={drawerTitleCompacto}>
+                      {eventoSelecionado.cliente?.nome || 'Cliente'}
+                    </h2>
+                    <p style={drawerSubtitleCompacto}>
+                      {eventoSelecionado.servico?.nome || 'Serviço'} • {formatarHora(eventoSelecionado.dataHoraInicio)}
+                    </p>
                   </div>
 
                   <button onClick={() => setEventoSelecionado(null)} style={botaoFechar}>
@@ -2236,60 +2407,75 @@ const eventosDia = eventosFiltrados
                   </button>
                 </div>
 
-                <div style={cardInfo}>
-                  <span style={label}>Cliente</span>
-                  <strong>{eventoSelecionado.cliente?.nome || 'Não informado'}</strong>
+                <div style={drawerResumoCompacto}>
+                  <div style={drawerResumoLinha}>
+                    <span style={drawerResumoIcone}>👤</span>
+                    <div style={drawerResumoTexto}>
+                      <small>Cliente</small>
+                      <strong>{eventoSelecionado.cliente?.nome || 'Não informado'}</strong>
+                    </div>
+                  </div>
+
+                  <div style={drawerResumoLinha}>
+                    <span style={drawerResumoIcone}>💼</span>
+                    <div style={drawerResumoTexto}>
+                      <small>Serviço</small>
+                      <strong>{eventoSelecionado.servico?.nome || 'Não informado'}</strong>
+                    </div>
+                  </div>
+
+                  <div style={drawerResumoLinha}>
+                    <span style={drawerResumoIcone}>👩‍💼</span>
+                    <div style={drawerResumoTexto}>
+                      <small>Profissional</small>
+                      <strong>{eventoSelecionado.profissional?.nome || 'Não informado'}</strong>
+                    </div>
+                  </div>
                 </div>
 
-                <div style={cardInfo}>
-                  <span style={label}>Serviço</span>
-                  <strong>{eventoSelecionado.servico?.nome || 'Não informado'}</strong>
-                </div>
+                <div style={drawerMetaGridCompacto}>
+                  <div style={drawerMetaCardCompacto}>
+                    <span>📅 Data e horário</span>
+                    <strong>{formatarData(eventoSelecionado.dataHoraInicio)}</strong>
+                  </div>
 
-                <div style={cardInfo}>
-                  <span style={label}>Profissional</span>
-                  <strong>{eventoSelecionado.profissional?.nome || 'Não informado'}</strong>
-                </div>
-
-                <div style={cardInfo}>
-                  <span style={label}>Data e horário</span>
-                  <strong>{formatarData(eventoSelecionado.dataHoraInicio)}</strong>
-                </div>
-
-                <div style={cardInfo}>
-                  <span style={label}>Status</span>
-                  <strong>{textoStatus(eventoSelecionado.status)}</strong>
+                  <div style={drawerMetaCardCompacto}>
+                    <span>Status</span>
+                    <strong>{textoStatus(eventoSelecionado.status)}</strong>
+                  </div>
                 </div>
 
                 {eventoSelecionado.status === 'cancelado' && (
-                  <>
-                    <div style={cardInfoCancelado}>
+                  <div style={drawerCancelamentoCompacto}>
+                    <div>
                       <span style={labelCancelado}>Motivo do cancelamento</span>
                       <strong>{eventoSelecionado.motivoCancelamento || 'Não informado'}</strong>
                     </div>
 
-                    <div style={cardInfoCancelado}>
+                    <div>
                       <span style={labelCancelado}>Cancelado em</span>
                       <strong>{formatarCanceladoEm(eventoSelecionado.canceladoEm)}</strong>
                     </div>
-                  </>
+                  </div>
                 )}
 
-                <div className="agenda-financeiro-responsive" style={financeiroGrid}>
-                  <div style={financeiroCard}>
-                    <span>Pagamento</span>
-                    <strong>{pagamentoConfirmadoAgenda(eventoSelecionado) ? 'Pago' : eventoSelecionado.statusPagamento || 'Pendente'}</strong>
-                  </div>
-
-                  <div style={financeiroCard}>
-                    <span>Valor pago</span>
+                <div style={drawerFinanceiroCompacto}>
+                  <div style={drawerFinanceiroTopo}>
+                    <span>💰 Financeiro</span>
                     <strong>{dinheiro(valorPago(eventoSelecionado))}</strong>
                   </div>
-                </div>
 
-                <div style={cardInfo}>
-                  <span style={label}>Forma de pagamento</span>
-                  <strong>{formatarMetodoPagamento(eventoSelecionado)}</strong>
+                  <div style={drawerFinanceiroListaCompacta}>
+                    <div style={drawerFinanceiroLinhaCompacta}>
+                      <small>Status</small>
+                      <strong>{pagamentoConfirmadoAgenda(eventoSelecionado) ? 'Pago' : eventoSelecionado.statusPagamento || 'Pendente'}</strong>
+                    </div>
+
+                    <div style={drawerFinanceiroLinhaCompacta}>
+                      <small>Forma de pagamento</small>
+                      <strong>{formatarMetodoPagamento(eventoSelecionado)}</strong>
+                    </div>
+                  </div>
                 </div>
 
                 {promocaoFoiAplicada(eventoSelecionado) && (
@@ -2335,29 +2521,35 @@ const eventosDia = eventosFiltrados
                   </div>
                 )}
 
-                <button onClick={() => abrirWhatsApp(eventoSelecionado)} style={botaoWhatsapp}>
-                  Enviar WhatsApp
-                </button>
+                <div style={drawerAcoesGridCompacto}>
+                  <button onClick={() => abrirWhatsApp(eventoSelecionado)} style={botaoWhatsappCompacto}>
+                    WhatsApp
+                  </button>
 
-                {eventoSelecionado.status !== 'cancelado' && (
-                  <>
-                    <button onClick={iniciarReagendamento} style={botaoReagendar}>
-                      Reagendar atendimento
+                  {eventoSelecionado.status !== 'cancelado' && (
+                    <button onClick={iniciarReagendamento} style={botaoReagendarCompacto}>
+                      Reagendar
                     </button>
+                  )}
 
+                  {eventoSelecionado.status !== 'cancelado' && (
                     <button
                       onClick={cancelarAgendamento}
                       disabled={cancelando}
                       style={{
-                        ...botaoCancelarAtendimento,
+                        ...botaoCancelarAtendimentoCompacto,
                         opacity: cancelando ? 0.65 : 1,
                         cursor: cancelando ? 'not-allowed' : 'pointer',
                       }}
                     >
-                      {cancelando ? 'Cancelando...' : 'Cancelar atendimento'}
+                      {cancelando ? 'Cancelando...' : 'Cancelar'}
                     </button>
-                  </>
-                )}
+                  )}
+
+                  <button onClick={() => setEventoSelecionado(null)} style={botaoFecharDrawerCompacto}>
+                    Fechar
+                  </button>
+                </div>
 
                 {modoReagendamento && eventoSelecionado.status !== 'cancelado' && (
                   <div style={reagendamentoBox}>
@@ -2429,10 +2621,6 @@ const eventosDia = eventosFiltrados
                     </button>
                   </div>
                 )}
-
-                <button onClick={() => setEventoSelecionado(null)} style={botaoFecharDrawer}>
-                  Fechar
-                </button>
               </aside>
             </div>
           )}
@@ -2442,23 +2630,212 @@ const eventosDia = eventosFiltrados
   );
 }
 
+
+
+const drawerHeaderCompacto: CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'flex-start',
+  gap: 14,
+  marginBottom: 14,
+};
+
+const drawerHeaderTextoCompacto: CSSProperties = {
+  minWidth: 0,
+};
+
+const drawerTitleCompacto: CSSProperties = {
+  margin: '4px 0 0',
+  fontSize: 26,
+  lineHeight: 1,
+  fontWeight: 950,
+  color: '#fff',
+  letterSpacing: '-0.04em',
+};
+
+const drawerSubtitleCompacto: CSSProperties = {
+  margin: '8px 0 0',
+  color: '#94a3b8',
+  fontSize: 13,
+  fontWeight: 800,
+  lineHeight: 1.35,
+};
+
+const drawerResumoCompacto: CSSProperties = {
+  borderRadius: 22,
+  padding: 14,
+  marginBottom: 10,
+  background:
+    'radial-gradient(circle at top left, rgba(124,58,237,0.18), transparent 44%), rgba(15,23,42,0.78)',
+  border: '1px solid rgba(255,255,255,0.08)',
+  display: 'grid',
+  gap: 10,
+};
+
+const drawerResumoLinha: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '34px minmax(0, 1fr)',
+  gap: 10,
+  alignItems: 'center',
+  minWidth: 0,
+};
+
+const drawerResumoIcone: CSSProperties = {
+  width: 34,
+  height: 34,
+  borderRadius: 13,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'rgba(255,255,255,0.06)',
+  border: '1px solid rgba(255,255,255,0.08)',
+  fontSize: 15,
+};
+
+const drawerResumoTexto: CSSProperties = {
+  minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 2,
+  color: '#fff',
+};
+
+const drawerMetaGridCompacto: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: 10,
+  marginBottom: 10,
+};
+
+const drawerMetaCardCompacto: CSSProperties = {
+  borderRadius: 18,
+  padding: 13,
+  background: 'rgba(255,255,255,0.045)',
+  border: '1px solid rgba(255,255,255,0.075)',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 6,
+  color: '#fff',
+  minWidth: 0,
+};
+
+const drawerCancelamentoCompacto: CSSProperties = {
+  borderRadius: 18,
+  padding: 13,
+  marginBottom: 10,
+  background: 'rgba(239,68,68,0.08)',
+  border: '1px solid rgba(239,68,68,0.18)',
+  display: 'grid',
+  gap: 10,
+  color: '#fecaca',
+};
+
+const drawerFinanceiroCompacto: CSSProperties = {
+  borderRadius: 20,
+  padding: 14,
+  marginBottom: 10,
+  background:
+    'radial-gradient(circle at top left, rgba(34,197,94,0.18), transparent 48%), rgba(6,78,59,0.18)',
+  border: '1px solid rgba(34,197,94,0.16)',
+  color: '#fff',
+};
+
+const drawerFinanceiroTopo: CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 12,
+  marginBottom: 12,
+  fontWeight: 950,
+};
+
+const drawerFinanceiroListaCompacta: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr',
+  gap: 8,
+};
+
+const drawerFinanceiroLinhaCompacta: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr)',
+  gap: 3,
+  minWidth: 0,
+};
+
+const drawerFinanceiroGridCompacto: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: 10,
+};
+
+const drawerAcoesGridCompacto: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: 9,
+  marginTop: 12,
+};
+
+const botaoWhatsappCompacto: CSSProperties = {
+  minHeight: 46,
+  padding: '0 12px',
+  borderRadius: 15,
+  border: 'none',
+  background: 'linear-gradient(135deg, #16a34a, #22c55e)',
+  color: '#fff',
+  fontWeight: 950,
+  cursor: 'pointer',
+};
+
+const botaoReagendarCompacto: CSSProperties = {
+  minHeight: 46,
+  padding: '0 12px',
+  borderRadius: 15,
+  border: 'none',
+  background: 'linear-gradient(135deg, #7c3aed, #06b6d4)',
+  color: '#fff',
+  fontWeight: 950,
+  cursor: 'pointer',
+};
+
+const botaoCancelarAtendimentoCompacto: CSSProperties = {
+  minHeight: 46,
+  padding: '0 12px',
+  borderRadius: 15,
+  border: 'none',
+  background: 'linear-gradient(135deg, #dc2626, #ef4444)',
+  color: '#fff',
+  fontWeight: 950,
+};
+
+const botaoFecharDrawerCompacto: CSSProperties = {
+  minHeight: 46,
+  padding: '0 12px',
+  borderRadius: 15,
+  border: '1px solid rgba(255,255,255,0.10)',
+  background: 'rgba(255,255,255,0.04)',
+  color: '#fff',
+  fontWeight: 950,
+  cursor: 'pointer',
+};
+
 function MetricCard({ titulo, valor, descricao, icone, cor }: any) {
   return (
     <div style={metricCard}>
-      <div
-        style={{
-          ...metricIcon,
-          background: `linear-gradient(135deg, ${cor}, rgba(255,255,255,0.18))`,
-        }}
-      >
-        {icone}
+      <div style={metricTopoCompacto}>
+        <strong style={metricValor}>{valor}</strong>
+
+        <span
+          style={{
+            ...metricIcon,
+            background: `linear-gradient(135deg, ${cor}, rgba(255,255,255,0.14))`,
+          }}
+        >
+          {icone}
+        </span>
       </div>
 
-      <div>
-        <span style={metricTitulo}>{titulo}</span>
-        <strong style={metricValor}>{valor}</strong>
-        <small style={metricDescricao}>{descricao}</small>
-      </div>
+      <span style={metricTitulo}>{titulo}</span>
+      <small style={metricDescricao}>{descricao}</small>
     </div>
   );
 }
@@ -2483,16 +2860,16 @@ const headerIdentidadeAgenda: CSSProperties = {
 };
 
 const logoHeaderCompacto: CSSProperties = {
-  width: 58,
-  height: 58,
-  borderRadius: 20,
+  width: 40,
+  height: 40,
+  borderRadius: 14,
   overflow: 'hidden',
   background: 'linear-gradient(135deg, rgba(124,58,237,0.92), rgba(168,85,247,0.92))',
   border: '1px solid rgba(255,255,255,0.14)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  fontSize: 25,
+  fontSize: 18,
   fontWeight: 950,
   color: '#fff',
   boxShadow: '0 12px 28px rgba(124,58,237,0.28)',
@@ -2559,7 +2936,7 @@ const headerInfoGridCompacto: CSSProperties = {
   zIndex: 2,
   display: 'grid',
   gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-  gap: 8,
+  gap: 6,
   width: '100%',
 };
 
@@ -2588,14 +2965,14 @@ const headerInfoIcone: CSSProperties = {
 };
 
 const toolbarAgendaCompacto: CSSProperties = {
-  borderRadius: 22,
-  padding: 14,
-  background: 'rgba(15,23,42,0.86)',
-  border: '1px solid rgba(255,255,255,0.08)',
-  marginBottom: 14,
+  borderRadius: 18,
+  padding: 10,
+  background: 'rgba(15,23,42,0.78)',
+  border: '1px solid rgba(255,255,255,0.07)',
+  marginBottom: 10,
   display: 'flex',
   flexDirection: 'column',
-  gap: 12,
+  gap: 8,
 };
 
 const toolbarFiltrosRapidos: CSSProperties = {
@@ -2605,12 +2982,12 @@ const toolbarFiltrosRapidos: CSSProperties = {
 };
 
 const botaoFiltroRapidoAgenda: CSSProperties = {
-  height: 46,
-  borderRadius: 16,
+  height: 38,
+  borderRadius: 13,
   border: '1px solid rgba(255,255,255,0.08)',
   background: 'rgba(255,255,255,0.04)',
   color: '#e2e8f0',
-  fontSize: 13,
+  fontSize: 12,
   fontWeight: 950,
   cursor: 'pointer',
 };
@@ -2623,8 +3000,8 @@ const toolbarBuscaDataCompacta: CSSProperties = {
 };
 
 const buscaCompactaBox: CSSProperties = {
-  height: 46,
-  borderRadius: 18,
+  height: 42,
+  borderRadius: 14,
   border: '1px solid rgba(255,255,255,0.08)',
   background: 'rgba(2,6,23,0.68)',
   display: 'flex',
@@ -2667,8 +3044,8 @@ const botaoLimparBuscaCompacto: CSSProperties = {
 };
 
 const dataCompactaBox: CSSProperties = {
-  height: 46,
-  borderRadius: 18,
+  height: 42,
+  borderRadius: 14,
   border: '1px solid rgba(255,255,255,0.08)',
   background: 'rgba(2,6,23,0.62)',
   display: 'grid',
@@ -2732,8 +3109,8 @@ const botaoCalendarioDataCompacta: CSSProperties = {
 };
 
 const periodoAgendaTextoCompacto: CSSProperties = {
-  minHeight: 36,
-  borderRadius: 14,
+  minHeight: 30,
+  borderRadius: 12,
   border: '1px solid rgba(255,255,255,0.07)',
   background: 'rgba(255,255,255,0.035)',
   color: '#cbd5e1',
@@ -2795,19 +3172,19 @@ const container: CSSProperties = {
 
 const headerPremium: CSSProperties = {
   color: '#fff',
-  borderRadius: 26,
-  padding: 18,
-  marginBottom: 14,
+  borderRadius: 20,
+  padding: 12,
+  marginBottom: 10,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'stretch',
-  gap: 12,
+  gap: 8,
   position: 'relative',
   overflow: 'hidden',
-  border: '1px solid rgba(255,255,255,0.10)',
+  border: '1px solid rgba(255,255,255,0.08)',
   background:
     'linear-gradient(180deg, rgba(15,23,42,0.96), rgba(2,6,23,0.98))',
-  boxShadow: '0 22px 70px rgba(0,0,0,0.30)',
+  boxShadow: '0 14px 38px rgba(0,0,0,0.22)',
 };
 
 const headerOverlay: CSSProperties = {
@@ -2943,60 +3320,80 @@ const headerPainelTexto: CSSProperties = {
 
 const metricasGrid: CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-  gap: 12,
-  marginBottom: 14,
+  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+  gap: 8,
+  marginBottom: 10,
 };
 
 const metricCard: CSSProperties = {
-  borderRadius: 22,
-  padding: 16,
-  background: 'rgba(15,23,42,0.82)',
-  border: '1px solid rgba(255,255,255,0.08)',
-  backdropFilter: 'blur(14px)',
+  borderRadius: 16,
+  padding: 11,
+  background: 'rgba(15,23,42,0.74)',
+  border: '1px solid rgba(255,255,255,0.07)',
+  backdropFilter: 'blur(12px)',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'stretch',
+  gap: 4,
+  minWidth: 0,
+  minHeight: 78,
+  boxShadow: 'none',
+};
+
+const metricTopoCompacto: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: 12,
+  justifyContent: 'space-between',
+  gap: 8,
   minWidth: 0,
 };
 
 const metricIcon: CSSProperties = {
-  width: 44,
-  height: 44,
-  borderRadius: 16,
+  width: 26,
+  height: 26,
+  borderRadius: 10,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  fontSize: 20,
+  fontSize: 13,
   flexShrink: 0,
 };
 
 const metricTitulo: CSSProperties = {
   display: 'block',
-  color: '#94a3b8',
-  fontSize: 12,
-  fontWeight: 700,
-  marginBottom: 8,
+  color: '#cbd5e1',
+  fontSize: 11,
+  fontWeight: 900,
+  marginTop: 1,
   textTransform: 'uppercase',
-  letterSpacing: '.08em',
+  letterSpacing: '.06em',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
 };
 
 const metricValor: CSSProperties = {
   display: 'block',
   color: '#fff',
-  fontSize: 24,
+  fontSize: 22,
   fontWeight: 950,
-  lineHeight: 1.05,
-  whiteSpace: 'normal',
-  overflowWrap: 'anywhere',
+  lineHeight: 1,
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  letterSpacing: '-0.04em',
 };
 
 const metricDescricao: CSSProperties = {
   display: 'block',
   color: '#94a3b8',
-  fontSize: 12,
-  marginTop: 5,
-  lineHeight: 1.25,
+  fontSize: 10.5,
+  fontWeight: 800,
+  marginTop: 0,
+  lineHeight: 1.15,
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
 };
 
 const toolbarAgenda: CSSProperties = {
@@ -3237,7 +3634,7 @@ const mobileBotaoDicaSeta: CSSProperties = {
   border: '1px solid rgba(255,255,255,0.12)',
   background: 'rgba(255,255,255,0.06)',
   color: '#fff',
-  fontSize: 20,
+  fontSize: 13,
   fontWeight: 950,
   cursor: 'pointer',
 };
@@ -3272,36 +3669,36 @@ const mobileBadge: CSSProperties = {
 
 const mobileCard: CSSProperties = {
   width: '100%',
-  borderRadius: 18,
-  padding: 12,
+  borderRadius: 15,
+  padding: 9,
   background: 'rgba(15,23,42,0.84)',
   border: '1px solid rgba(255,255,255,0.075)',
   display: 'flex',
   flexDirection: 'column',
-  gap: 9,
+  gap: 6,
   textAlign: 'left',
   color: '#fff',
   cursor: 'pointer',
-  boxShadow: '0 12px 34px rgba(0,0,0,0.18)',
+  boxShadow: 'none',
 };
 
 const mobileCardLinhaPrincipal: CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: '62px 1fr',
-  gap: 11,
+  gridTemplateColumns: '54px 1fr',
+  gap: 9,
   alignItems: 'stretch',
 };
 
 const mobileHoraBox: CSSProperties = {
   minWidth: 0,
-  borderRadius: 15,
+  borderRadius: 12,
   background: 'rgba(255,255,255,0.045)',
   border: '1px solid rgba(255,255,255,0.06)',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  padding: '8px 6px',
+  padding: '6px 5px',
 };
 
 const mobileCardInfo: CSSProperties = {
@@ -3314,7 +3711,7 @@ const mobileCardInfo: CSSProperties = {
 
 const mobileClienteNome: CSSProperties = {
   color: '#fff',
-  fontSize: 15,
+  fontSize: 14,
   fontWeight: 950,
   lineHeight: 1.15,
   overflow: 'hidden',
@@ -3341,7 +3738,7 @@ const mobileStatusLinha: CSSProperties = {
 
 
 const mobileHora: CSSProperties = {
-  fontSize: 18,
+  fontSize: 16,
   fontWeight: 950,
   color: '#38bdf8',
   lineHeight: 1,
@@ -3373,9 +3770,9 @@ const mobileCardRodape: CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  gap: 10,
-  paddingTop: 7,
-  marginTop: 3,
+  gap: 8,
+  paddingTop: 4,
+  marginTop: 1,
   borderTop: '1px solid rgba(255,255,255,0.06)',
   color: '#cbd5e1',
   fontSize: 11,
@@ -3596,7 +3993,7 @@ const badgeProfissional: CSSProperties = {
 };
 
 const badgePagamento: CSSProperties = {
-  padding: '5px 9px',
+  padding: '4px 7px',
   borderRadius: 999,
   background: 'rgba(34,197,94,0.12)',
   color: '#bbf7d0',
@@ -3606,7 +4003,7 @@ const badgePagamento: CSSProperties = {
 
 
 const badgePromocaoAplicada: CSSProperties = {
-  padding: '5px 9px',
+  padding: '4px 7px',
   borderRadius: 999,
   background: 'rgba(168,85,247,0.16)',
   color: '#e9d5ff',
@@ -3859,7 +4256,7 @@ const reagendamentoBox: CSSProperties = {
 const reagendamentoTitulo: CSSProperties = {
   margin: '0 0 10px',
   color: '#fff',
-  fontSize: 20,
+  fontSize: 13,
   fontWeight: 900,
 };
 
@@ -3943,7 +4340,7 @@ const botaoCancelarReagendamento: CSSProperties = {
 };
 
 const badgeReagendado: CSSProperties = {
-  padding: '5px 9px',
+  padding: '4px 7px',
   borderRadius: 999,
   background: 'rgba(168,85,247,0.16)',
   color: '#e9d5ff',

@@ -50,7 +50,6 @@ export default function AdminPage() {
   const [sincronizandoRecorrencia, setSincronizandoRecorrencia] = useState(false);
   const [configPlanos, setConfigPlanos] = useState({
     valorPlanoBasico: null as number | null,
-    valorPlanoPlus: null as number | null,
     valorPlanoPremium: null as number | null,
   });
 
@@ -148,7 +147,6 @@ export default function AdminPage() {
 
       setConfigPlanos({
         valorPlanoBasico: normalizarValorPlano(configuracao?.valorPlanoBasico),
-        valorPlanoPlus: normalizarValorPlano(configuracao?.valorPlanoPlus),
         valorPlanoPremium: normalizarValorPlano(configuracao?.valorPlanoPremium),
       });
     } catch (error) {
@@ -364,17 +362,13 @@ export default function AdminPage() {
   }
 
   function planoAtual() {
-    if (empresa?.plano === 'plus') return 'plus';
+    if (empresa?.plano === 'plus') return 'premium';
     if (empresa?.plano === 'premium') return 'premium';
     return 'basico';
   }
 
   function planoBasico() {
     return planoAtual() === 'basico';
-  }
-
-  function planoPlus() {
-    return planoAtual() === 'plus';
   }
 
   function planoPremium() {
@@ -396,10 +390,6 @@ export default function AdminPage() {
     return trialAtivo() || (planoPremium() && assinaturaAtiva());
   }
 
-  function temPlusOuPremium() {
-    return trialAtivo() || (assinaturaAtiva() && (planoPlus() || planoPremium()));
-  }
-
   function temPermissao(modulo: keyof PermissoesUsuario) {
     if (!usuario) return false;
 
@@ -413,7 +403,6 @@ export default function AdminPage() {
 
   function nomePlanoAtual() {
   if (planoPremium()) return 'Premium';
-  if (planoPlus()) return 'Plus';
   if (trialAtivo()) return 'Trial 7 dias';
   if (licencaExpirada()) return 'Básico vencido';
   return 'Básico';
@@ -422,7 +411,6 @@ export default function AdminPage() {
   function textoBadge() {
   if (licencaExpirada()) return 'Licença expirada';
   if (planoPremium()) return 'Premium ativo';
-  if (planoPlus()) return 'Plus ativo';
   if (trialAtivo()) return 'Trial ativo';
   return 'Básico ativo';
 }
@@ -431,7 +419,6 @@ export default function AdminPage() {
     if (trialAtivo()) return badgeTrial;
     if (licencaExpirada()) return badgeExpirado;
     if (planoPremium()) return badgePremium;
-    if (planoPlus()) return badgePlus;
     return badgeBasicoAtivo;
   }
 
@@ -473,11 +460,7 @@ export default function AdminPage() {
       return 'Plano Premium ativo com todos os recursos liberados.';
     }
 
-    if (planoPlus()) {
-      return 'Plano Plus ativo com pré-pagamento, WhatsApp automático e lembretes.';
-    }
-
-    return 'Plano Básico ativo com recursos essenciais para agenda e atendimento manual.';
+    return 'Plano Básico ativo com agenda online, clientes, serviços, profissionais e WhatsApp automático.';
   }
 
   function recursoBloqueado() {
@@ -598,7 +581,7 @@ export default function AdminPage() {
     }
   }
 
-  async function ativarCobrancaAutomatica(planoSelecionado?: 'basico' | 'plus' | 'premium') {
+  async function ativarCobrancaAutomatica(planoSelecionado?: 'basico' | 'premium') {
     if (sistemaBloqueado) {
       recursoBloqueado();
       return;
@@ -640,7 +623,6 @@ export default function AdminPage() {
 
   const diasParaExpirar = diasRestantes(dataAssinaturaExpira());
   const premiumAtivo = temPremium();
-  const plusOuPremiumAtivo = temPlusOuPremium();
   const trialEstaAtivo = trialAtivo();
   const sistemaBloqueado = licencaExpirada();
   const planoPremiumExpirado = premiumExpirado();
@@ -680,12 +662,6 @@ export default function AdminPage() {
     empresa.precoPlanoBasico ??
     null;
 
-  const valorPlanoPlus =
-    configPlanos.valorPlanoPlus ??
-    empresa.valorPlanoPlus ??
-    empresa.valorMensalPlus ??
-    empresa.precoPlanoPlus ??
-    null;
 
   const valorPlanoPremium =
     configPlanos.valorPlanoPremium ??
@@ -703,27 +679,22 @@ export default function AdminPage() {
     return formatarMoeda(Number(valor));
   }
 
-  function planoCardAtivo(plano: 'basico' | 'plus' | 'premium') {
+  function planoCardAtivo(plano: 'basico' | 'premium') {
     if (plano === 'premium') return planoPremium();
-    if (plano === 'plus') return planoPlus();
     return planoBasico() && !trialEstaAtivo;
   }
 
-  function planoCardBloqueadoPorHierarquia(plano: 'basico' | 'plus' | 'premium') {
+  function planoCardBloqueadoPorHierarquia(plano: 'basico' | 'premium') {
     if (sistemaBloqueado) return true;
 
     if (plano === 'basico') {
-      return planoPlus() || planoPremium();
-    }
-
-    if (plano === 'plus') {
       return planoPremium();
     }
 
     return false;
   }
 
-  function acaoPlano(plano: 'basico' | 'plus' | 'premium') {
+  function acaoPlano(plano: 'basico' | 'premium') {
     if (sistemaBloqueado) {
       recursoBloqueado();
       return;
@@ -902,8 +873,6 @@ export default function AdminPage() {
             style={{
               background: planoPremium()
                 ? '#f59e0b'
-                : planoPlus()
-                ? '#0ea5e9'
                 : '#22c55e',
               padding: '8px 13px',
               borderRadius: 999,
@@ -1167,32 +1136,11 @@ export default function AdminPage() {
               recursos={[
                 { texto: 'Agenda e controle de agendamentos', ativo: true },
                 { texto: 'Cadastro de serviços e profissionais', ativo: true },
-                { texto: 'Comprovante manual por WhatsApp', ativo: true },
-                { texto: 'Botão Google Agenda', ativo: true },
+                { texto: 'Clientes, serviços e profissionais', ativo: true },
+                { texto: 'Agendamento online sem pré-pagamento', ativo: true },
+                { texto: 'WhatsApp automático e lembretes', ativo: true },
                 { texto: 'Pré-pagamento Mercado Pago', ativo: false },
-                { texto: 'WhatsApp automático', ativo: false },
-                { texto: 'Comissões e financeiro premium', ativo: false },
-              ]}
-            />
-
-            <PlanoComercialCard
-              nome="Plus"
-              subtitulo="Crescimento"
-              destaque="Pagamentos e automações"
-              valor={textoValorPlano(valorPlanoPlus)}
-              cor="#2563eb"
-              ativo={planoCardAtivo('plus')}
-              bloqueado={planoCardBloqueadoPorHierarquia('plus')}
-              acaoTexto={planoCardAtivo('plus') ? 'Plano atual' : 'Solicitar Plus'}
-              bloqueadoTexto={sistemaBloqueado ? 'Regularize para alterar' : 'Plano superior ativo'}
-              onClick={() => acaoPlano('plus')}
-              recursos={[
-                { texto: 'Tudo do Básico', ativo: true },
-                { texto: 'Comissões básicas por profissional', ativo: true },
-                { texto: 'Promoções de aniversário, por serviço e campanhas gerais com envio facilitado via WhatsApp', ativo: true },
-                { texto: 'Comprovantes automáticos via WhatsApp', ativo: true },
-                { texto: 'Confirmação de agendamento e lembretes automáticos 1h antes via API WhatsApp', ativo: true },
-                { texto: 'Recebimentos de agendamento online via API Mercado Pago', ativo: true },
+                { texto: 'Financeiro, comissões, promoções e relatórios', ativo: false },
               ]}
             />
 
@@ -1208,7 +1156,7 @@ export default function AdminPage() {
               bloqueadoTexto={sistemaBloqueado ? 'Regularize para alterar' : ''}
               onClick={() => acaoPlano('premium')}
               recursos={[
-                { texto: 'Tudo do Plus', ativo: true },
+                { texto: 'Tudo do Básico', ativo: true },
                 { texto: 'Inclusão de serviços em agendamentos realizados e fechamento de atendimento com controle de caixa', ativo: true },
                 { texto: 'Dashboard premium financeiro', ativo: true },
                 { texto: 'Comissões automáticas', ativo: true },
@@ -1263,21 +1211,7 @@ export default function AdminPage() {
                       Selecionar plano
                     </option>
 
-                    {trialEstaAtivo && (
-                      <>
-                        <option value="plus">Plano Plus</option>
-                        <option value="premium">Plano Premium</option>
-                      </>
-                    )}
-
-                    {!trialEstaAtivo && planoBasico() && (
-                      <>
-                        <option value="plus">Plano Plus</option>
-                        <option value="premium">Plano Premium</option>
-                      </>
-                    )}
-
-                    {!trialEstaAtivo && planoPlus() && (
+                    {(trialEstaAtivo || (!trialEstaAtivo && planoBasico())) && (
                       <option value="premium">Plano Premium</option>
                     )}
                   </select>
@@ -1355,9 +1289,7 @@ export default function AdminPage() {
               <p style={{ margin: '6px 0 0', color: '#92400e' }}>
                 {sistemaBloqueado
                   ? 'Regularize o pagamento para liberar novamente as funções do sistema.'
-                  : planoBasico()
-                  ? 'Suba para o Plus para liberar pré-pagamento, WhatsApp automático e lembretes. Ou vá para o Premium para liberar financeiro completo.'
-                  : 'Suba para o Premium para liberar comissões, repasses, relatórios financeiros e promoções.'}
+                  : 'Suba para o Premium para liberar pré-pagamento, financeiro, comissões, promoções e relatórios.'}
               </p>
             </div>
           )}
@@ -2226,15 +2158,6 @@ const badgePremium = {
   fontSize: 13,
 };
 
-const badgePlus = {
-  display: 'inline-block',
-  background: '#fef3c7',
-  color: '#92400e',
-  padding: '6px 12px',
-  borderRadius: 999,
-  fontWeight: 800,
-  fontSize: 13,
-};
 
 const badgeTrial = {
   display: 'inline-block',

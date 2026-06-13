@@ -18,8 +18,18 @@ function gerarUsuarioPadrao(texto: string) {
     .replace(/[^a-z0-9]/g, "");
 }
 
+function normalizarPlano(plano: string) {
+  const planoNormalizado = String(plano || "basico").toLowerCase();
+
+  if (planoNormalizado === "plus") return "premium";
+  if (planoNormalizado === "premium") return "premium";
+  if (planoNormalizado === "trial") return "trial";
+
+  return "basico";
+}
+
 function planoEhValido(plano: string) {
-  return ["basico", "plus", "premium", "trial"].includes(plano);
+  return ["basico", "premium", "trial"].includes(plano);
 }
 
 function normalizarValorMonetario(valor: any) {
@@ -46,7 +56,7 @@ function normalizarValorMonetario(valor: any) {
 }
 
 async function obterValorPadraoPlano(plano: string) {
-  const planoNormalizado = String(plano || "basico").toLowerCase();
+  const planoNormalizado = normalizarPlano(plano);
 
   const registros = await prisma.$queryRaw<
     {
@@ -70,10 +80,6 @@ async function obterValorPadraoPlano(plano: string) {
     return 0;
   }
 
-  if (planoNormalizado === "plus") {
-    return normalizarValorMonetario(configuracao?.valorPlanoPlus);
-  }
-
   if (planoNormalizado === "premium") {
     return normalizarValorMonetario(configuracao?.valorPlanoPremium);
   }
@@ -82,7 +88,7 @@ async function obterValorPadraoPlano(plano: string) {
 }
 
 function permissoesPorPlano(plano: string) {
-  const planoNormalizado = String(plano || "basico").toLowerCase();
+  const planoNormalizado = normalizarPlano(plano);
 
   if (planoNormalizado === "trial" || planoNormalizado === "premium") {
     return {
@@ -94,19 +100,6 @@ function permissoesPorPlano(plano: string) {
       configuracoes: true,
       financeiro: true,
       comissoes: true,
-    };
-  }
-
-  if (planoNormalizado === "plus") {
-    return {
-      dashboard: true,
-      agenda: true,
-      servicos: true,
-      profissionais: true,
-      promocoes: false,
-      configuracoes: true,
-      financeiro: true,
-      comissoes: false,
     };
   }
 
@@ -143,7 +136,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
 
     const status = searchParams.get("status");
-    const plano = searchParams.get("plano");
+    const planoRecebido = searchParams.get("plano");
 
     const where: any = {};
 
@@ -162,8 +155,8 @@ export async function GET(req: Request) {
       }
     }
 
-    if (plano) {
-      where.plano = plano;
+    if (planoRecebido) {
+      where.plano = normalizarPlano(planoRecebido);
     }
 
     const empresas = await prisma.empresa.findMany({
@@ -234,7 +227,7 @@ export async function POST(req: Request) {
     const whatsapp = String(body?.whatsapp || "").trim();
     const responsavel = String(body?.responsavel || "").trim();
     const observacoesInternas = String(body?.observacoesInternas || "").trim();
-    const plano = String(body?.plano || "basico").trim().toLowerCase();
+    const plano = normalizarPlano(String(body?.plano || "basico").trim());
     const valorRecebido = normalizarValorMonetario(body?.valorMensalPersonalizado);
     const valorPadraoPlano = await obterValorPadraoPlano(plano);
     const valorMensalPersonalizado =
@@ -259,7 +252,7 @@ export async function POST(req: Request) {
 
     if (!planoEhValido(plano)) {
       return NextResponse.json(
-        { error: "Plano inválido. Use basico, plus, premium ou trial." },
+        { error: "Plano inválido. Use basico, premium ou trial." },
         { status: 400 }
       );
     }

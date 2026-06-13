@@ -68,7 +68,7 @@ async function criarConfiguracaoPorSql() {
       ${id},
       ${49.9},
       ${99.9},
-      ${149.9},
+      ${99.9},
       ${agora},
       ${agora}
     )
@@ -87,12 +87,10 @@ async function criarConfiguracaoPorSql() {
 async function atualizarConfiguracaoPorSql({
   id,
   valorPlanoBasico,
-  valorPlanoPlus,
   valorPlanoPremium,
 }: {
   id: string;
   valorPlanoBasico: number;
-  valorPlanoPlus: number;
   valorPlanoPremium: number;
 }) {
   const agora = new Date();
@@ -101,7 +99,7 @@ async function atualizarConfiguracaoPorSql({
     UPDATE "ConfiguracaoSaas"
     SET
       "valorPlanoBasico" = ${valorPlanoBasico},
-      "valorPlanoPlus" = ${valorPlanoPlus},
+      "valorPlanoPlus" = ${valorPlanoPremium},
       "valorPlanoPremium" = ${valorPlanoPremium},
       "updatedAt" = ${agora}
     WHERE id = ${id}
@@ -133,7 +131,10 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      configuracao,
+      configuracao: {
+        ...configuracao,
+        valorPlanoPlus: configuracao.valorPlanoPremium,
+      },
     });
   } catch (error: any) {
     console.error('Erro ao carregar configuração dos planos:', error);
@@ -159,11 +160,6 @@ export async function PATCH(req: Request) {
       Number(atual.valorPlanoBasico)
     );
 
-    const valorPlanoPlus = normalizarValor(
-      body.valorPlanoPlus,
-      Number(atual.valorPlanoPlus)
-    );
-
     const valorPlanoPremium = normalizarValor(
       body.valorPlanoPremium,
       Number(atual.valorPlanoPremium)
@@ -172,13 +168,15 @@ export async function PATCH(req: Request) {
     const configuracao = await atualizarConfiguracaoPorSql({
       id: atual.id,
       valorPlanoBasico,
-      valorPlanoPlus,
       valorPlanoPremium,
     });
 
     return NextResponse.json({
       success: true,
-      configuracao,
+      configuracao: {
+        ...configuracao,
+        valorPlanoPlus: configuracao.valorPlanoPremium,
+      },
     });
   } catch (error: any) {
     console.error('Erro ao salvar configuração dos planos:', error);

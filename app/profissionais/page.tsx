@@ -52,8 +52,10 @@ export default function ProfissionaisPage() {
   const [carregando, setCarregando] = useState(true);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [salvandoProfissional, setSalvandoProfissional] = useState(false);
-  const [carregandoEdicaoProfissionalId, setCarregandoEdicaoProfissionalId] = useState<string | null>(null);
-  const [profissionalStatusProcessandoId, setProfissionalStatusProcessandoId] = useState<string | null>(null);
+  const [carregandoEdicaoProfissionalId, setCarregandoEdicaoProfissionalId] =
+    useState<string | null>(null);
+  const [profissionalStatusProcessandoId, setProfissionalStatusProcessandoId] =
+    useState<string | null>(null);
   const [filtroStatus, setFiltroStatus] = useState<
     "todos" | "ativos" | "inativos"
   >("todos");
@@ -499,11 +501,15 @@ export default function ProfissionaisPage() {
   }
 
   function servicoEstaAtivo(servicoId: string) {
-    return servicos.some((servico) => servico.id === servicoId && servico.ativo !== false);
+    return servicos.some(
+      (servico) => servico.id === servicoId && servico.ativo !== false,
+    );
   }
 
   function servicosDoProfissional() {
-    return servicosAtivosDisponiveis().filter((servico) => form.servicosIds.includes(servico.id));
+    return servicosAtivosDisponiveis().filter((servico) =>
+      form.servicosIds.includes(servico.id),
+    );
   }
 
   function normalizarDisponibilidadeParaSalvar() {
@@ -514,7 +520,9 @@ export default function ProfissionaisPage() {
         horaFim: bloco.horaFim,
         servicosIds: Array.isArray(bloco.servicosIds)
           ? bloco.servicosIds.filter(
-              (servicoId) => form.servicosIds.includes(servicoId) && servicoEstaAtivo(servicoId),
+              (servicoId) =>
+                form.servicosIds.includes(servicoId) &&
+                servicoEstaAtivo(servicoId),
             )
           : [],
       })),
@@ -552,7 +560,12 @@ export default function ProfissionaisPage() {
   }
 
   async function salvar() {
-    if (salvandoProfissional || carregandoEdicaoProfissionalId || profissionalStatusProcessandoId) return;
+    if (
+      salvandoProfissional ||
+      carregandoEdicaoProfissionalId ||
+      profissionalStatusProcessandoId
+    )
+      return;
 
     if (!form.nome.trim()) {
       alert("Informe o nome do profissional.");
@@ -575,13 +588,19 @@ export default function ProfissionaisPage() {
           id: editandoId,
           empresaId: empresa.id,
           ...form,
-          servicosIds: form.servicosIds.filter((servicoId) => servicoEstaAtivo(servicoId)),
+          servicosIds: form.servicosIds.filter((servicoId) =>
+            servicoEstaAtivo(servicoId),
+          ),
           valorComissao:
             form.valorComissao !== ""
               ? Number(String(form.valorComissao).replace(",", "."))
               : null,
           comissoesServicos: comissoesServicos
-            .filter((item) => form.servicosIds.includes(item.servicoId) && servicoEstaAtivo(item.servicoId))
+            .filter(
+              (item) =>
+                form.servicosIds.includes(item.servicoId) &&
+                servicoEstaAtivo(item.servicoId),
+            )
             .map((item) => ({
               servicoId: item.servicoId,
               tipoComissao: item.tipoComissao || "percentual",
@@ -634,7 +653,12 @@ export default function ProfissionaisPage() {
   }
 
   async function editar(profissional: any) {
-    if (salvandoProfissional || carregandoEdicaoProfissionalId || profissionalStatusProcessandoId) return;
+    if (
+      salvandoProfissional ||
+      carregandoEdicaoProfissionalId ||
+      profissionalStatusProcessandoId
+    )
+      return;
 
     try {
       setCarregandoEdicaoProfissionalId(profissional.id);
@@ -687,7 +711,12 @@ export default function ProfissionaisPage() {
   }
 
   async function alternarStatusProfissional(profissional: any) {
-    if (salvandoProfissional || carregandoEdicaoProfissionalId || profissionalStatusProcessandoId) return;
+    if (
+      salvandoProfissional ||
+      carregandoEdicaoProfissionalId ||
+      profissionalStatusProcessandoId
+    )
+      return;
 
     const confirmar = confirm(
       profissional.ativo === false
@@ -788,16 +817,22 @@ export default function ProfissionaisPage() {
 
   const totalAtivos = profissionais.filter((p) => p.ativo !== false).length;
   const totalInativos = profissionais.filter((p) => p.ativo === false).length;
-  const totalComServicos = profissionais.filter((p) => (p.servicos?.length || 0) > 0).length;
+  const totalComServicos = profissionais.filter(
+    (p) => (p.servicos?.length || 0) > 0,
+  ).length;
   const comissaoMedia =
     profissionais.length > 0
       ? Math.round(
-          profissionais.reduce((acc, p) => acc + Number(p.valorComissao || 0), 0) /
-            profissionais.length,
+          profissionais.reduce(
+            (acc, p) => acc + Number(p.valorComissao || 0),
+            0,
+          ) / profissionais.length,
         )
       : 0;
   const acaoProfissionalEmAndamento =
-    salvandoProfissional || Boolean(carregandoEdicaoProfissionalId) || Boolean(profissionalStatusProcessandoId);
+    salvandoProfissional ||
+    Boolean(carregandoEdicaoProfissionalId) ||
+    Boolean(profissionalStatusProcessandoId);
 
   if (!empresa) {
     return (
@@ -828,112 +863,114 @@ export default function ProfissionaisPage() {
             overflow-x: hidden;
           }
 
+          .profissionais-mini-resumo-mobile {
+            display: none;
+          }
 
+          .profissionais-grid-horizontal {
+            width: 100% !important;
+            max-width: 100% !important;
+          }
 
+          .profissional-card-horizontal {
+            min-width: 0 !important;
+          }
+
+          @media (min-width: 761px) {
             .profissionais-grid-horizontal {
-              width: 100% !important;
-              max-width: 100% !important;
+              display: grid !important;
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+              align-items: stretch !important;
+              gap: 14px !important;
             }
 
             .profissional-card-horizontal {
+              width: 100% !important;
+              min-width: 0 !important;
+              min-height: 238px !important;
+              display: flex !important;
+              flex-direction: column !important;
+              align-items: stretch !important;
+              justify-content: flex-start !important;
+              gap: 12px !important;
+              overflow: hidden !important;
+            }
+
+            .profissional-card-horizontal .profissional-info-mobile {
+              display: grid !important;
+              grid-template-columns: 58px minmax(0, 1fr) !important;
+              align-items: flex-start !important;
+              gap: 10px !important;
+              width: 100% !important;
               min-width: 0 !important;
             }
 
-            @media (min-width: 761px) {
-              .profissionais-grid-horizontal {
-                display: grid !important;
-                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-                align-items: stretch !important;
-                gap: 14px !important;
-              }
-
-              .profissional-card-horizontal {
-                width: 100% !important;
-                min-width: 0 !important;
-                min-height: 238px !important;
-                display: flex !important;
-                flex-direction: column !important;
-                align-items: stretch !important;
-                justify-content: flex-start !important;
-                gap: 12px !important;
-                overflow: hidden !important;
-              }
-
-              .profissional-card-horizontal .profissional-info-mobile {
-                display: grid !important;
-                grid-template-columns: 58px minmax(0, 1fr) !important;
-                align-items: flex-start !important;
-                gap: 10px !important;
-                width: 100% !important;
-                min-width: 0 !important;
-              }
-
-              .profissional-card-horizontal .profissional-info-mobile > div:last-child {
-                min-width: 0 !important;
-              }
-
-              .profissional-card-horizontal .profissional-info-mobile strong,
-              .profissional-card-horizontal .profissional-info-mobile p,
-              .profissional-card-horizontal .profissional-info-mobile span {
-                overflow-wrap: anywhere !important;
-              }
+            .profissional-card-horizontal
+              .profissional-info-mobile
+              > div:last-child {
+              min-width: 0 !important;
             }
 
-            @media (max-width: 760px) {
-              .profissionais-grid-horizontal {
-                display: flex !important;
-                overflow-x: auto !important;
-                overflow-y: hidden !important;
-                gap: 14px !important;
-                padding: 4px 2px 16px !important;
-                scroll-snap-type: x mandatory !important;
-                -webkit-overflow-scrolling: touch !important;
-              }
+            .profissional-card-horizontal .profissional-info-mobile strong,
+            .profissional-card-horizontal .profissional-info-mobile p,
+            .profissional-card-horizontal .profissional-info-mobile span {
+              overflow-wrap: anywhere !important;
+            }
+          }
 
-              .profissionais-grid-horizontal::-webkit-scrollbar {
-                height: 0 !important;
-              }
-
-              .profissional-card-horizontal {
-                flex: 0 0 82vw !important;
-                width: 82vw !important;
-                max-width: 330px !important;
-                min-width: 280px !important;
-                scroll-snap-align: start !important;
-                display: flex !important;
-                flex-direction: column !important;
-                align-items: stretch !important;
-                justify-content: flex-start !important;
-                gap: 12px !important;
-                padding: 18px !important;
-              }
-
-              .profissional-card-horizontal .profissional-info-mobile {
-                display: grid !important;
-                grid-template-columns: 54px minmax(0, 1fr) !important;
-                align-items: flex-start !important;
-                gap: 10px !important;
-                width: 100% !important;
-              }
-
-              .profissional-card-horizontal .profissional-avatar-mobile {
-                width: 54px !important;
-                height: 54px !important;
-                min-width: 54px !important;
-                max-width: 54px !important;
-                flex: 0 0 54px !important;
-                border-radius: 18px !important;
-              }
-
-              .profissional-card-horizontal .profissional-avatar-img-mobile {
-                width: 100% !important;
-                height: 100% !important;
-                object-fit: cover !important;
-                object-position: center top !important;
-              }
+          @media (max-width: 760px) {
+            .profissionais-grid-horizontal {
+              display: flex !important;
+              overflow-x: auto !important;
+              overflow-y: hidden !important;
+              gap: 14px !important;
+              padding: 4px 2px 16px !important;
+              scroll-snap-type: x mandatory !important;
+              -webkit-overflow-scrolling: touch !important;
             }
 
-  
+            .profissionais-grid-horizontal::-webkit-scrollbar {
+              height: 0 !important;
+            }
+
+            .profissional-card-horizontal {
+              flex: 0 0 82vw !important;
+              width: 82vw !important;
+              max-width: 330px !important;
+              min-width: 280px !important;
+              scroll-snap-align: start !important;
+              display: flex !important;
+              flex-direction: column !important;
+              align-items: stretch !important;
+              justify-content: flex-start !important;
+              gap: 12px !important;
+              padding: 18px !important;
+            }
+
+            .profissional-card-horizontal .profissional-info-mobile {
+              display: grid !important;
+              grid-template-columns: 54px minmax(0, 1fr) !important;
+              align-items: flex-start !important;
+              gap: 10px !important;
+              width: 100% !important;
+            }
+
+            .profissional-card-horizontal .profissional-avatar-mobile {
+              width: 54px !important;
+              height: 54px !important;
+              min-width: 54px !important;
+              max-width: 54px !important;
+              flex: 0 0 54px !important;
+              border-radius: 18px !important;
+            }
+
+            .profissional-card-horizontal .profissional-avatar-img-mobile {
+              width: 100% !important;
+              height: 100% !important;
+              object-fit: cover !important;
+              object-position: center top !important;
+            }
+          }
 
           @media (max-width: 900px) {
             .profissionais-mobile-safe section.profissionais-resumo-card {
@@ -952,7 +989,9 @@ export default function ProfissionaisPage() {
               scroll-snap-align: unset !important;
             }
 
-            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child {
+            .profissionais-mobile-safe
+              section.profissionais-resumo-card
+              > div:first-child {
               display: grid !important;
               grid-template-columns: 56px minmax(0, 1fr) !important;
               gap: 14px !important;
@@ -960,11 +999,18 @@ export default function ProfissionaisPage() {
               margin-bottom: 0 !important;
             }
 
-            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child > div:first-child {
+            .profissionais-mobile-safe
+              section.profissionais-resumo-card
+              > div:first-child
+              > div:first-child {
               display: contents !important;
             }
 
-            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child > div:first-child > div:first-child {
+            .profissionais-mobile-safe
+              section.profissionais-resumo-card
+              > div:first-child
+              > div:first-child
+              > div:first-child {
               width: 56px !important;
               height: 56px !important;
               border-radius: 18px !important;
@@ -973,12 +1019,19 @@ export default function ProfissionaisPage() {
               grid-row: 1 / span 2 !important;
             }
 
-            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child > div:first-child > div:last-child {
+            .profissionais-mobile-safe
+              section.profissionais-resumo-card
+              > div:first-child
+              > div:first-child
+              > div:last-child {
               grid-column: 2 !important;
               min-width: 0 !important;
             }
 
-            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child > div:last-child {
+            .profissionais-mobile-safe
+              section.profissionais-resumo-card
+              > div:first-child
+              > div:last-child {
               display: none !important;
             }
 
@@ -994,20 +1047,27 @@ export default function ProfissionaisPage() {
               margin-top: 6px !important;
             }
 
-            .profissionais-mobile-safe section.profissionais-resumo-card > div:nth-child(2) {
+            .profissionais-mobile-safe
+              section.profissionais-resumo-card
+              > div:nth-child(2) {
               display: grid !important;
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
               gap: 10px !important;
               overflow: visible !important;
             }
 
-            .profissionais-mobile-safe section.profissionais-resumo-card > div:nth-child(2) > div {
+            .profissionais-mobile-safe
+              section.profissionais-resumo-card
+              > div:nth-child(2)
+              > div {
               min-width: 0 !important;
               padding: 12px !important;
               border-radius: 17px !important;
             }
 
-            .profissionais-mobile-safe section.profissionais-resumo-card > div:last-child {
+            .profissionais-mobile-safe
+              section.profissionais-resumo-card
+              > div:last-child {
               display: grid !important;
               grid-template-columns: auto minmax(0, 1fr) auto !important;
               align-items: center !important;
@@ -1018,13 +1078,199 @@ export default function ProfissionaisPage() {
             }
           }
 
-          @media (max-width: 430px) {
-              .profissional-card-horizontal {
-                flex-basis: 80vw !important;
-                width: 80vw !important;
-                min-width: 252px !important;
-              }
+          @media (max-width: 760px) {
+            .profissionais-form-grid-v2 {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              gap: 10px !important;
+              margin-top: 14px !important;
             }
+
+            .profissionais-form-grid-v2 > div,
+            .profissionais-form-grid-v2 > label {
+              min-width: 0 !important;
+            }
+
+            .profissionais-form-grid-v2 label {
+              font-size: 12.5px !important;
+              font-weight: 900 !important;
+              color: #e2e8f0 !important;
+            }
+
+            .profissionais-form-grid-v2 input,
+            .profissionais-form-grid-v2 select,
+            .profissionais-form-grid-v2 textarea {
+              min-height: 42px !important;
+              border-radius: 15px !important;
+              font-size: 13px !important;
+              padding: 12px 14px !important;
+            }
+
+            .profissionais-form-grid-v2 textarea {
+              min-height: 74px !important;
+            }
+
+            .profissionais-form-grid-v2 input[type="file"] {
+              padding: 10px !important;
+              font-size: 12px !important;
+            }
+
+            .profissionais-ativo-check-v2 {
+              display: grid !important;
+              grid-template-columns: 28px minmax(0, 1fr) !important;
+              align-items: center !important;
+              gap: 10px !important;
+              padding: 12px !important;
+              border-radius: 16px !important;
+              background: rgba(2, 6, 23, 0.52) !important;
+              border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            }
+
+            .profissionais-comissao-v2,
+            .profissionais-servicos-v2,
+            .profissionais-agenda-v2 {
+              padding: 12px !important;
+              border-radius: 18px !important;
+              background: rgba(2, 6, 23, 0.42) !important;
+              border: 1px solid rgba(255, 255, 255, 0.07) !important;
+            }
+
+            .profissionais-comissao-v2 h3,
+            .profissionais-servicos-v2 h3,
+            .profissionais-agenda-v2 h3 {
+              font-size: 17px !important;
+              line-height: 1.1 !important;
+              margin: 0 0 6px !important;
+            }
+
+            .profissionais-comissao-v2 p,
+            .profissionais-agenda-v2 p {
+              font-size: 11.5px !important;
+              line-height: 1.35 !important;
+            }
+
+            .profissional-agenda-dia-linha-v2 {
+              display: grid !important;
+              grid-template-columns: 34px minmax(0, 1fr) auto !important;
+              grid-template-areas:
+                "check day badge"
+                "button button button" !important;
+              gap: 8px !important;
+              align-items: center !important;
+              padding: 12px 0 !important;
+            }
+
+            .profissional-agenda-dia-linha-v2 > label {
+              grid-area: check !important;
+              justify-self: start !important;
+            }
+
+            .profissional-agenda-dia-linha-v2 > strong {
+              grid-area: day !important;
+              font-size: 15px !important;
+            }
+
+            .profissional-agenda-dia-linha-v2 > button {
+              grid-area: button !important;
+              height: 36px !important;
+              min-height: 36px !important;
+              font-size: 11px !important;
+              border-radius: 13px !important;
+            }
+
+            .profissional-agenda-dia-linha-v2 > span {
+              grid-area: badge !important;
+              justify-self: end !important;
+              height: 26px !important;
+              font-size: 11px !important;
+            }
+
+            .profissionais-filtros-v2 {
+              display: grid !important;
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+              gap: 7px !important;
+            }
+
+            .profissionais-filtros-v2 > span {
+              grid-column: 1 / -1 !important;
+              justify-self: start !important;
+              width: auto !important;
+            }
+
+            .profissionais-grid-horizontal {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              overflow: visible !important;
+              gap: 10px !important;
+              padding: 0 !important;
+            }
+
+            .profissional-card-horizontal {
+              width: 100% !important;
+              max-width: 100% !important;
+              min-width: 0 !important;
+              flex: none !important;
+              padding: 14px !important;
+              border-radius: 20px !important;
+              min-height: auto !important;
+            }
+
+            .profissional-card-horizontal .profissional-info-mobile {
+              display: grid !important;
+              grid-template-columns: 50px minmax(0, 1fr) !important;
+              gap: 10px !important;
+              align-items: start !important;
+            }
+
+            .profissional-card-horizontal .profissional-avatar-mobile {
+              width: 50px !important;
+              height: 50px !important;
+              min-width: 50px !important;
+              max-width: 50px !important;
+              border-radius: 17px !important;
+            }
+
+            .profissional-tags-v2 {
+              display: flex !important;
+              flex-wrap: wrap !important;
+              gap: 6px !important;
+              margin-top: 8px !important;
+              max-height: 64px !important;
+              overflow: hidden !important;
+            }
+
+            .profissional-tags-v2 span {
+              max-width: 100% !important;
+              height: 25px !important;
+              padding: 0 9px !important;
+              font-size: 10.5px !important;
+              white-space: nowrap !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+            }
+
+            .profissional-actions-v2 {
+              display: grid !important;
+              grid-template-columns: 1fr 1fr !important;
+              gap: 8px !important;
+              margin-top: 10px !important;
+            }
+
+            .profissional-actions-v2 button {
+              height: 36px !important;
+              min-height: 36px !important;
+              border-radius: 13px !important;
+              font-size: 11px !important;
+            }
+          }
+
+          @media (max-width: 430px) {
+            .profissional-card-horizontal {
+              flex-basis: 80vw !important;
+              width: 80vw !important;
+              min-width: 252px !important;
+            }
+          }
 
           @media (max-width: 1180px) {
             .profissionais-mobile-safe {
@@ -1147,7 +1393,10 @@ export default function ProfissionaisPage() {
               border-radius: 22px !important;
             }
 
-            .profissionais-mobile-safe > div > section:first-of-type > div:nth-child(2) {
+            .profissionais-mobile-safe
+              > div
+              > section:first-of-type
+              > div:nth-child(2) {
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
             }
 
@@ -1157,12 +1406,19 @@ export default function ProfissionaisPage() {
               padding: 14px !important;
             }
 
-            .profissionais-mobile-safe > div > section:nth-of-type(3) > div:first-child {
+            .profissionais-mobile-safe
+              > div
+              > section:nth-of-type(3)
+              > div:first-child {
               display: grid !important;
               grid-template-columns: 1fr !important;
             }
 
-            .profissionais-mobile-safe > div > section:nth-of-type(3) > div:first-child > div:last-child {
+            .profissionais-mobile-safe
+              > div
+              > section:nth-of-type(3)
+              > div:first-child
+              > div:last-child {
               width: 100% !important;
               min-width: 0 !important;
             }
@@ -1333,145 +1589,143 @@ export default function ProfissionaisPage() {
             }
           }
 
+          .profissional-info-mobile {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+            width: 100% !important;
+            min-width: 0 !important;
+          }
 
-            .profissional-info-mobile {
-              display: flex !important;
-              flex-direction: row !important;
-              align-items: flex-start !important;
-              gap: 12px !important;
-              width: 100% !important;
-              min-width: 0 !important;
-            }
+          .profissional-avatar-mobile {
+            width: 72px !important;
+            height: 72px !important;
+            min-width: 72px !important;
+            max-width: 72px !important;
+            flex: 0 0 72px !important;
+            border-radius: 22px !important;
+            overflow: hidden !important;
+            align-self: flex-start !important;
+          }
 
-            .profissional-avatar-mobile {
-              width: 72px !important;
-              height: 72px !important;
-              min-width: 72px !important;
-              max-width: 72px !important;
-              flex: 0 0 72px !important;
-              border-radius: 22px !important;
-              overflow: hidden !important;
-              align-self: flex-start !important;
-            }
+          .profissional-avatar-img-mobile {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            object-position: center top !important;
+            display: block !important;
+          }
 
-            .profissional-avatar-img-mobile {
-              width: 100% !important;
-              height: 100% !important;
-              object-fit: cover !important;
-              object-position: center top !important;
-              display: block !important;
-            }
+          .profissionais-resumo-card {
+            padding: 14px !important;
+            border-radius: 22px !important;
+            overflow: hidden !important;
+          }
 
+          .profissionais-resumo-card > div:first-child {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+            margin-bottom: 12px !important;
+          }
 
+          .profissionais-resumo-card > div:first-child > div:first-child {
+            display: grid !important;
+            grid-template-columns: 42px minmax(0, 1fr) !important;
+            align-items: start !important;
+            gap: 10px !important;
+            width: 100% !important;
+            min-width: 0 !important;
+          }
 
-            .profissionais-resumo-card {
-              padding: 14px !important;
-              border-radius: 22px !important;
-              overflow: hidden !important;
-            }
+          .profissionais-resumo-card
+            > div:first-child
+            > div:first-child
+            > div:first-child {
+            width: 42px !important;
+            height: 42px !important;
+            border-radius: 14px !important;
+            font-size: 20px !important;
+            margin: 0 !important;
+          }
 
-            .profissionais-resumo-card > div:first-child {
-              display: grid !important;
-              grid-template-columns: 1fr !important;
-              gap: 12px !important;
-              margin-bottom: 12px !important;
-            }
+          .profissionais-resumo-card h2 {
+            font-size: 22px !important;
+            line-height: 1.06 !important;
+            max-width: 100% !important;
+          }
 
-            .profissionais-resumo-card > div:first-child > div:first-child {
-              display: grid !important;
-              grid-template-columns: 42px minmax(0, 1fr) !important;
-              align-items: start !important;
-              gap: 10px !important;
-              width: 100% !important;
-              min-width: 0 !important;
-            }
+          .profissionais-resumo-card p {
+            font-size: 12px !important;
+            line-height: 1.35 !important;
+            margin-top: 6px !important;
+          }
 
-            .profissionais-resumo-card > div:first-child > div:first-child > div:first-child {
-              width: 42px !important;
-              height: 42px !important;
-              border-radius: 14px !important;
-              font-size: 20px !important;
-              margin: 0 !important;
-            }
+          .profissionais-resumo-card > div:first-child > div:last-child {
+            width: 100% !important;
+            min-width: 0 !important;
+            padding: 10px 12px !important;
+            border-radius: 16px !important;
+            display: grid !important;
+            grid-template-columns: 1fr auto !important;
+            align-items: center !important;
+          }
 
-            .profissionais-resumo-card h2 {
-              font-size: 22px !important;
-              line-height: 1.06 !important;
-              max-width: 100% !important;
-            }
+          .profissionais-resumo-card > div:nth-child(2) {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+            width: 100% !important;
+            min-width: 0 !important;
+          }
 
-            .profissionais-resumo-card p {
-              font-size: 12px !important;
-              line-height: 1.35 !important;
-              margin-top: 6px !important;
-            }
+          .profissionais-resumo-card > div:nth-child(2) > div {
+            min-width: 0 !important;
+            padding: 10px !important;
+            border-radius: 14px !important;
+          }
 
-            .profissionais-resumo-card > div:first-child > div:last-child {
-              width: 100% !important;
-              min-width: 0 !important;
-              padding: 10px 12px !important;
-              border-radius: 16px !important;
-              display: grid !important;
-              grid-template-columns: 1fr auto !important;
-              align-items: center !important;
-            }
+          .profissionais-cadastro-card {
+            padding: 14px !important;
+            border-radius: 22px !important;
+            margin-bottom: 16px !important;
+            overflow: hidden !important;
+          }
 
-            .profissionais-resumo-card > div:nth-child(2) {
-              display: grid !important;
-              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 8px !important;
-              width: 100% !important;
-              min-width: 0 !important;
-            }
+          .profissionais-cadastro-card > div:first-child {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) 48px !important;
+            align-items: center !important;
+            gap: 12px !important;
+            width: 100% !important;
+            min-width: 0 !important;
+          }
 
-            .profissionais-resumo-card > div:nth-child(2) > div {
-              min-width: 0 !important;
-              padding: 10px !important;
-              border-radius: 14px !important;
-            }
+          .profissionais-cadastro-card h2 {
+            font-size: 23px !important;
+            line-height: 1.05 !important;
+            max-width: 100% !important;
+          }
 
-            .profissionais-cadastro-card {
-              padding: 14px !important;
-              border-radius: 22px !important;
-              margin-bottom: 16px !important;
-              overflow: hidden !important;
-            }
+          .profissionais-cadastro-card p {
+            font-size: 12px !important;
+            line-height: 1.35 !important;
+            margin-top: 6px !important;
+          }
 
-            .profissionais-cadastro-card > div:first-child {
-              display: grid !important;
-              grid-template-columns: minmax(0, 1fr) 48px !important;
-              align-items: center !important;
-              gap: 12px !important;
-              width: 100% !important;
-              min-width: 0 !important;
-            }
-
-            .profissionais-cadastro-card h2 {
-              font-size: 23px !important;
-              line-height: 1.05 !important;
-              max-width: 100% !important;
-            }
-
-            .profissionais-cadastro-card p {
-              font-size: 12px !important;
-              line-height: 1.35 !important;
-              margin-top: 6px !important;
-            }
-
-            .profissionais-cadastro-card .profissional-botao-plus {
-              width: 48px !important;
-              min-width: 48px !important;
-              max-width: 48px !important;
-              height: 48px !important;
-              min-height: 48px !important;
-              padding: 0 !important;
-              margin-left: 0 !important;
-              border-radius: 16px !important;
-              justify-self: end !important;
-              font-size: 26px !important;
-            }
-
-
+          .profissionais-cadastro-card .profissional-botao-plus {
+            width: 48px !important;
+            min-width: 48px !important;
+            max-width: 48px !important;
+            height: 48px !important;
+            min-height: 48px !important;
+            padding: 0 !important;
+            margin-left: 0 !important;
+            border-radius: 16px !important;
+            justify-self: end !important;
+            font-size: 26px !important;
+          }
 
           @media (max-width: 900px) {
             .profissionais-mobile-safe section.profissionais-resumo-card {
@@ -1490,7 +1744,9 @@ export default function ProfissionaisPage() {
               scroll-snap-align: unset !important;
             }
 
-            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child {
+            .profissionais-mobile-safe
+              section.profissionais-resumo-card
+              > div:first-child {
               display: grid !important;
               grid-template-columns: 56px minmax(0, 1fr) !important;
               gap: 14px !important;
@@ -1498,11 +1754,18 @@ export default function ProfissionaisPage() {
               margin-bottom: 0 !important;
             }
 
-            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child > div:first-child {
+            .profissionais-mobile-safe
+              section.profissionais-resumo-card
+              > div:first-child
+              > div:first-child {
               display: contents !important;
             }
 
-            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child > div:first-child > div:first-child {
+            .profissionais-mobile-safe
+              section.profissionais-resumo-card
+              > div:first-child
+              > div:first-child
+              > div:first-child {
               width: 56px !important;
               height: 56px !important;
               border-radius: 18px !important;
@@ -1511,12 +1774,19 @@ export default function ProfissionaisPage() {
               grid-row: 1 / span 2 !important;
             }
 
-            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child > div:first-child > div:last-child {
+            .profissionais-mobile-safe
+              section.profissionais-resumo-card
+              > div:first-child
+              > div:first-child
+              > div:last-child {
               grid-column: 2 !important;
               min-width: 0 !important;
             }
 
-            .profissionais-mobile-safe section.profissionais-resumo-card > div:first-child > div:last-child {
+            .profissionais-mobile-safe
+              section.profissionais-resumo-card
+              > div:first-child
+              > div:last-child {
               display: none !important;
             }
 
@@ -1532,20 +1802,27 @@ export default function ProfissionaisPage() {
               margin-top: 6px !important;
             }
 
-            .profissionais-mobile-safe section.profissionais-resumo-card > div:nth-child(2) {
+            .profissionais-mobile-safe
+              section.profissionais-resumo-card
+              > div:nth-child(2) {
               display: grid !important;
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
               gap: 10px !important;
               overflow: visible !important;
             }
 
-            .profissionais-mobile-safe section.profissionais-resumo-card > div:nth-child(2) > div {
+            .profissionais-mobile-safe
+              section.profissionais-resumo-card
+              > div:nth-child(2)
+              > div {
               min-width: 0 !important;
               padding: 12px !important;
               border-radius: 17px !important;
             }
 
-            .profissionais-mobile-safe section.profissionais-resumo-card > div:last-child {
+            .profissionais-mobile-safe
+              section.profissionais-resumo-card
+              > div:last-child {
               display: grid !important;
               grid-template-columns: auto minmax(0, 1fr) auto !important;
               align-items: center !important;
@@ -1553,6 +1830,425 @@ export default function ProfissionaisPage() {
               min-height: 48px !important;
               padding: 12px 14px !important;
               border-radius: 18px !important;
+            }
+          }
+
+          @media (max-width: 760px) {
+            .profissionais-form-grid-v2 {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              gap: 10px !important;
+              margin-top: 14px !important;
+            }
+
+            .profissionais-form-grid-v2 > div,
+            .profissionais-form-grid-v2 > label {
+              min-width: 0 !important;
+            }
+
+            .profissionais-form-grid-v2 label {
+              font-size: 12.5px !important;
+              font-weight: 900 !important;
+              color: #e2e8f0 !important;
+            }
+
+            .profissionais-form-grid-v2 input,
+            .profissionais-form-grid-v2 select,
+            .profissionais-form-grid-v2 textarea {
+              min-height: 42px !important;
+              border-radius: 15px !important;
+              font-size: 13px !important;
+              padding: 12px 14px !important;
+            }
+
+            .profissionais-form-grid-v2 textarea {
+              min-height: 74px !important;
+            }
+
+            .profissionais-form-grid-v2 input[type="file"] {
+              padding: 10px !important;
+              font-size: 12px !important;
+            }
+
+            .profissionais-ativo-check-v2 {
+              display: grid !important;
+              grid-template-columns: 28px minmax(0, 1fr) !important;
+              align-items: center !important;
+              gap: 10px !important;
+              padding: 12px !important;
+              border-radius: 16px !important;
+              background: rgba(2, 6, 23, 0.52) !important;
+              border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            }
+
+            .profissionais-comissao-v2,
+            .profissionais-servicos-v2,
+            .profissionais-agenda-v2 {
+              padding: 12px !important;
+              border-radius: 18px !important;
+              background: rgba(2, 6, 23, 0.42) !important;
+              border: 1px solid rgba(255, 255, 255, 0.07) !important;
+            }
+
+            .profissionais-comissao-v2 h3,
+            .profissionais-servicos-v2 h3,
+            .profissionais-agenda-v2 h3 {
+              font-size: 17px !important;
+              line-height: 1.1 !important;
+              margin: 0 0 6px !important;
+            }
+
+            .profissionais-comissao-v2 p,
+            .profissionais-agenda-v2 p {
+              font-size: 11.5px !important;
+              line-height: 1.35 !important;
+            }
+
+            .profissional-agenda-dia-linha-v2 {
+              display: grid !important;
+              grid-template-columns: 34px minmax(0, 1fr) auto !important;
+              grid-template-areas:
+                "check day badge"
+                "button button button" !important;
+              gap: 8px !important;
+              align-items: center !important;
+              padding: 12px 0 !important;
+            }
+
+            .profissional-agenda-dia-linha-v2 > label {
+              grid-area: check !important;
+              justify-self: start !important;
+            }
+
+            .profissional-agenda-dia-linha-v2 > strong {
+              grid-area: day !important;
+              font-size: 15px !important;
+            }
+
+            .profissional-agenda-dia-linha-v2 > button {
+              grid-area: button !important;
+              height: 36px !important;
+              min-height: 36px !important;
+              font-size: 11px !important;
+              border-radius: 13px !important;
+            }
+
+            .profissional-agenda-dia-linha-v2 > span {
+              grid-area: badge !important;
+              justify-self: end !important;
+              height: 26px !important;
+              font-size: 11px !important;
+            }
+
+            .profissionais-filtros-v2 {
+              display: grid !important;
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+              gap: 7px !important;
+            }
+
+            .profissionais-filtros-v2 > span {
+              grid-column: 1 / -1 !important;
+              justify-self: start !important;
+              width: auto !important;
+            }
+
+            .profissionais-grid-horizontal {
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              overflow: visible !important;
+              gap: 10px !important;
+              padding: 0 !important;
+            }
+
+            .profissional-card-horizontal {
+              width: 100% !important;
+              max-width: 100% !important;
+              min-width: 0 !important;
+              flex: none !important;
+              padding: 14px !important;
+              border-radius: 20px !important;
+              min-height: auto !important;
+            }
+
+            .profissional-card-horizontal .profissional-info-mobile {
+              display: grid !important;
+              grid-template-columns: 50px minmax(0, 1fr) !important;
+              gap: 10px !important;
+              align-items: start !important;
+            }
+
+            .profissional-card-horizontal .profissional-avatar-mobile {
+              width: 50px !important;
+              height: 50px !important;
+              min-width: 50px !important;
+              max-width: 50px !important;
+              border-radius: 17px !important;
+            }
+
+            .profissional-tags-v2 {
+              display: flex !important;
+              flex-wrap: wrap !important;
+              gap: 6px !important;
+              margin-top: 8px !important;
+              max-height: 64px !important;
+              overflow: hidden !important;
+            }
+
+            .profissional-tags-v2 span {
+              max-width: 100% !important;
+              height: 25px !important;
+              padding: 0 9px !important;
+              font-size: 10.5px !important;
+              white-space: nowrap !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+            }
+
+            .profissional-actions-v2 {
+              display: grid !important;
+              grid-template-columns: 1fr 1fr !important;
+              gap: 8px !important;
+              margin-top: 10px !important;
+            }
+
+            .profissional-actions-v2 button {
+              height: 36px !important;
+              min-height: 36px !important;
+              border-radius: 13px !important;
+              font-size: 11px !important;
+            }
+          }
+
+          .profissionais-detalhe-compacto > summary::-webkit-details-marker {
+            display: none;
+          }
+
+          .profissionais-detalhe-compacto[open] > summary b {
+            transform: rotate(45deg);
+          }
+
+          @media (max-width: 760px) {
+            .profissionais-resumo-card {
+              display: none !important;
+            }
+
+            .profissionais-cadastro-card {
+              margin-bottom: 12px !important;
+            }
+
+            .profissionais-cadastro-card > div:first-child p,
+            .profissionais-mobile-safe section:nth-of-type(3) p {
+              display: none !important;
+            }
+
+            .profissionais-detalhe-compacto {
+              padding: 0 !important;
+              background: rgba(2, 6, 23, 0.34) !important;
+              border: 1px solid rgba(255, 255, 255, 0.07) !important;
+              border-radius: 16px !important;
+              overflow: hidden !important;
+            }
+
+            .profissionais-detalhe-compacto > summary {
+              display: grid !important;
+              grid-template-columns: minmax(0, 1fr) auto !important;
+              align-items: center !important;
+              gap: 12px !important;
+              min-height: 54px !important;
+              padding: 12px 14px !important;
+              cursor: pointer !important;
+              list-style: none !important;
+            }
+
+            .profissionais-detalhe-compacto > summary strong {
+              display: block !important;
+              font-size: 14px !important;
+              line-height: 1.1 !important;
+            }
+
+            .profissionais-detalhe-compacto > summary small {
+              display: block !important;
+              color: #94a3b8 !important;
+              font-size: 11px !important;
+              margin-top: 3px !important;
+            }
+
+            .profissionais-detalhe-compacto > summary b {
+              width: 28px !important;
+              height: 28px !important;
+              border-radius: 10px !important;
+              display: inline-flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              background: rgba(124, 58, 237, 0.18) !important;
+              color: #ddd6fe !important;
+              transition: transform 0.18s ease !important;
+            }
+
+            .profissionais-detalhe-compacto > div {
+              padding: 12px !important;
+              border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+            }
+
+            .profissionais-detalhe-compacto > div > h3:first-child,
+            .profissionais-detalhe-compacto > div > h3:first-child + p {
+              display: none !important;
+            }
+
+            .profissionais-detalhe-compacto button {
+              min-height: 38px !important;
+            }
+
+            .profissionais-servicos-v2 label {
+              min-height: 66px !important;
+              padding: 11px !important;
+              border-radius: 16px !important;
+            }
+
+            .profissionais-servicos-v2 label strong {
+              font-size: 14px !important;
+              line-height: 1.1 !important;
+            }
+
+            .profissional-agenda-dia-linha-v2 {
+              grid-template-columns: 28px minmax(0, 1fr) auto !important;
+              grid-template-areas: "check day badge" "button button button" !important;
+              padding: 9px 0 !important;
+            }
+
+            .profissional-agenda-dia-linha-v2 > label span {
+              width: 24px !important;
+              height: 24px !important;
+              border-radius: 8px !important;
+            }
+
+            .profissional-agenda-dia-linha-v2 > button {
+              height: 32px !important;
+              min-height: 32px !important;
+            }
+
+            .profissional-card-horizontal {
+              gap: 8px !important;
+            }
+
+            .profissional-card-horizontal .profissional-info-mobile {
+              grid-template-columns: 46px minmax(0, 1fr) !important;
+            }
+
+            .profissional-card-horizontal .profissional-avatar-mobile {
+              width: 46px !important;
+              height: 46px !important;
+              min-width: 46px !important;
+              max-width: 46px !important;
+            }
+
+            .profissional-tags-v2 {
+              max-height: 55px !important;
+              gap: 5px !important;
+            }
+
+            .profissional-tags-v2 span {
+              height: 23px !important;
+              font-size: 10px !important;
+            }
+
+            .profissional-actions-v2 {
+              grid-template-columns: 1fr 1fr !important;
+              margin-top: 8px !important;
+            }
+
+            .profissional-actions-v2 button {
+              height: 34px !important;
+              min-height: 34px !important;
+            }
+          }
+
+          @media (max-width: 760px) {
+            .profissionais-topo-compacto-v3 {
+              min-height: auto !important;
+              padding: 12px !important;
+              margin-bottom: 8px !important;
+              border-radius: 19px !important;
+              display: grid !important;
+              grid-template-columns: minmax(0, 1fr) auto !important;
+              align-items: center !important;
+              gap: 10px !important;
+              background: linear-gradient(
+                135deg,
+                rgba(15, 23, 42, 0.96),
+                rgba(2, 6, 23, 0.88)
+              ) !important;
+              box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2) !important;
+            }
+
+            .profissionais-topo-compacto-v3 > div:first-child {
+              display: grid !important;
+              grid-template-columns: 38px minmax(0, 1fr) !important;
+              gap: 10px !important;
+              align-items: center !important;
+              min-width: 0 !important;
+            }
+
+            .profissionais-topo-compacto-v3
+              > div:first-child
+              > div:first-child {
+              width: 38px !important;
+              height: 38px !important;
+              border-radius: 14px !important;
+              font-size: 18px !important;
+            }
+
+            .profissionais-topo-compacto-v3 h1 {
+              font-size: 22px !important;
+              line-height: 1 !important;
+              margin: 0 !important;
+            }
+
+            .profissionais-topo-compacto-v3 p {
+              display: none !important;
+            }
+
+            .profissionais-topo-compacto-v3 > div:last-child {
+              height: 31px !important;
+              padding: 0 10px !important;
+              border-radius: 999px !important;
+              display: inline-flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              font-size: 11px !important;
+            }
+
+            .profissionais-resumo-card {
+              display: none !important;
+            }
+
+            .profissionais-mini-resumo-mobile {
+              display: grid !important;
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+              gap: 7px !important;
+              margin: 0 0 10px !important;
+            }
+
+            .profissionais-mini-resumo-mobile span {
+              min-height: 34px !important;
+              border-radius: 13px !important;
+              background: rgba(15, 23, 42, 0.82) !important;
+              border: 1px solid rgba(255, 255, 255, 0.08) !important;
+              color: #dbeafe !important;
+              display: inline-flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              text-align: center !important;
+              font-size: 10.5px !important;
+              font-weight: 900 !important;
+              line-height: 1.05 !important;
+              padding: 0 6px !important;
+              white-space: nowrap !important;
+            }
+
+            .profissionais-cadastro-card {
+              margin-top: 0 !important;
+              margin-bottom: 10px !important;
             }
           }
 
@@ -1579,7 +2275,10 @@ export default function ProfissionaisPage() {
         `}</style>
 
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={topoModuloCompacto}>
+          <div
+            className="profissionais-topo-compacto-v3"
+            style={topoModuloCompacto}
+          >
             <div style={topoModuloEsquerda}>
               <div style={topoModuloIcone}>👷</div>
 
@@ -1596,7 +2295,19 @@ export default function ProfissionaisPage() {
             </div>
           </div>
 
-          <section className="profissionais-resumo-card" style={equipeDashboardCard}>
+          <div
+            className="profissionais-mini-resumo-mobile"
+            style={miniResumoMobile}
+          >
+            <span>{profissionais.length} total</span>
+            <span>{totalAtivos} ativos</span>
+            <span>{totalComServicos} com serviços</span>
+          </div>
+
+          <section
+            className="profissionais-resumo-card"
+            style={equipeDashboardCard}
+          >
             <div style={equipeDashboardHeader}>
               <div style={equipeDashboardTituloBox}>
                 <div style={equipeDashboardIcone}>💎</div>
@@ -1639,10 +2350,17 @@ export default function ProfissionaisPage() {
             </div>
           </section>
 
-          <section className="profissionais-cadastro-card" style={formCardCompacto}>
+          <section
+            className="profissionais-cadastro-card"
+            style={formCardCompacto}
+          >
             <div style={cadastroCompactHeader}>
               <div>
-                <h2 style={sectionTitle}>{editandoId ? "Editar profissional" : "Cadastrar profissional"}</h2>
+                <h2 style={sectionTitle}>
+                  {editandoId
+                    ? "Editar profissional"
+                    : "Cadastrar profissional"}
+                </h2>
                 <p style={cadastroCompactTexto}>
                   Configure dados, serviços, agenda semanal e comissão.
                 </p>
@@ -1664,7 +2382,9 @@ export default function ProfissionaisPage() {
                 style={{
                   ...botaoAbrirCadastro,
                   opacity: acaoProfissionalEmAndamento ? 0.55 : 1,
-                  cursor: acaoProfissionalEmAndamento ? "not-allowed" : "pointer",
+                  cursor: acaoProfissionalEmAndamento
+                    ? "not-allowed"
+                    : "pointer",
                   background: formProfissionalAberto
                     ? "rgba(255,255,255,0.08)"
                     : `linear-gradient(135deg, ${empresa?.corSidebar || "#7c3aed"}, ${
@@ -1681,540 +2401,715 @@ export default function ProfissionaisPage() {
 
             {formProfissionalAberto && (
               <>
-
-            <div style={gridForm}>
-              <div style={campo}>
-                <label>Nome *</label>
-                <input
-                  style={input}
-                  value={form.nome}
-                  onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                  placeholder="Ex: João Silva"
-                />
-              </div>
-
-              <div style={campo}>
-                <label>Foto do profissional</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  style={input}
-                  onChange={selecionarFoto}
-                />
-
-                {form.fotoUrl && (
-                  <img
-                    src={form.fotoUrl}
-                    alt="Prévia"
-                    style={{
-                      width: 76,
-                      height: 76,
-                      borderRadius: 999,
-                      objectFit: "cover",
-                      border: "2px solid #e2e8f0",
-                      marginTop: 8,
-                    }}
-                  />
-                )}
-              </div>
-
-              <div style={{ ...campo, gridColumn: "1 / -1" }}>
-                <label>Bio / descrição</label>
-                <textarea
-                  style={{ ...input, minHeight: 90, resize: "vertical" }}
-                  value={form.bio}
-                  onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                  placeholder="Ex: Especialista em cortes femininos..."
-                />
-              </div>
-
-              <label style={checkLinha}>
-                <input
-                  type="checkbox"
-                  checked={form.ativo}
-                  onChange={(e) =>
-                    setForm({ ...form, ativo: e.target.checked })
-                  }
-                />
-                Profissional ativo
-              </label>
-
-              <div style={{ ...campo, gridColumn: "1 / -1", marginTop: 8 }}>
-                <h3 style={{ marginBottom: 4 }}>Comissão do profissional</h3>
-                <p
-                  style={{ margin: "0 0 12px", color: "#94a3b8", fontSize: 13 }}
-                >
-                  Escolha se este profissional recebe uma comissão geral ou uma
-                  comissão diferenciada por serviço realizado.
-                </p>
-
-                <div style={modoComissaoGrid}>
-                  <button
-                    type="button"
-                    onClick={() => setForm({ ...form, modoComissao: "geral" })}
-                    style={
-                      form.modoComissao === "geral"
-                        ? modoComissaoAtivo
-                        : modoComissaoInativo
-                    }
-                  >
-                    <strong>Comissão geral</strong>
-                    <span>Usa a mesma regra para todos os serviços.</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setForm({ ...form, modoComissao: "por_servico" })
-                    }
-                    style={
-                      form.modoComissao === "por_servico"
-                        ? modoComissaoAtivo
-                        : modoComissaoInativo
-                    }
-                  >
-                    <strong>Comissão por serviço</strong>
-                    <span>Permite percentual ou valor fixo por serviço.</span>
-                  </button>
-                </div>
-
-                <div style={{ ...comissaoGrid, marginTop: 14 }}>
+                <div className="profissionais-form-grid-v2" style={gridForm}>
                   <div style={campo}>
-                    <label>
-                      {form.modoComissao === "por_servico"
-                        ? "Tipo de comissão geral fallback"
-                        : "Tipo de comissão"}
-                    </label>
-                    <select
-                      style={input}
-                      value={form.tipoComissao}
-                      onChange={(e) =>
-                        setForm({ ...form, tipoComissao: e.target.value })
-                      }
-                    >
-                      <option value="percentual">Percentual (%)</option>
-                      <option value="fixo">Valor fixo (R$)</option>
-                    </select>
-                  </div>
-
-                  <div style={campo}>
-                    <label>
-                      {form.modoComissao === "por_servico"
-                        ? "Comissão geral fallback"
-                        : form.tipoComissao === "percentual"
-                          ? "Percentual da comissão"
-                          : "Valor fixo da comissão"}
-                    </label>
+                    <label>Nome *</label>
                     <input
                       style={input}
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder={
-                        form.tipoComissao === "percentual"
-                          ? "Ex: 40"
-                          : "Ex: 25,00"
-                      }
-                      value={form.valorComissao}
+                      value={form.nome}
                       onChange={(e) =>
-                        setForm({ ...form, valorComissao: e.target.value })
+                        setForm({ ...form, nome: e.target.value })
                       }
+                      placeholder="Ex: João Silva"
                     />
                   </div>
-                </div>
 
-                {form.modoComissao === "por_servico" && (
-                  <div style={comissaoAviso}>
-                    💡 Configure a comissão individual nos serviços marcados
-                    abaixo. Se algum serviço ficar sem comissão específica, o
-                    sistema usa a comissão geral fallback.
+                  <div style={campo}>
+                    <label>Foto do profissional</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={input}
+                      onChange={selecionarFoto}
+                    />
+
+                    {form.fotoUrl && (
+                      <img
+                        src={form.fotoUrl}
+                        alt="Prévia"
+                        style={{
+                          width: 76,
+                          height: 76,
+                          borderRadius: 999,
+                          objectFit: "cover",
+                          border: "2px solid #e2e8f0",
+                          marginTop: 8,
+                        }}
+                      />
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
 
-            <div style={{ marginTop: 26 }}>
-              <h3>Serviços que este profissional realiza</h3>
+                  <div style={{ ...campo, gridColumn: "1 / -1" }}>
+                    <label>Bio / descrição</label>
+                    <textarea
+                      style={{ ...input, minHeight: 90, resize: "vertical" }}
+                      value={form.bio}
+                      onChange={(e) =>
+                        setForm({ ...form, bio: e.target.value })
+                      }
+                      placeholder="Ex: Especialista em cortes femininos..."
+                    />
+                  </div>
 
-              {servicosAtivosDisponiveis().length === 0 ? (
-                <p style={{ color: "#64748b" }}>
-                  Nenhum serviço ativo disponível. Ative ou cadastre um serviço primeiro.
-                </p>
-              ) : (
-                <div style={servicosGrid}>
-                  {servicosAtivosDisponiveis().map((servico) => {
-                    const selecionado = form.servicosIds.includes(servico.id);
+                  <label
+                    className="profissionais-ativo-check-v2"
+                    style={checkLinha}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={form.ativo}
+                      onChange={(e) =>
+                        setForm({ ...form, ativo: e.target.checked })
+                      }
+                    />
+                    Profissional ativo
+                  </label>
 
-                    return (
-                      <label
-                        key={servico.id}
-                        style={selecionado ? checkboxCardSelecionado : checkboxCard}
+                  <details
+                    className="profissionais-comissao-v2 profissionais-detalhe-compacto"
+                    style={{ ...campo, gridColumn: "1 / -1", marginTop: 8 }}
+                  >
+                    <summary style={detalheCompactoSummary}>
+                      <span>
+                        <strong>Comissão</strong>
+                        <small>
+                          {form.modoComissao === "por_servico"
+                            ? "Por serviço"
+                            : "Geral"}
+                          {form.valorComissao
+                            ? ` · ${form.valorComissao}${form.tipoComissao === "percentual" ? "%" : ""}`
+                            : ""}
+                        </small>
+                      </span>
+                      <b>+</b>
+                    </summary>
+
+                    <div style={detalheCompactoContent}>
+                      <h3 style={{ marginBottom: 4 }}>
+                        Comissão do profissional
+                      </h3>
+                      <p
+                        style={{
+                          margin: "0 0 12px",
+                          color: "#94a3b8",
+                          fontSize: 13,
+                        }}
                       >
-                        <input
-                          type="checkbox"
-                          checked={selecionado}
-                          onChange={() => alternarServico(servico.id)}
-                          style={checkboxReal}
-                        />
+                        Escolha se este profissional recebe uma comissão geral
+                        ou uma comissão diferenciada por serviço realizado.
+                      </p>
 
-                        <span style={selecionado ? checkboxVisualSelecionado : checkboxVisual}>
-                          {selecionado ? "✓" : ""}
-                        </span>
+                      <div style={modoComissaoGrid}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setForm({ ...form, modoComissao: "geral" })
+                          }
+                          style={
+                            form.modoComissao === "geral"
+                              ? modoComissaoAtivo
+                              : modoComissaoInativo
+                          }
+                        >
+                          <strong>Comissão geral</strong>
+                          <span>Usa a mesma regra para todos os serviços.</span>
+                        </button>
 
-                        <div style={checkboxTextoArea}>
-                          <strong style={checkboxTitulo}>{servico.nome}</strong>
-                          <span style={checkboxDescricao}>
-                            {servico.duracaoMin} min · R$ {servico.valor}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setForm({ ...form, modoComissao: "por_servico" })
+                          }
+                          style={
+                            form.modoComissao === "por_servico"
+                              ? modoComissaoAtivo
+                              : modoComissaoInativo
+                          }
+                        >
+                          <strong>Comissão por serviço</strong>
+                          <span>
+                            Permite percentual ou valor fixo por serviço.
                           </span>
-                        </div>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-
-              {form.modoComissao === "por_servico" &&
-                servicosDoProfissional().length > 0 && (
-                  <div style={comissoesServicosBox}>
-                    <div style={comissoesServicosHeader}>
-                      <div>
-                        <h3 style={{ margin: 0 }}>Comissão por serviço</h3>
-                        <p style={comissoesServicosTexto}>
-                          Defina uma comissão individual para cada serviço deste
-                          profissional.
-                        </p>
+                        </button>
                       </div>
 
-                      <span style={badgeComissaoPremium}>
-                        {servicosDoProfissional().length} serviço
-                        {servicosDoProfissional().length === 1 ? "" : "s"}
-                      </span>
+                      <div style={{ ...comissaoGrid, marginTop: 14 }}>
+                        <div style={campo}>
+                          <label>
+                            {form.modoComissao === "por_servico"
+                              ? "Tipo de comissão geral fallback"
+                              : "Tipo de comissão"}
+                          </label>
+                          <select
+                            style={input}
+                            value={form.tipoComissao}
+                            onChange={(e) =>
+                              setForm({ ...form, tipoComissao: e.target.value })
+                            }
+                          >
+                            <option value="percentual">Percentual (%)</option>
+                            <option value="fixo">Valor fixo (R$)</option>
+                          </select>
+                        </div>
+
+                        <div style={campo}>
+                          <label>
+                            {form.modoComissao === "por_servico"
+                              ? "Comissão geral fallback"
+                              : form.tipoComissao === "percentual"
+                                ? "Percentual da comissão"
+                                : "Valor fixo da comissão"}
+                          </label>
+                          <input
+                            style={input}
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder={
+                              form.tipoComissao === "percentual"
+                                ? "Ex: 40"
+                                : "Ex: 25,00"
+                            }
+                            value={form.valorComissao}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                valorComissao: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      {form.modoComissao === "por_servico" && (
+                        <div style={comissaoAviso}>
+                          💡 Configure a comissão individual nos serviços
+                          marcados abaixo. Se algum serviço ficar sem comissão
+                          específica, o sistema usa a comissão geral fallback.
+                        </div>
+                      )}
                     </div>
+                  </details>
+                </div>
 
-                    <div style={comissoesServicosLista}>
-                      {servicosDoProfissional().map((servico) => {
-                        const comissaoServico = obterComissaoServico(
-                          servico.id,
-                        );
+                <details
+                  className="profissionais-servicos-v2 profissionais-detalhe-compacto"
+                  style={{ marginTop: 18 }}
+                >
+                  <summary style={detalheCompactoSummary}>
+                    <span>
+                      <strong>Serviços</strong>
+                      <small>
+                        {form.servicosIds.length} selecionado
+                        {form.servicosIds.length === 1 ? "" : "s"}
+                      </small>
+                    </span>
+                    <b>+</b>
+                  </summary>
 
-                        return (
-                          <div key={servico.id} style={comissaoServicoCard}>
+                  <div style={detalheCompactoContent}>
+                    <h3>Serviços que este profissional realiza</h3>
+
+                    {servicosAtivosDisponiveis().length === 0 ? (
+                      <p style={{ color: "#64748b" }}>
+                        Nenhum serviço ativo disponível. Ative ou cadastre um
+                        serviço primeiro.
+                      </p>
+                    ) : (
+                      <div style={servicosGrid}>
+                        {servicosAtivosDisponiveis().map((servico) => {
+                          const selecionado = form.servicosIds.includes(
+                            servico.id,
+                          );
+
+                          return (
+                            <label
+                              key={servico.id}
+                              style={
+                                selecionado
+                                  ? checkboxCardSelecionado
+                                  : checkboxCard
+                              }
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selecionado}
+                                onChange={() => alternarServico(servico.id)}
+                                style={checkboxReal}
+                              />
+
+                              <span
+                                style={
+                                  selecionado
+                                    ? checkboxVisualSelecionado
+                                    : checkboxVisual
+                                }
+                              >
+                                {selecionado ? "✓" : ""}
+                              </span>
+
+                              <div style={checkboxTextoArea}>
+                                <strong style={checkboxTitulo}>
+                                  {servico.nome}
+                                </strong>
+                                <span style={checkboxDescricao}>
+                                  {servico.duracaoMin} min · R$ {servico.valor}
+                                </span>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {form.modoComissao === "por_servico" &&
+                      servicosDoProfissional().length > 0 && (
+                        <div style={comissoesServicosBox}>
+                          <div style={comissoesServicosHeader}>
                             <div>
-                              <strong style={comissaoServicoNome}>
-                                {servico.nome}
-                              </strong>
-                              <p style={comissaoServicoDetalhe}>
-                                Valor do serviço: R${" "}
-                                {Number(servico.valor || 0).toLocaleString(
-                                  "pt-BR",
-                                  {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  },
-                                )}
+                              <h3 style={{ margin: 0 }}>
+                                Comissão por serviço
+                              </h3>
+                              <p style={comissoesServicosTexto}>
+                                Defina uma comissão individual para cada serviço
+                                deste profissional.
                               </p>
                             </div>
 
-                            <div style={comissaoServicoCampos}>
-                              <div style={campo}>
-                                <label>Tipo</label>
-                                <select
-                                  style={input}
-                                  value={comissaoServico.tipoComissao}
-                                  onChange={(e) =>
-                                    atualizarComissaoServico(
-                                      servico.id,
-                                      "tipoComissao",
-                                      e.target.value,
-                                    )
-                                  }
-                                >
-                                  <option value="percentual">
-                                    Percentual (%)
-                                  </option>
-                                  <option value="fixo">Valor fixo (R$)</option>
-                                </select>
-                              </div>
-
-                              <div style={campo}>
-                                <label>
-                                  {comissaoServico.tipoComissao === "percentual"
-                                    ? "Percentual"
-                                    : "Valor fixo"}
-                                </label>
-                                <input
-                                  style={input}
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  placeholder={
-                                    comissaoServico.tipoComissao ===
-                                    "percentual"
-                                      ? "Ex: 40"
-                                      : "Ex: 60,00"
-                                  }
-                                  value={comissaoServico.valorComissao}
-                                  onChange={(e) =>
-                                    atualizarComissaoServico(
-                                      servico.id,
-                                      "valorComissao",
-                                      e.target.value,
-                                    )
-                                  }
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-            </div>
-
-            <div style={{ marginTop: 28 }}>
-              <h3 style={{ marginBottom: 4 }}>Agenda semanal</h3>
-              <p style={{ margin: "0 0 14px", color: "#64748b", fontSize: 13 }}>
-                Configure múltiplos blocos por dia. Exemplo: 08:00 às 12:00 e
-                13:00 às 18:00.
-              </p>
-
-              <div style={agendaResumoBox}>
-                <div style={agendaResumoTopo}>
-                  <button
-                    type="button"
-                    onClick={() => copiarHorarioParaTodos(1)}
-                    style={botaoAgendaAcao}
-                  >
-                    📅 Copiar todos
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const todosAtivos = disponibilidade.every((dia) => dia.ativo);
-                      setDisponibilidade((atual) =>
-                        atual.map((dia) => ({ ...dia, ativo: !todosAtivos })),
-                      );
-                    }}
-                    style={botaoAgendaLink}
-                  >
-                    {disponibilidade.every((dia) => dia.ativo)
-                      ? "Desmarcar todos"
-                      : "Marcar todos"}
-                  </button>
-                </div>
-
-                <div style={agendaListaMobile}> 
-                  {diasSemana.map((dia, index) => {
-                    const ativo = disponibilidade[index].ativo;
-                    const aberto = diaAgendaAberto === index;
-
-                    return (
-                      <div key={dia.value} style={agendaDiaLinhaBox}>
-                        <div style={agendaDiaLinha}>
-                          <label style={agendaDiaCheckLabel}>
-                            <input
-                              type="checkbox"
-                              checked={ativo}
-                              onChange={(e) =>
-                                atualizarDia(index, "ativo", e.target.checked)
-                              }
-                              style={checkboxReal}
-                            />
-
-                            <span style={ativo ? checkboxVisualSelecionado : checkboxVisual}>
-                              {ativo ? "✓" : ""}
+                            <span style={badgeComissaoPremium}>
+                              {servicosDoProfissional().length} serviço
+                              {servicosDoProfissional().length === 1 ? "" : "s"}
                             </span>
-                          </label>
+                          </div>
 
-                          <strong style={agendaDiaNome}>{dia.label}</strong>
+                          <div style={comissoesServicosLista}>
+                            {servicosDoProfissional().map((servico) => {
+                              const comissaoServico = obterComissaoServico(
+                                servico.id,
+                              );
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setDiaAgendaAberto(aberto ? null : index)
-                            }
-                            style={ativo ? botaoEditarHorariosAtivo : botaoEditarHorariosInativo}
-                            disabled={!ativo}
-                          >
-                            📅 {aberto ? "Ocultar horários" : "Editar horários"}
-                          </button>
-
-                          <span style={ativo ? badgeDiaAtivoPremium : badgeDiaInativoPremium}>
-                            {ativo ? "Ativo" : "Inativo"}
-                          </span>
-                        </div>
-
-                        {aberto && ativo && (
-                          <div style={agendaDiaDetalhe}>
-                            <div style={agendaDiaAcoesInline}>
-                              <button
-                                type="button"
-                                onClick={() => copiarHorarioParaTodos(index)}
-                                style={botaoCopiarHorarioPremium}
-                              >
-                                Copiar para todos
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => copiarHorarioDiasUteis(index)}
-                                style={botaoCopiarHorarioPremium}
-                              >
-                                Copiar dias úteis
-                              </button>
-                            </div>
-
-                            <div style={blocosWrapper}>
-                              {disponibilidade[index].blocos.map((bloco, blocoIndex) => (
-                                <div key={`${dia.value}-${blocoIndex}`} style={blocoCardPremium}>
-                                  <div style={blocoLinhaPremium}>
-                                    <input
-                                      type="time"
-                                      value={bloco.horaInicio}
-                                      onChange={(e) =>
-                                        atualizarBloco(
-                                          index,
-                                          blocoIndex,
-                                          "horaInicio",
-                                          e.target.value,
-                                        )
-                                      }
-                                      style={inputHorarioPremium}
-                                    />
-
-                                    <span style={separadorHorario}>até</span>
-
-                                    <input
-                                      type="time"
-                                      value={bloco.horaFim}
-                                      onChange={(e) =>
-                                        atualizarBloco(
-                                          index,
-                                          blocoIndex,
-                                          "horaFim",
-                                          e.target.value,
-                                        )
-                                      }
-                                      style={inputHorarioPremium}
-                                    />
-
-                                    {disponibilidade[index].blocos.length > 1 && (
-                                      <button
-                                        type="button"
-                                        onClick={() => removerBloco(index, blocoIndex)}
-                                        style={botaoRemoverBlocoPremium}
-                                        title="Remover horário"
-                                      >
-                                        ×
-                                      </button>
-                                    )}
-                                  </div>
-
-                                  <div style={servicosBlocoBox}>
-                                    <span style={servicosBlocoTitulo}>
-                                      Serviços neste horário
-                                    </span>
-
-                                    {servicosDoProfissional().length === 0 ? (
-                                      <span style={servicosBlocoVazio}>
-                                        Marque primeiro os serviços que este profissional realiza.
-                                      </span>
-                                    ) : (
-                                      <div style={servicosBlocoGrid}>
-                                        {servicosDoProfissional().map((servico) => {
-                                          const selecionado = bloco.servicosIds.includes(servico.id);
-
-                                          return (
-                                            <button
-                                              key={servico.id}
-                                              type="button"
-                                              onClick={() =>
-                                                alternarServicoBloco(index, blocoIndex, servico.id)
-                                              }
-                                              style={
-                                                selecionado
-                                                  ? servicoBlocoSelecionado
-                                                  : servicoBlocoNaoSelecionado
-                                              }
-                                            >
-                                              {servico.nome}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-
-                                    <p style={servicosBlocoAjuda}>
-                                      Se nenhum serviço for marcado, este horário ficará disponível para todos os serviços do profissional.
+                              return (
+                                <div
+                                  key={servico.id}
+                                  style={comissaoServicoCard}
+                                >
+                                  <div>
+                                    <strong style={comissaoServicoNome}>
+                                      {servico.nome}
+                                    </strong>
+                                    <p style={comissaoServicoDetalhe}>
+                                      Valor do serviço: R${" "}
+                                      {Number(
+                                        servico.valor || 0,
+                                      ).toLocaleString("pt-BR", {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      })}
                                     </p>
                                   </div>
+
+                                  <div style={comissaoServicoCampos}>
+                                    <div style={campo}>
+                                      <label>Tipo</label>
+                                      <select
+                                        style={input}
+                                        value={comissaoServico.tipoComissao}
+                                        onChange={(e) =>
+                                          atualizarComissaoServico(
+                                            servico.id,
+                                            "tipoComissao",
+                                            e.target.value,
+                                          )
+                                        }
+                                      >
+                                        <option value="percentual">
+                                          Percentual (%)
+                                        </option>
+                                        <option value="fixo">
+                                          Valor fixo (R$)
+                                        </option>
+                                      </select>
+                                    </div>
+
+                                    <div style={campo}>
+                                      <label>
+                                        {comissaoServico.tipoComissao ===
+                                        "percentual"
+                                          ? "Percentual"
+                                          : "Valor fixo"}
+                                      </label>
+                                      <input
+                                        style={input}
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder={
+                                          comissaoServico.tipoComissao ===
+                                          "percentual"
+                                            ? "Ex: 40"
+                                            : "Ex: 60,00"
+                                        }
+                                        value={comissaoServico.valorComissao}
+                                        onChange={(e) =>
+                                          atualizarComissaoServico(
+                                            servico.id,
+                                            "valorComissao",
+                                            e.target.value,
+                                          )
+                                        }
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
-                              ))}
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => adicionarBloco(index)}
-                              style={botaoAdicionarBlocoPremium}
-                            >
-                              + Adicionar horário
-                            </button>
+                              );
+                            })}
                           </div>
-                        )}
+                        </div>
+                      )}
+                  </div>
+                </details>
+
+                <details
+                  className="profissionais-agenda-v2 profissionais-detalhe-compacto"
+                  style={{ marginTop: 18 }}
+                >
+                  <summary style={detalheCompactoSummary}>
+                    <span>
+                      <strong>Agenda semanal</strong>
+                      <small>
+                        {disponibilidade.filter((dia) => dia.ativo).length} dia
+                        {disponibilidade.filter((dia) => dia.ativo).length === 1
+                          ? ""
+                          : "s"}{" "}
+                        ativo
+                        {disponibilidade.filter((dia) => dia.ativo).length === 1
+                          ? ""
+                          : "s"}
+                      </small>
+                    </span>
+                    <b>+</b>
+                  </summary>
+
+                  <div style={detalheCompactoContent}>
+                    <h3 style={{ marginBottom: 4 }}>Agenda semanal</h3>
+                    <p
+                      style={{
+                        margin: "0 0 14px",
+                        color: "#64748b",
+                        fontSize: 13,
+                      }}
+                    >
+                      Configure múltiplos blocos por dia. Exemplo: 08:00 às
+                      12:00 e 13:00 às 18:00.
+                    </p>
+
+                    <div style={agendaResumoBox}>
+                      <div style={agendaResumoTopo}>
+                        <button
+                          type="button"
+                          onClick={() => copiarHorarioParaTodos(1)}
+                          style={botaoAgendaAcao}
+                        >
+                          📅 Copiar todos
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const todosAtivos = disponibilidade.every(
+                              (dia) => dia.ativo,
+                            );
+                            setDisponibilidade((atual) =>
+                              atual.map((dia) => ({
+                                ...dia,
+                                ativo: !todosAtivos,
+                              })),
+                            );
+                          }}
+                          style={botaoAgendaLink}
+                        >
+                          {disponibilidade.every((dia) => dia.ativo)
+                            ? "Desmarcar todos"
+                            : "Marcar todos"}
+                        </button>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-                marginTop: 24,
-                flexWrap: "wrap",
-              }}
-            >
-              <button
-                onClick={salvar}
-                disabled={acaoProfissionalEmAndamento}
-                style={{
-                  ...botaoPrincipal,
-                  opacity: acaoProfissionalEmAndamento ? 0.65 : 1,
-                  cursor: acaoProfissionalEmAndamento ? "not-allowed" : "pointer",
-                }}
-              >
-                {salvandoProfissional
-                  ? editandoId
-                    ? "Salvando alterações... aguarde"
-                    : "Cadastrando profissional... aguarde"
-                  : carregandoEdicaoProfissionalId
-                    ? "Carregando edição... aguarde"
-                    : profissionalStatusProcessandoId
-                      ? "Processando... aguarde"
-                      : editandoId
-                        ? "Salvar alterações"
-                        : "Cadastrar profissional"}
-              </button>
+                      <div style={agendaListaMobile}>
+                        {diasSemana.map((dia, index) => {
+                          const ativo = disponibilidade[index].ativo;
+                          const aberto = diaAgendaAberto === index;
 
-              {editandoId && (
-                <button
-                  type="button"
-                  onClick={limparFormulario}
-                  disabled={acaoProfissionalEmAndamento}
+                          return (
+                            <div key={dia.value} style={agendaDiaLinhaBox}>
+                              <div
+                                className="profissional-agenda-dia-linha-v2"
+                                style={agendaDiaLinha}
+                              >
+                                <label style={agendaDiaCheckLabel}>
+                                  <input
+                                    type="checkbox"
+                                    checked={ativo}
+                                    onChange={(e) =>
+                                      atualizarDia(
+                                        index,
+                                        "ativo",
+                                        e.target.checked,
+                                      )
+                                    }
+                                    style={checkboxReal}
+                                  />
+
+                                  <span
+                                    style={
+                                      ativo
+                                        ? checkboxVisualSelecionado
+                                        : checkboxVisual
+                                    }
+                                  >
+                                    {ativo ? "✓" : ""}
+                                  </span>
+                                </label>
+
+                                <strong style={agendaDiaNome}>
+                                  {dia.label}
+                                </strong>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setDiaAgendaAberto(aberto ? null : index)
+                                  }
+                                  style={
+                                    ativo
+                                      ? botaoEditarHorariosAtivo
+                                      : botaoEditarHorariosInativo
+                                  }
+                                  disabled={!ativo}
+                                >
+                                  📅{" "}
+                                  {aberto
+                                    ? "Ocultar horários"
+                                    : "Editar horários"}
+                                </button>
+
+                                <span
+                                  style={
+                                    ativo
+                                      ? badgeDiaAtivoPremium
+                                      : badgeDiaInativoPremium
+                                  }
+                                >
+                                  {ativo ? "Ativo" : "Inativo"}
+                                </span>
+                              </div>
+
+                              {aberto && ativo && (
+                                <div style={agendaDiaDetalhe}>
+                                  <div style={agendaDiaAcoesInline}>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        copiarHorarioParaTodos(index)
+                                      }
+                                      style={botaoCopiarHorarioPremium}
+                                    >
+                                      Copiar para todos
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        copiarHorarioDiasUteis(index)
+                                      }
+                                      style={botaoCopiarHorarioPremium}
+                                    >
+                                      Copiar dias úteis
+                                    </button>
+                                  </div>
+
+                                  <div style={blocosWrapper}>
+                                    {disponibilidade[index].blocos.map(
+                                      (bloco, blocoIndex) => (
+                                        <div
+                                          key={`${dia.value}-${blocoIndex}`}
+                                          style={blocoCardPremium}
+                                        >
+                                          <div style={blocoLinhaPremium}>
+                                            <input
+                                              type="time"
+                                              value={bloco.horaInicio}
+                                              onChange={(e) =>
+                                                atualizarBloco(
+                                                  index,
+                                                  blocoIndex,
+                                                  "horaInicio",
+                                                  e.target.value,
+                                                )
+                                              }
+                                              style={inputHorarioPremium}
+                                            />
+
+                                            <span style={separadorHorario}>
+                                              até
+                                            </span>
+
+                                            <input
+                                              type="time"
+                                              value={bloco.horaFim}
+                                              onChange={(e) =>
+                                                atualizarBloco(
+                                                  index,
+                                                  blocoIndex,
+                                                  "horaFim",
+                                                  e.target.value,
+                                                )
+                                              }
+                                              style={inputHorarioPremium}
+                                            />
+
+                                            {disponibilidade[index].blocos
+                                              .length > 1 && (
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  removerBloco(
+                                                    index,
+                                                    blocoIndex,
+                                                  )
+                                                }
+                                                style={botaoRemoverBlocoPremium}
+                                                title="Remover horário"
+                                              >
+                                                ×
+                                              </button>
+                                            )}
+                                          </div>
+
+                                          <div style={servicosBlocoBox}>
+                                            <span style={servicosBlocoTitulo}>
+                                              Serviços neste horário
+                                            </span>
+
+                                            {servicosDoProfissional().length ===
+                                            0 ? (
+                                              <span style={servicosBlocoVazio}>
+                                                Marque primeiro os serviços que
+                                                este profissional realiza.
+                                              </span>
+                                            ) : (
+                                              <div style={servicosBlocoGrid}>
+                                                {servicosDoProfissional().map(
+                                                  (servico) => {
+                                                    const selecionado =
+                                                      bloco.servicosIds.includes(
+                                                        servico.id,
+                                                      );
+
+                                                    return (
+                                                      <button
+                                                        key={servico.id}
+                                                        type="button"
+                                                        onClick={() =>
+                                                          alternarServicoBloco(
+                                                            index,
+                                                            blocoIndex,
+                                                            servico.id,
+                                                          )
+                                                        }
+                                                        style={
+                                                          selecionado
+                                                            ? servicoBlocoSelecionado
+                                                            : servicoBlocoNaoSelecionado
+                                                        }
+                                                      >
+                                                        {servico.nome}
+                                                      </button>
+                                                    );
+                                                  },
+                                                )}
+                                              </div>
+                                            )}
+
+                                            <p style={servicosBlocoAjuda}>
+                                              Se nenhum serviço for marcado,
+                                              este horário ficará disponível
+                                              para todos os serviços do
+                                              profissional.
+                                            </p>
+                                          </div>
+                                        </div>
+                                      ),
+                                    )}
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => adicionarBloco(index)}
+                                    style={botaoAdicionarBlocoPremium}
+                                  >
+                                    + Adicionar horário
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </details>
+
+                <div
                   style={{
-                    ...botaoSecundario,
-                    opacity: acaoProfissionalEmAndamento ? 0.55 : 1,
-                    cursor: acaoProfissionalEmAndamento ? "not-allowed" : "pointer",
+                    display: "flex",
+                    gap: 10,
+                    marginTop: 24,
+                    flexWrap: "wrap",
                   }}
                 >
-                  {acaoProfissionalEmAndamento ? "Aguarde..." : "Cancelar edição"}
-                </button>
-              )}
-            </div>
+                  <button
+                    onClick={salvar}
+                    disabled={acaoProfissionalEmAndamento}
+                    style={{
+                      ...botaoPrincipal,
+                      opacity: acaoProfissionalEmAndamento ? 0.65 : 1,
+                      cursor: acaoProfissionalEmAndamento
+                        ? "not-allowed"
+                        : "pointer",
+                    }}
+                  >
+                    {salvandoProfissional
+                      ? editandoId
+                        ? "Salvando alterações... aguarde"
+                        : "Cadastrando profissional... aguarde"
+                      : carregandoEdicaoProfissionalId
+                        ? "Carregando edição... aguarde"
+                        : profissionalStatusProcessandoId
+                          ? "Processando... aguarde"
+                          : editandoId
+                            ? "Salvar alterações"
+                            : "Cadastrar profissional"}
+                  </button>
+
+                  {editandoId && (
+                    <button
+                      type="button"
+                      onClick={limparFormulario}
+                      disabled={acaoProfissionalEmAndamento}
+                      style={{
+                        ...botaoSecundario,
+                        opacity: acaoProfissionalEmAndamento ? 0.55 : 1,
+                        cursor: acaoProfissionalEmAndamento
+                          ? "not-allowed"
+                          : "pointer",
+                      }}
+                    >
+                      {acaoProfissionalEmAndamento
+                        ? "Aguarde..."
+                        : "Cancelar edição"}
+                    </button>
+                  )}
+                </div>
               </>
             )}
           </section>
@@ -2224,7 +3119,7 @@ export default function ProfissionaisPage() {
               <div>
                 <h2 style={sectionTitle}>Lista de profissionais</h2>
                 <p style={listaDescricao}>
-                  Pesquise por nome, serviço, descrição ou comissão. Arraste os cards no mobile.
+                  Pesquise por nome, serviço, descrição ou comissão.
                 </p>
               </div>
 
@@ -2239,49 +3134,52 @@ export default function ProfissionaisPage() {
                   />
                 </div>
 
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <button
-                  onClick={() => setFiltroStatus("todos")}
-                  style={{
-                    ...filtroBotao,
-                    background:
-                      filtroStatus === "todos"
-                        ? "rgba(124,58,237,0.22)"
-                        : "rgba(255,255,255,0.04)",
-                  }}
+                <div
+                  className="profissionais-filtros-v2"
+                  style={{ display: "flex", gap: 10, flexWrap: "wrap" }}
                 >
-                  Todos
-                </button>
+                  <button
+                    onClick={() => setFiltroStatus("todos")}
+                    style={{
+                      ...filtroBotao,
+                      background:
+                        filtroStatus === "todos"
+                          ? "rgba(124,58,237,0.22)"
+                          : "rgba(255,255,255,0.04)",
+                    }}
+                  >
+                    Todos
+                  </button>
 
-                <button
-                  onClick={() => setFiltroStatus("ativos")}
-                  style={{
-                    ...filtroBotao,
-                    background:
-                      filtroStatus === "ativos"
-                        ? "rgba(34,197,94,0.18)"
-                        : "rgba(255,255,255,0.04)",
-                  }}
-                >
-                  Ativos
-                </button>
+                  <button
+                    onClick={() => setFiltroStatus("ativos")}
+                    style={{
+                      ...filtroBotao,
+                      background:
+                        filtroStatus === "ativos"
+                          ? "rgba(34,197,94,0.18)"
+                          : "rgba(255,255,255,0.04)",
+                    }}
+                  >
+                    Ativos
+                  </button>
 
-                <button
-                  onClick={() => setFiltroStatus("inativos")}
-                  style={{
-                    ...filtroBotao,
-                    background:
-                      filtroStatus === "inativos"
-                        ? "rgba(239,68,68,0.18)"
-                        : "rgba(255,255,255,0.04)",
-                  }}
-                >
-                  Inativos
-                </button>
+                  <button
+                    onClick={() => setFiltroStatus("inativos")}
+                    style={{
+                      ...filtroBotao,
+                      background:
+                        filtroStatus === "inativos"
+                          ? "rgba(239,68,68,0.18)"
+                          : "rgba(255,255,255,0.04)",
+                    }}
+                  >
+                    Inativos
+                  </button>
 
-                <span style={listaBadge}>
-                  {profissionaisFiltrados.length} profissionais
-                </span>
+                  <span style={listaBadge}>
+                    {profissionaisFiltrados.length} profissionais
+                  </span>
                 </div>
               </div>
             </div>
@@ -2294,7 +3192,10 @@ export default function ProfissionaisPage() {
               </p>
             )}
 
-            <div className="profissionais-grid-horizontal" style={profissionaisGrid}>
+            <div
+              className="profissionais-grid-horizontal"
+              style={profissionaisGrid}
+            >
               {profissionaisFiltrados.map((p) => (
                 <div
                   key={p.id}
@@ -2304,8 +3205,14 @@ export default function ProfissionaisPage() {
                     opacity: p.ativo ? 1 : 0.72,
                   }}
                 >
-                  <div className="profissional-info-mobile" style={profissionalInfo}>
-                    <div className="profissional-avatar-mobile" style={avatarPremium}>
+                  <div
+                    className="profissional-info-mobile"
+                    style={profissionalInfo}
+                  >
+                    <div
+                      className="profissional-avatar-mobile"
+                      style={avatarPremium}
+                    >
                       {p.fotoUrl ? (
                         <img
                           src={p.fotoUrl}
@@ -2343,7 +3250,10 @@ export default function ProfissionaisPage() {
                         {p.bio || "Sem descrição cadastrada"}
                       </p>
 
-                      <div style={profissionalTags}>
+                      <div
+                        className="profissional-tags-v2"
+                        style={profissionalTags}
+                      >
                         {p.servicos?.length > 0 ? (
                           p.servicos.map((item: any) => (
                             <span key={item.id} style={badgeServicoPremium}>
@@ -2366,15 +3276,19 @@ export default function ProfissionaisPage() {
                     </div>
                   </div>
 
-
-                  <div style={profissionalActions}>
+                  <div
+                    className="profissional-actions-v2"
+                    style={profissionalActions}
+                  >
                     <button
                       onClick={() => editar(p)}
                       disabled={acaoProfissionalEmAndamento}
                       style={{
                         ...botaoEditarPremium,
                         opacity: acaoProfissionalEmAndamento ? 0.55 : 1,
-                        cursor: acaoProfissionalEmAndamento ? "not-allowed" : "pointer",
+                        cursor: acaoProfissionalEmAndamento
+                          ? "not-allowed"
+                          : "pointer",
                         background: `linear-gradient(135deg, ${empresa?.corSidebar || "#d709ab"}, ${
                           empresa?.corSecundaria || "#57f755"
                         })`,
@@ -2382,7 +3296,7 @@ export default function ProfissionaisPage() {
                     >
                       {carregandoEdicaoProfissionalId === p.id
                         ? "Carregando... aguarde"
-                        : "Editar profissional"}
+                        : "Editar"}
                     </button>
 
                     <button
@@ -2391,7 +3305,9 @@ export default function ProfissionaisPage() {
                       style={{
                         ...botaoEditarPremium,
                         opacity: acaoProfissionalEmAndamento ? 0.55 : 1,
-                        cursor: acaoProfissionalEmAndamento ? "not-allowed" : "pointer",
+                        cursor: acaoProfissionalEmAndamento
+                          ? "not-allowed"
+                          : "pointer",
                         background:
                           p.ativo === false
                             ? "rgba(34,197,94,0.12)"
@@ -2406,8 +3322,8 @@ export default function ProfissionaisPage() {
                       {profissionalStatusProcessandoId === p.id
                         ? "Processando... aguarde"
                         : p.ativo === false
-                          ? "✅ Ativar profissional"
-                          : "🚫 Inativar profissional"}
+                          ? "✅ Ativar"
+                          : "🚫 Inativar"}
                     </button>
                   </div>
                 </div>
@@ -2419,7 +3335,6 @@ export default function ProfissionaisPage() {
     </PremiumLayout>
   );
 }
-
 
 function hexToRgba(hex: string, alpha: number) {
   if (!hex) return `rgba(124,58,237,${alpha})`;
@@ -2436,8 +3351,6 @@ function hexToRgba(hex: string, alpha: number) {
 
   return `rgba(${r},${g},${b},${alpha})`;
 }
-
-
 
 const sectionEyebrow = {
   display: "inline-block",
@@ -2519,6 +3432,10 @@ const topoModuloBadge = {
   fontSize: 12,
   fontWeight: 950,
   whiteSpace: "nowrap" as const,
+};
+
+const miniResumoMobile = {
+  display: "none",
 };
 
 const equipeDashboardCard = {
@@ -3677,6 +4594,21 @@ const botaoEditarPremium = {
   lineHeight: 1.15,
 };
 
+const detalheCompactoSummary = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) auto",
+  alignItems: "center",
+  gap: 12,
+  color: "#fff",
+  cursor: "pointer",
+  listStyle: "none" as const,
+};
+
+const detalheCompactoContent = {
+  display: "grid",
+  gap: 12,
+};
+
 const listaHeader = {
   display: "flex",
   justifyContent: "space-between",
@@ -3718,10 +4650,6 @@ const listaBadge = {
   fontWeight: 900,
   whiteSpace: "nowrap" as const,
 };
-
-
-
-
 
 const filtroBotao = {
   padding: "10px 14px",

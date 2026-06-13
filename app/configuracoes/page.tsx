@@ -781,6 +781,239 @@ export default function ConfiguracoesPage() {
               height: 132px !important;
             }
           }
+
+
+          /* Marcaê Compact Premium - Configurações mobile */
+          @media (max-width: 760px) {
+            .marcae-config-mobile-ajuste-usuarios {
+              gap: 10px !important;
+              padding-bottom: 124px !important;
+            }
+
+            .config-hero-mobile {
+              padding: 12px !important;
+              border-radius: 20px !important;
+              min-height: auto !important;
+              box-shadow: 0 12px 34px rgba(0,0,0,.22) !important;
+            }
+
+            .config-hero-content-mobile > div:first-child {
+              font-size: 10px !important;
+              margin-bottom: 4px !important;
+            }
+
+            .config-hero-content-mobile h1 {
+              font-size: 23px !important;
+              line-height: 1 !important;
+              margin: 0 !important;
+            }
+
+            .config-hero-content-mobile p {
+              display: none !important;
+            }
+
+            .config-hero-content-mobile > div:last-child {
+              margin-top: 8px !important;
+              gap: 6px !important;
+            }
+
+            .config-hero-content-mobile > div:last-child span {
+              padding: 5px 8px !important;
+              font-size: 10px !important;
+              max-width: max-content !important;
+            }
+
+            .config-hero-preview-mobile {
+              display: none !important;
+            }
+
+            .config-top-stats-mobile {
+              display: grid !important;
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+              gap: 7px !important;
+            }
+
+            .config-top-stats-mobile > div {
+              padding: 10px !important;
+              border-radius: 16px !important;
+              min-width: 0 !important;
+            }
+
+            .config-top-stats-mobile strong {
+              font-size: 15px !important;
+              line-height: 1.05 !important;
+            }
+
+            .config-top-stats-mobile p {
+              display: none !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios > section {
+              padding: 14px !important;
+              border-radius: 20px !important;
+              margin: 0 !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios > section > div:first-child {
+              margin-bottom: 12px !important;
+              gap: 10px !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios h2 {
+              font-size: 21px !important;
+              line-height: 1.05 !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios h3 {
+              font-size: 18px !important;
+              line-height: 1.1 !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios p {
+              font-size: 11.5px !important;
+              line-height: 1.35 !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios .marcae-premium-card button {
+              min-height: 38px !important;
+              border-radius: 13px !important;
+              font-size: 12px !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios section:nth-of-type(1) > div:nth-child(2) {
+              grid-template-columns: 1fr !important;
+              gap: 8px !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios section:nth-of-type(1) > div:nth-child(2) > div {
+              padding: 10px !important;
+              border-radius: 15px !important;
+              display: grid !important;
+              grid-template-columns: minmax(0,1fr) auto !important;
+              align-items: center !important;
+              gap: 8px !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios section:nth-of-type(1) input[type="color"] {
+              width: 54px !important;
+              height: 36px !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios section:nth-of-type(1) > div:first-child p {
+              display: none !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios section:nth-of-type(2) > div:first-child p,
+            .marcae-config-mobile-ajuste-usuarios section:nth-of-type(3) > div:first-child p,
+            .marcae-config-mobile-ajuste-usuarios section:nth-of-type(4) > div:first-child p,
+            .marcae-config-mobile-ajuste-usuarios section:nth-of-type(5) > div:first-child p {
+              display: none !important;
+            }
+
+            .config-link-publico-mobile {
+              grid-template-columns: 1fr !important;
+              gap: 10px !important;
+            }
+
+            .config-link-publico-mobile input {
+              min-height: 40px !important;
+              font-size: 12px !important;
+            }
+
+            .config-link-acoes-mobile {
+              grid-template-columns: 1fr !important;
+              gap: 8px !important;
+            }
+
+            .config-qr-mobile {
+              padding: 12px !important;
+              border-radius: 18px !important;
+            }
+
+            .config-qr-mobile img {
+              width: 118px !important;
+              height: 118px !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios section:nth-of-type(4) > div:nth-child(2),
+            .marcae-config-mobile-ajuste-usuarios section:nth-of-type(4) > div:nth-child(3) {
+              padding: 12px !important;
+              border-radius: 17px !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios section:nth-of-type(5) > div:last-child {
+              padding: 10px !important;
+              border-radius: 17px !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios section:nth-of-type(5) > div:last-child > div {
+              min-width: 0 !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios section:nth-of-type(5) > div:last-child strong {
+              font-size: 19px !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios section:nth-of-type(5) > div:last-child span {
+              font-size: 10.5px !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios input,
+            .marcae-config-mobile-ajuste-usuarios select,
+            .marcae-config-mobile-ajuste-usuarios textarea {
+              min-height: 39px !important;
+              border-radius: 13px !important;
+              font-size: 12px !important;
+              padding: 10px 12px !important;
+            }
+
+            .marcae-config-mobile-ajuste-usuarios label {
+              font-size: 11.5px !important;
+            }
+          }
+
+          @media (max-width: 430px) {
+            .config-top-stats-mobile {
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+              gap: 6px !important;
+            }
+
+            .config-top-stats-mobile > div:last-child {
+              grid-column: auto !important;
+            }
+
+            .config-top-stats-mobile > div {
+              padding: 8px 7px !important;
+              min-height: 58px !important;
+            }
+
+            .config-top-stats-mobile span {
+              font-size: 8.5px !important;
+              line-height: 1 !important;
+              margin-bottom: 4px !important;
+            }
+
+            .config-top-stats-mobile strong {
+              font-size: 13px !important;
+              line-height: 1.05 !important;
+            }
+
+            .config-hero-content-mobile > div:last-child {
+              display: grid !important;
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+              gap: 5px !important;
+            }
+
+            .config-hero-content-mobile > div:last-child span {
+              justify-content: center !important;
+              text-align: center !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              padding: 5px 6px !important;
+              font-size: 9px !important;
+              white-space: nowrap !important;
+            }
+          }
         `}</style>
 
         <div
@@ -864,7 +1097,7 @@ export default function ConfiguracoesPage() {
           )}
         </div>
 
-        <div style={topStatsGrid}>
+        <div className="config-top-stats-mobile" style={topStatsGrid}>
           <InfoStat
             titulo="Empresa"
             valor={dadosEmpresa.nome || "Não informado"}
@@ -953,28 +1186,16 @@ export default function ConfiguracoesPage() {
               </p>
             </div>
 
-            <div style={sectionActionsRow}>
-              <button
-                type="button"
-                onClick={() => setMostrarDadosEmpresa(!mostrarDadosEmpresa)}
-                style={secondaryButton}
-                className="marcae-ghost-button"
-              >
-                {mostrarDadosEmpresa
-                  ? "Ocultar informações"
-                  : "Visualizar informações"}
-              </button>
-
-              {mostrarDadosEmpresa && (
+            {mostrarDadosEmpresa && (
                 <button
-                  onClick={salvarDadosEmpresa}
-                  style={primaryButtonInline}
-                  className="marcae-premium-button"
+                  type="button"
+                  onClick={() => setMostrarDadosEmpresa(false)}
+                  style={secondaryButton}
+                  className="marcae-ghost-button"
                 >
-                  {salvandoEmpresa ? "Salvando..." : "Salvar empresa"}
+                  Ocultar dados
                 </button>
               )}
-            </div>
           </div>
 
           {!mostrarDadosEmpresa ? (
@@ -1020,11 +1241,11 @@ export default function ConfiguracoesPage() {
 
               <button
                 type="button"
-                onClick={() => setMostrarDadosEmpresa(true)}
+                onClick={() => setMostrarDadosEmpresa(!mostrarDadosEmpresa)}
                 style={empresaResumoButton}
                 className="marcae-ghost-button"
               >
-                Ver e editar
+                {mostrarDadosEmpresa ? "Fechar edição" : "Ver e editar"}
               </button>
             </div>
           ) : (

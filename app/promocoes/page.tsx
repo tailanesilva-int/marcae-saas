@@ -585,6 +585,90 @@ export default function PromocoesPage() {
               overflow-wrap: anywhere !important;
             }
           }
+
+
+          @media (max-width: 760px) {
+            .promocoes-mobile-safe {
+              padding: 14px !important;
+              padding-bottom: 126px !important;
+              margin-top: 0 !important;
+            }
+
+            .promocoes-mobile-safe .promocoes-compact-header {
+              margin-top: 0 !important;
+              margin-bottom: 10px !important;
+              padding: 12px !important;
+              border-radius: 20px !important;
+              min-height: auto !important;
+              box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22) !important;
+            }
+
+            .promocoes-mobile-safe .promocoes-compact-left {
+              grid-template-columns: 40px minmax(0, 1fr) !important;
+              gap: 10px !important;
+              align-items: center !important;
+            }
+
+            .promocoes-mobile-safe .promocoes-compact-icon {
+              width: 40px !important;
+              min-width: 40px !important;
+              max-width: 40px !important;
+              height: 40px !important;
+              min-height: 40px !important;
+              border-radius: 14px !important;
+              font-size: 19px !important;
+              box-shadow: none !important;
+            }
+
+            .promocoes-mobile-safe .promocoes-compact-left h1 {
+              font-size: 22px !important;
+              line-height: 1 !important;
+            }
+
+            .promocoes-mobile-safe .promocoes-compact-left p {
+              display: block !important;
+              font-size: 11.5px !important;
+              line-height: 1.25 !important;
+              margin-top: 3px !important;
+            }
+
+            .promocoes-mobile-safe .promocoes-compact-left div[style*="margin-top: 6"] {
+              display: none !important;
+            }
+
+            .promocoes-mobile-safe .promocoes-compact-right {
+              display: none !important;
+            }
+
+            .promocoes-mobile-safe .promocoes-metricas-grid {
+              margin-bottom: 10px !important;
+              gap: 8px !important;
+            }
+
+            .promocoes-mobile-safe .promocoes-metricas-grid > div {
+              padding: 10px !important;
+              border-radius: 15px !important;
+              min-height: 82px !important;
+            }
+
+            .promocoes-mobile-safe .promocoes-metricas-grid p {
+              margin: 5px 0 3px !important;
+              font-size: 10.5px !important;
+              line-height: 1.15 !important;
+            }
+
+            .promocoes-mobile-safe .promocoes-metricas-grid strong {
+              font-size: 22px !important;
+              line-height: 1 !important;
+            }
+
+            .promocoes-mobile-safe section[style*="rgba(15,23,42,0.86)"] {
+              padding: 14px !important;
+              border-radius: 20px !important;
+              margin-bottom: 12px !important;
+            }
+          }
+
         `}</style>
 
         <div style={backgroundGlowOne} />
@@ -637,21 +721,6 @@ export default function PromocoesPage() {
               <strong style={miniStatValue}>{metricas.totalEnviados}</strong>
               <span style={miniStatLabel}>Envios</span>
             </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setMostrarFormulario(true);
-                setTimeout(() => {
-                  document
-                    .getElementById("form-promocao")
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }, 80);
-              }}
-              style={newCampaignButton}
-            >
-              + Nova campanha
-            </button>
           </div>
         </section>
 
@@ -954,71 +1023,6 @@ export default function PromocoesPage() {
                 </div>
               </form>
             </div>
-
-            <div style={sidePanel}>
-              <div style={sideCard}>
-                <div style={sectionHeader}>
-                  <div>
-                    <span style={sectionKicker}>Analytics</span>
-                    <h3 style={sideTitle}>Performance das campanhas</h3>
-                  </div>
-
-                  <span style={analyticsBadge}>Live</span>
-                </div>
-
-                <div style={analyticsList}>
-                  <div style={analyticsItem}>
-                    <div>
-                      <strong style={analyticsValue}>
-                        {metricas.totalEnviados}
-                      </strong>
-                      <span style={analyticsLabel}>Mensagens enviadas</span>
-                    </div>
-
-                    <span style={analyticsEmoji}>🚀</span>
-                  </div>
-
-                  <div style={analyticsItem}>
-                    <div>
-                      <strong style={analyticsValue}>
-                        {metricas.totalErros}
-                      </strong>
-                      <span style={analyticsLabel}>Falhas registradas</span>
-                    </div>
-
-                    <span style={analyticsEmoji}>⚠️</span>
-                  </div>
-
-                  <div style={analyticsItem}>
-                    <div>
-                      <strong style={analyticsValue}>{metricas.ativas}</strong>
-                      <span style={analyticsLabel}>Campanhas ativas</span>
-                    </div>
-
-                    <span style={analyticsEmoji}>📈</span>
-                  </div>
-                </div>
-              </div>
-
-              <div style={sideCardGradient}>
-                <span style={automationBadge}>Automação WhatsApp</span>
-
-                <h3 style={automationTitle}>Campanhas inteligentes</h3>
-
-                <p style={automationText}>
-                  Utilize promoções para aumentar retenção, reativar clientes e
-                  gerar recorrência automática usando campanhas segmentadas.
-                </p>
-
-                <div style={automationTags}>
-                  <span style={automationTag}>🎂 Aniversariantes</span>
-
-                  <span style={automationTag}>💇 Serviços</span>
-
-                  <span style={automationTag}>📣 Marketing</span>
-                </div>
-              </div>
-            </div>
           </section>
         ) : (
           <section style={quickCreatePanel}>
@@ -1040,14 +1044,6 @@ export default function PromocoesPage() {
                 </p>
               </div>
             </div>
-
-            <button
-              type="button"
-              onClick={() => setMostrarFormulario(true)}
-              style={quickCreateButton}
-            >
-              + Nova campanha
-            </button>
           </section>
         )}
 
@@ -1638,7 +1634,7 @@ const contentGrid = {
   position: "relative" as const,
   zIndex: 2,
   display: "grid",
-  gridTemplateColumns: "1.5fr 0.8fr",
+  gridTemplateColumns: "1fr",
   gap: 24,
   alignItems: "flex-start",
   marginBottom: 24,

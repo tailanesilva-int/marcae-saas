@@ -94,7 +94,6 @@ type HistoricoEmpresa = {
 
 type ConfiguracaoPlanos = {
   valorPlanoBasico: string;
-  valorPlanoPlus: string;
   valorPlanoPremium: string;
 };
 
@@ -209,8 +208,7 @@ const [formRecebimento, setFormRecebimento] = useState({
 const [configuracaoPlanos, setConfiguracaoPlanos] =
   useState<ConfiguracaoPlanos>({
     valorPlanoBasico: "49,90",
-    valorPlanoPlus: "99,90",
-    valorPlanoPremium: "149,90",
+    valorPlanoPremium: "99,90",
   });
 
 const [salvandoConfiguracaoPlanos, setSalvandoConfiguracaoPlanos] =
@@ -258,7 +256,6 @@ const [modalComunicacaoAberto, setModalComunicacaoAberto] = useState(false);
       if (data.configuracao) {
         setConfiguracaoPlanos({
           valorPlanoBasico: String(data.configuracao.valorPlanoBasico || 0).replace(".", ","),
-          valorPlanoPlus: String(data.configuracao.valorPlanoPlus || 0).replace(".", ","),
           valorPlanoPremium: String(data.configuracao.valorPlanoPremium || 0).replace(".", ","),
         });
       }
@@ -280,7 +277,6 @@ const [modalComunicacaoAberto, setModalComunicacaoAberto] = useState(false);
         },
         body: JSON.stringify({
           valorPlanoBasico: configuracaoPlanos.valorPlanoBasico,
-          valorPlanoPlus: configuracaoPlanos.valorPlanoPlus,
           valorPlanoPremium: configuracaoPlanos.valorPlanoPremium,
         }),
       });
@@ -293,7 +289,6 @@ const [modalComunicacaoAberto, setModalComunicacaoAberto] = useState(false);
 
       setConfiguracaoPlanos({
         valorPlanoBasico: String(data.configuracao.valorPlanoBasico || 0).replace(".", ","),
-        valorPlanoPlus: String(data.configuracao.valorPlanoPlus || 0).replace(".", ","),
         valorPlanoPremium: String(data.configuracao.valorPlanoPremium || 0).replace(".", ","),
       });
 
@@ -524,12 +519,8 @@ const [modalComunicacaoAberto, setModalComunicacaoAberto] = useState(false);
   function obterValorPlano(plano: string) {
   const planoNormalizado = String(plano || "").toLowerCase();
 
-  if (planoNormalizado === "premium") {
+  if (planoNormalizado === "premium" || planoNormalizado === "plus") {
     return configuracaoPlanos.valorPlanoPremium || "0";
-  }
-
-  if (planoNormalizado === "plus") {
-    return configuracaoPlanos.valorPlanoPlus || "0";
   }
 
   if (planoNormalizado === "trial") {
@@ -621,6 +612,8 @@ function atualizarForm(campo: keyof FormEmpresa, valor: string) {
     const planoAtual =
       empresa.trialAtivo || empresa.plano === "trial"
         ? "trial"
+        : String(empresa.plano || "basico").toLowerCase() === "plus"
+        ? "premium"
         : empresa.plano || "basico";
 
     setDadosUltimoUsuario(null);
@@ -845,10 +838,12 @@ const payload = {
     const planoAtual =
       empresa.trialAtivo || empresa.plano === "trial"
         ? "trial"
+        : String(empresa.plano || "basico").toLowerCase() === "plus"
+        ? "premium"
         : empresa.plano || "basico";
 
     const novoPlano = window.prompt(
-      `Informe o novo plano para ${empresa.nome}:\n\nOpções: basico, plus, premium ou trial`,
+      `Informe o novo plano para ${empresa.nome}:\n\nOpções: basico, premium ou trial`,
       planoAtual
     );
 
@@ -921,14 +916,11 @@ const payload = {
       String(e.plano || "basico").toLowerCase() === "basico" && !e.trialAtivo
   ).length;
 
-  const totalPlus = empresasFiltradas.filter(
-    (e) => String(e.plano || "basico").toLowerCase() === "plus" && !e.trialAtivo
-  ).length;
+  const totalPremium = empresasFiltradas.filter((e) => {
+    const plano = String(e.plano || "basico").toLowerCase();
 
-  const totalPremium = empresasFiltradas.filter(
-    (e) =>
-      String(e.plano || "basico").toLowerCase() === "premium" && !e.trialAtivo
-  ).length;
+    return (plano === "premium" || plano === "plus") && !e.trialAtivo;
+  }).length;
 
   const totalTrial = empresasFiltradas.filter(
     (e) => e.trialAtivo || String(e.plano || "").toLowerCase() === "trial"
@@ -993,7 +985,6 @@ const payload = {
           color="#ef4444"
         />
         <Card label="Plano Básico" value={totalBasico} color="#10b981" />
-        <Card label="Plano Plus" value={totalPlus} color="#3b82f6" />
         <Card label="Plano Premium" value={totalPremium} color="#a855f7" />
       </div>
 
@@ -1037,24 +1028,6 @@ const payload = {
                   atualizarConfiguracaoPlano("valorPlanoBasico", e.target.value)
                 }
                 placeholder="49,90"
-              />
-            </div>
-          </div>
-
-          <div style={styles.configPlanoCard}>
-            <span style={styles.configPlanoIcone}>🚀</span>
-            <strong style={styles.configPlanoNome}>Plus</strong>
-            <small style={styles.configPlanoDescricao}>Automações, promoções e recebimentos</small>
-            <label style={styles.configPlanoLabel}>Valor mensal</label>
-            <div style={styles.configPlanoInputWrap}>
-              <span>R$</span>
-              <input
-                style={styles.configPlanoInput}
-                value={configuracaoPlanos.valorPlanoPlus}
-                onChange={(e) =>
-                  atualizarConfiguracaoPlano("valorPlanoPlus", e.target.value)
-                }
-                placeholder="99,90"
               />
             </div>
           </div>
@@ -1759,7 +1732,6 @@ const payload = {
                     onChange={(e) => atualizarForm("plano", e.target.value)}
                   >
                     <option value="basico">Básico</option>
-                    <option value="plus">Plus</option>
                     <option value="premium">Premium</option>
                     <option value="trial">Trial 7 dias</option>
                   </select>
@@ -2176,8 +2148,7 @@ function labelPlano(plano?: string | null, trialAtivo?: boolean) {
   const normalizado = String(plano || "basico").toLowerCase();
 
   if (trialAtivo || normalizado === "trial") return "Trial";
-  if (normalizado === "premium") return "Premium";
-  if (normalizado === "plus") return "Plus";
+  if (normalizado === "premium" || normalizado === "plus") return "Premium";
   return "Básico";
 }
 
@@ -2225,12 +2196,8 @@ function badgePlano(plano?: string | null, trialAtivo?: boolean) {
     return { ...styles.badgeBase, background: "#78350f", color: "#fde68a" };
   }
 
-  if (normalizado === "premium") {
+  if (normalizado === "premium" || normalizado === "plus") {
     return { ...styles.badgeBase, background: "#581c87", color: "#f5d0fe" };
-  }
-
-  if (normalizado === "plus") {
-    return { ...styles.badgeBase, background: "#1d4ed8", color: "#dbeafe" };
   }
 
   return { ...styles.badgeBase, background: "#065f46", color: "#d1fae5" };

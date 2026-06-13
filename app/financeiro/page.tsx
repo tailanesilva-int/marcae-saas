@@ -799,6 +799,209 @@ Os valores esperados e diferenças ficarão disponíveis somente para conferênc
             }
           }
 
+
+          @media (max-width: 760px) {
+            .financeiro-mobile-safe {
+              padding-top: 6px !important;
+            }
+
+            .financeiro-hero-mobile {
+              margin-top: 0 !important;
+              margin-bottom: 8px !important;
+              padding: 10px 12px !important;
+              display: grid !important;
+              grid-template-columns: 1fr !important;
+              gap: 9px !important;
+            }
+
+            .financeiro-hero-mobile > div:first-child {
+              display: grid !important;
+              grid-template-columns: 42px minmax(0, 1fr) !important;
+              gap: 10px !important;
+              align-items: center !important;
+            }
+
+            .financeiro-hero-mobile > div:first-child > div:first-child {
+              width: 42px !important;
+              height: 42px !important;
+              border-radius: 14px !important;
+              font-size: 18px !important;
+            }
+
+            .financeiro-hero-mobile h1 {
+              font-size: 24px !important;
+              margin: 2px 0 2px !important;
+            }
+
+            .financeiro-hero-mobile p {
+              display: none !important;
+            }
+
+            .financeiro-hero-mobile > div:last-child {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 7px !important;
+            }
+
+            .financeiro-hero-mobile > div:last-child > div {
+              min-width: 0 !important;
+              padding: 8px 10px !important;
+              border-radius: 14px !important;
+            }
+
+            .financeiro-hero-mobile > div:last-child > span {
+              grid-column: 1 / -1 !important;
+              min-height: 28px !important;
+              text-align: center !important;
+              justify-content: center !important;
+            }
+
+            .financeiro-filter-mobile {
+              margin-bottom: 8px !important;
+              gap: 8px !important;
+            }
+
+            .financeiro-filter-mobile > div:first-child {
+              display: grid !important;
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+              gap: 7px !important;
+            }
+
+            .financeiro-filter-mobile > div:first-child button {
+              min-height: 34px !important;
+              padding: 0 8px !important;
+              border-radius: 12px !important;
+              font-size: 12px !important;
+            }
+
+            .financeiro-filter-mobile > div:last-child {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 8px !important;
+            }
+
+            .financeiro-filter-mobile > div:last-child > button {
+              grid-column: 1 / -1 !important;
+              min-height: 38px !important;
+            }
+
+            .financeiro-filter-mobile input {
+              min-height: 38px !important;
+              border-radius: 13px !important;
+              font-size: 12px !important;
+            }
+
+            .financeiro-kpi-mobile {
+              gap: 7px !important;
+              margin-bottom: 8px !important;
+            }
+
+            .financeiro-kpi-mobile > div {
+              min-height: 54px !important;
+              padding: 9px !important;
+              border-radius: 14px !important;
+              grid-template-columns: 20px minmax(0, 1fr) !important;
+              gap: 7px !important;
+            }
+
+            .financeiro-kpi-mobile > div > div:first-child {
+              width: 20px !important;
+              height: 20px !important;
+              border-radius: 8px !important;
+              font-size: 9px !important;
+            }
+
+            .financeiro-panel-large-mobile,
+            .financeiro-panel-side-mobile {
+              margin-bottom: 8px !important;
+            }
+
+            .financeiro-panel-header-mobile {
+              margin-bottom: 10px !important;
+            }
+
+            .financeiro-panel-header-mobile p,
+            .financeiro-mobile-safe .financeiro-operacoes-grid-mobile small,
+            .financeiro-mobile-safe .financeiro-operacoes-grid-mobile em {
+              display: none !important;
+            }
+
+            .financeiro-caixa-resumo-mobile {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 7px !important;
+            }
+
+            .financeiro-caixa-resumo-mobile > div {
+              padding: 10px !important;
+              border-radius: 14px !important;
+            }
+
+            .financeiro-operacoes-grid-mobile {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 8px !important;
+            }
+
+            .financeiro-operacoes-grid-mobile > button {
+              min-height: 74px !important;
+              padding: 10px !important;
+              border-radius: 16px !important;
+              gap: 6px !important;
+            }
+
+            .financeiro-operacoes-grid-mobile > button > span {
+              width: 28px !important;
+              height: 28px !important;
+              border-radius: 10px !important;
+              font-size: 14px !important;
+            }
+
+            .financeiro-operacoes-grid-mobile > button > strong {
+              font-size: 12.5px !important;
+              line-height: 1.15 !important;
+            }
+
+            .financeiro-movimento-form-mobile {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 8px !important;
+              padding: 10px !important;
+            }
+
+            .financeiro-movimento-form-mobile > div:nth-child(5),
+            .financeiro-movimento-form-mobile > button {
+              grid-column: 1 / -1 !important;
+            }
+
+            .financeiro-movimento-form-mobile input,
+            .financeiro-movimento-form-mobile select {
+              min-height: 38px !important;
+              border-radius: 13px !important;
+              font-size: 12px !important;
+              padding: 0 10px !important;
+            }
+
+            .financeiro-analise-mobile .financeiro-panel-large-mobile:first-child {
+              display: none !important;
+            }
+
+            .financeiro-ranking-mobile > div:nth-child(1),
+            .financeiro-ranking-mobile > div:nth-child(2) {
+              display: none !important;
+            }
+
+            .financeiro-chart-box-mobile {
+              height: 160px !important;
+            }
+
+            .financeiro-panel-side-mobile h2,
+            .financeiro-panel-large-mobile h2 {
+              font-size: 18px !important;
+              line-height: 1.1 !important;
+            }
+          }
+
           @media (max-width: 430px) {
             .financeiro-hero-mobile > div:last-child {
               grid-template-columns: 1fr !important;
@@ -821,14 +1024,13 @@ Os valores esperados e diferenças ficarão disponíveis somente para conferênc
               <div style={financeiroHeaderMeta}>
                 <span style={financeiroMetaBadge}>Financeiro</span>
                 <span style={financeiroMetaDot}>•</span>
-                <span style={financeiroMetaText}>Caixa & controle diário</span>
+                <span style={financeiroMetaText}>Controle diário</span>
               </div>
 
               <h1 style={pageTitle}>Financeiro</h1>
 
               <p style={pageDescription}>
-                Recebimentos, pendências, caixa e conferência em uma visão
-                operacional.
+                Caixa, recebimentos e pendências do dia.
               </p>
             </div>
           </div>
@@ -929,7 +1131,7 @@ Os valores esperados e diferenças ficarão disponíveis somente para conferênc
           <>
             <section className="financeiro-kpi-mobile" style={kpiGrid}>
               <FinanceCard
-                titulo="Recebido no período"
+                titulo="Recebido"
                 valor={dinheiro(
                   financeiro.resumo?.recebidoPeriodo ||
                     financeiro.resumo?.recebidoOperacional,
@@ -939,7 +1141,7 @@ Os valores esperados e diferenças ficarão disponíveis somente para conferênc
               />
 
               <FinanceCard
-                titulo="Pendente operacional"
+                titulo="Pendente"
                 valor={dinheiro(financeiro.resumo?.pendenteOperacional)}
                 descricao="Valores ainda não quitados em atendimentos."
                 cor="#f59e0b"
@@ -953,7 +1155,7 @@ Os valores esperados e diferenças ficarão disponíveis somente para conferênc
               />
 
               <FinanceCard
-                titulo="Comissões pendentes"
+                titulo="Comissões"
                 valor={dinheiro(financeiro.resumo?.comissoesPendentes)}
                 descricao="Repasse ainda pendente para profissionais."
                 cor="#a855f7"
@@ -970,8 +1172,7 @@ Os valores esperados e diferenças ficarão disponíveis somente para conferênc
                     <span style={sectionKicker}>CAIXA OPERACIONAL</span>
                     <h2 style={panelTitle}>Caixa do dia</h2>
                     <p style={panelText}>
-                      Abra o caixa, registre reforços, sangrias, saídas e faça o
-                      fechamento diário.
+                      Controle entradas, saídas e fechamento.
                     </p>
                   </div>
 
@@ -1115,11 +1316,10 @@ Os valores esperados e diferenças ficarão disponíveis somente para conferênc
                         <div>
                           <span style={sectionKicker}>OPERAÇÕES DO CAIXA</span>
                           <h3 style={actionTitle}>
-                            Escolha o tipo de lançamento
+                            Lançamento rápido
                           </h3>
                           <p style={panelText}>
-                            Separe reforços, sangrias, saídas e entradas manuais
-                            para evitar erro no fechamento.
+                            Registre entradas, reforços, sangrias e saídas.
                           </p>
                         </div>
 
@@ -1691,7 +1891,7 @@ Os valores esperados e diferenças ficarão disponíveis somente para conferênc
                   style={panelSide}
                 >
                   <span style={sectionKicker}>FORMAS DE PAGAMENTO</span>
-                  <h2 style={panelTitle}>Como o dinheiro entrou</h2>
+                  <h2 style={panelTitle}>Formas de pagamento</h2>
 
                   {pieData.length === 0 ? (
                     <div style={emptyBox}>
@@ -1751,7 +1951,7 @@ Os valores esperados e diferenças ficarão disponíveis somente para conferênc
             </section>
 
             <section
-              className="financeiro-charts-grid-mobile"
+              className="financeiro-charts-grid-mobile financeiro-analise-mobile"
               style={chartsGrid}
             >
               <div className="financeiro-panel-large-mobile" style={panelLarge}>
@@ -1761,7 +1961,7 @@ Os valores esperados e diferenças ficarão disponíveis somente para conferênc
                 >
                   <div>
                     <span style={sectionKicker}>VISÃO DO PERÍODO</span>
-                    <h2 style={panelTitle}>Recebido, pendente e obrigações</h2>
+                    <h2 style={panelTitle}>Resumo do período</h2>
                   </div>
                 </div>
 
@@ -1811,7 +2011,7 @@ Os valores esperados e diferenças ficarão disponíveis somente para conferênc
 
               <div className="financeiro-panel-side-mobile" style={panelSide}>
                 <span style={sectionKicker}>CONTA FINANCEIRA CLIENTES</span>
-                <h2 style={panelTitle}>Créditos e débitos</h2>
+                <h2 style={panelTitle}>Clientes</h2>
 
                 <div style={clienteFinanceiroBox}>
                   <ResumoCaixaItem
@@ -1843,7 +2043,7 @@ Os valores esperados e diferenças ficarão disponíveis somente para conferênc
             </section>
 
             <section
-              className="financeiro-bottom-grid-mobile"
+              className="financeiro-bottom-grid-mobile financeiro-ranking-mobile"
               style={bottomGrid}
             >
               <RankingPanel

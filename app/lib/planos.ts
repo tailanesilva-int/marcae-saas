@@ -1,4 +1,4 @@
-export type PlanoAgendeAi = 'basico' | 'plus' | 'premium';
+export type PlanoAgendeAi = 'basico' | 'premium';
 
 export type RecursoPlano =
   | 'agenda'
@@ -21,20 +21,9 @@ export type RecursoPlano =
 export const PLANOS = {
   basico: {
     nome: 'Básico',
-    descricao: 'Controle simples de agenda, serviços e agendamentos.',
-    recursos: [
-      'agenda',
-      'servicos',
-      'profissionais',
-      'usuarios_basico',
-      'whatsapp_manual',
-      'google_agenda',
-    ],
-  },
+    descricao:
+      'Agenda online com WhatsApp automático para gestão essencial do negócio.',
 
-  plus: {
-    nome: 'Plus',
-    descricao: 'Agenda com pré-pagamento, WhatsApp automático e lembretes.',
     recursos: [
       'agenda',
       'servicos',
@@ -42,7 +31,8 @@ export const PLANOS = {
       'usuarios_basico',
       'whatsapp_manual',
       'google_agenda',
-      'pre_pagamento',
+
+      // NOVO BÁSICO
       'whatsapp_automatico',
       'lembrete_whatsapp',
       'dashboard_basico',
@@ -51,24 +41,34 @@ export const PLANOS = {
 
   premium: {
     nome: 'Premium',
+
     descricao:
-      'Sistema completo com financeiro, comissões, relatórios e promoções.',
+      'Sistema completo com financeiro, pré-pagamento, comissões, relatórios e promoções.',
+
     recursos: [
       'agenda',
       'servicos',
       'profissionais',
+
       'usuarios_basico',
       'usuarios_avancado',
+
       'whatsapp_manual',
       'google_agenda',
-      'pre_pagamento',
+
       'whatsapp_automatico',
       'lembrete_whatsapp',
+
       'dashboard_basico',
+      'dashboard_premium',
+
+      'pre_pagamento',
+
       'comissoes',
       'repasse_comissoes',
+
       'relatorio_financeiro',
-      'dashboard_premium',
+
       'promocoes',
     ],
   },
@@ -82,8 +82,17 @@ type EmpresaPlano = {
 };
 
 export function normalizarPlano(plano?: string | null): PlanoAgendeAi {
-  if (plano === 'plus') return 'plus';
-  if (plano === 'premium') return 'premium';
+  const planoNormalizado = String(plano || '').toLowerCase();
+
+  // Compatibilidade com registros antigos
+  if (planoNormalizado === 'plus') {
+    return 'premium';
+  }
+
+  if (planoNormalizado === 'premium') {
+    return 'premium';
+  }
+
   return 'basico';
 }
 
@@ -100,15 +109,19 @@ export function planoTemRecurso(
 
 export function dataValidaPlano(data?: Date | string | null) {
   if (!data) return false;
+
   return new Date(data).getTime() >= Date.now();
 }
 
 export function empresaEmTrial(empresa?: EmpresaPlano | null) {
   if (!empresa) return false;
+
   return dataValidaPlano(empresa.trialExpiraEm);
 }
 
-export function empresaComAssinaturaAtiva(empresa?: EmpresaPlano | null) {
+export function empresaComAssinaturaAtiva(
+  empresa?: EmpresaPlano | null
+) {
   if (!empresa) return false;
 
   return (
@@ -117,10 +130,15 @@ export function empresaComAssinaturaAtiva(empresa?: EmpresaPlano | null) {
   );
 }
 
-export function empresaComLicencaAtiva(empresa?: EmpresaPlano | null) {
+export function empresaComLicencaAtiva(
+  empresa?: EmpresaPlano | null
+) {
   if (!empresa) return false;
 
-  return empresaEmTrial(empresa) || empresaComAssinaturaAtiva(empresa);
+  return (
+    empresaEmTrial(empresa) ||
+    empresaComAssinaturaAtiva(empresa)
+  );
 }
 
 export function empresaTemRecurso(
@@ -133,7 +151,7 @@ export function empresaTemRecurso(
     return false;
   }
 
-  // Trial libera experiência completa para conversão
+  // Trial libera experiência completa
   if (empresaEmTrial(empresa)) {
     return true;
   }
@@ -141,7 +159,9 @@ export function empresaTemRecurso(
   return planoTemRecurso(empresa.plano, recurso);
 }
 
-export function respostaPlanoBloqueado(recurso: RecursoPlano) {
+export function respostaPlanoBloqueado(
+  recurso: RecursoPlano
+) {
   return {
     success: false,
     error: 'Recurso indisponível para o plano atual.',
@@ -154,16 +174,14 @@ export function nomePlano(plano?: string | null) {
   return PLANOS[normalizarPlano(plano)].nome;
 }
 
-export function descricaoPlanoPorTipo(plano?: string | null) {
+export function descricaoPlanoPorTipo(
+  plano?: string | null
+) {
   return PLANOS[normalizarPlano(plano)].descricao;
 }
 
 export function planoEhBasico(plano?: string | null) {
   return normalizarPlano(plano) === 'basico';
-}
-
-export function planoEhPlus(plano?: string | null) {
-  return normalizarPlano(plano) === 'plus';
 }
 
 export function planoEhPremium(plano?: string | null) {

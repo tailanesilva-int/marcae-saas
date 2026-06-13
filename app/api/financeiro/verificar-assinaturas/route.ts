@@ -60,7 +60,7 @@ function normalizarPlano(plano?: string | null) {
   const normalizado = String(plano || '').toLowerCase();
 
   if (normalizado === 'basico') return 'basico';
-  if (normalizado === 'plus') return 'plus';
+  if (normalizado === 'plus') return 'premium';
   if (normalizado === 'premium') return 'premium';
   if (normalizado === 'trial') return 'trial';
 

@@ -1,7 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 
-const PLANOS_VALIDOS = ['basico', 'plus', 'premium'];
+const PLANOS_VALIDOS = ['basico', 'premium'];
+
+function normalizarPlano(plano?: string | null) {
+  const planoNormalizado = String(plano || 'basico').toLowerCase();
+
+  if (planoNormalizado === 'plus') return 'premium';
+  if (planoNormalizado === 'premium') return 'premium';
+
+  return 'basico';
+}
 
 function planoValido(plano: string) {
   return PLANOS_VALIDOS.includes(plano);
@@ -10,8 +19,7 @@ function planoValido(plano: string) {
 function planoEhSuperiorOuIgual(planoAtual: string, novoPlano: string) {
   const ordem: Record<string, number> = {
     basico: 1,
-    plus: 2,
-    premium: 3,
+    premium: 2,
   };
 
   return ordem[novoPlano] >= ordem[planoAtual];
@@ -43,7 +51,7 @@ export async function PATCH(
       );
     }
 
-    const planoAtual = empresa.plano || 'basico';
+    const planoAtual = normalizarPlano(empresa.plano || 'basico');
     let dataUpdate: any = {};
 
     const agora = new Date();
@@ -57,11 +65,8 @@ export async function PATCH(
       Boolean(empresa.assinaturaExpiraEm) &&
       new Date(empresa.assinaturaExpiraEm as any) >= agora;
 
-    // =========================
-    // 🔄 ALTERAÇÃO DE PLANO
-    // =========================
     if (body.plano) {
-      const novoPlano = String(body.plano);
+      const novoPlano = normalizarPlano(String(body.plano));
 
       if (!planoValido(novoPlano)) {
         return NextResponse.json(
@@ -73,7 +78,6 @@ export async function PATCH(
         );
       }
 
-      // Premium não pode regredir
       if (planoAtual === 'premium' && novoPlano !== 'premium') {
         return NextResponse.json(
           {
@@ -85,19 +89,6 @@ export async function PATCH(
         );
       }
 
-      // Plus não pode voltar para básico
-      if (planoAtual === 'plus' && novoPlano === 'basico') {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              'Empresa no Plano Plus não pode regredir para o Plano Básico pelo painel.',
-          },
-          { status: 400 }
-        );
-      }
-
-      // Só permite upgrade ou manter o plano atual
       if (!planoEhSuperiorOuIgual(planoAtual, novoPlano)) {
         return NextResponse.json(
           {
@@ -111,9 +102,6 @@ export async function PATCH(
       dataUpdate.plano = novoPlano;
     }
 
-    // =========================
-    // 🟡 ATIVAR TRIAL
-    // =========================
     if (body.acao === 'ativar_trial') {
       if (assinaturaAtiva && planoAtual === 'premium') {
         return NextResponse.json(
@@ -130,10 +118,6 @@ export async function PATCH(
 
       dataUpdate = {
         ...dataUpdate,
-
-        // IMPORTANTE:
-        // Trial NÃO altera o plano real da empresa.
-        // Ele só libera temporariamente os recursos.
         trialAtivo: true,
         trialExpiraEm: expiraEm,
         assinaturaStatus: 'trial',
@@ -141,21 +125,12 @@ export async function PATCH(
       };
     }
 
-    // =========================
-    // 🟠 ENCERRAR TRIAL
-    // =========================
     if (body.acao === 'encerrar_trial') {
       const expiraEm = new Date();
       expiraEm.setDate(expiraEm.getDate() + 30);
 
       dataUpdate = {
         ...dataUpdate,
-
-        // Mantém o plano real atual.
-        // Exemplo:
-        // - se era básico, volta para básico
-        // - se era plus, volta para plus
-        // - se era premium, continua premium
         trialAtivo: false,
         trialExpiraEm: null,
         assinaturaStatus: 'ativa',
@@ -163,14 +138,11 @@ export async function PATCH(
       };
     }
 
-    // =========================
-    // 💳 ATIVAR ASSINATURA
-    // =========================
     if (body.acao === 'ativar_assinatura') {
       const planoAssinatura = body.plano
-        ? String(body.plano)
+        ? normalizarPlano(String(body.plano))
         : planoAtual === 'basico'
-        ? 'plus'
+        ? 'premium'
         : planoAtual;
 
       if (!planoValido(planoAssinatura)) {

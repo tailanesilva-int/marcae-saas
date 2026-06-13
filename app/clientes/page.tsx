@@ -153,6 +153,57 @@ export default function ClientesPage() {
     });
   }
 
+  function obterUltimoAtendimento(cliente: any) {
+    return (
+      cliente?.ultimoAtendimento ||
+      cliente?.ultimoAtendimentoEm ||
+      cliente?.ultimoAgendamento ||
+      cliente?.ultimaVisita ||
+      cliente?.lastAppointmentAt ||
+      cliente?.lastAtendimentoAt ||
+      null
+    );
+  }
+
+  function textoUltimoAtendimento(cliente: any) {
+    const ultimoAtendimento = obterUltimoAtendimento(cliente);
+
+    if (!ultimoAtendimento) return 'Sem atendimento';
+
+    const dataUltimoAtendimento = new Date(ultimoAtendimento);
+
+    if (Number.isNaN(dataUltimoAtendimento.getTime())) {
+      return formatarData(ultimoAtendimento);
+    }
+
+    const hoje = new Date();
+    const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    const inicioAtendimento = new Date(
+      dataUltimoAtendimento.getFullYear(),
+      dataUltimoAtendimento.getMonth(),
+      dataUltimoAtendimento.getDate(),
+    );
+    const diferencaDias = Math.floor(
+      (inicioHoje.getTime() - inicioAtendimento.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    if (diferencaDias <= 0) return 'Hoje';
+    if (diferencaDias === 1) return 'Ontem';
+    if (diferencaDias <= 30) return `${diferencaDias} dias atrás`;
+
+    return formatarData(ultimoAtendimento);
+  }
+
+  function totalAtendimentosCliente(cliente: any) {
+    return (
+      cliente?.totalAtendimentos ||
+      cliente?.quantidadeAtendimentos ||
+      cliente?._count?.agendamentos ||
+      cliente?._count?.atendimentos ||
+      0
+    );
+  }
+
   function dataInput(data?: string | null) {
     if (!data) return '';
     return new Date(data).toISOString().slice(0, 10);
@@ -647,12 +698,12 @@ export default function ClientesPage() {
             .clientes-form-card-mobile,
             .clientes-side-card-mobile,
             .clientes-lista-card-mobile {
-              padding: 14px !important;
+              padding: 12px !important;
               border-radius: 22px !important;
             }
 
             .clientes-form-card-mobile {
-              margin-bottom: 22px !important;
+              margin-bottom: 12px !important;
             }
 
             .clientes-crm-dashboard-mobile > div:first-child {
@@ -661,7 +712,12 @@ export default function ClientesPage() {
             }
 
             .clientes-crm-dashboard-mobile > div:nth-child(2) {
-              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+              gap: 8px !important;
+            }
+
+            .clientes-crm-dashboard-mobile {
+              margin-bottom: 10px !important;
             }
 
             .clientes-grid-form-mobile,
@@ -694,12 +750,12 @@ export default function ClientesPage() {
             }
 
             .cliente-card-mobile {
-              padding: 14px !important;
-              border-radius: 20px !important;
-              flex: 0 0 82vw !important;
-              width: 82vw !important;
-              max-width: 330px !important;
-              min-width: 280px !important;
+              padding: 12px !important;
+              border-radius: 18px !important;
+              flex: 0 0 80vw !important;
+              width: 80vw !important;
+              max-width: 318px !important;
+              min-width: 270px !important;
               overflow: hidden !important;
               scroll-snap-align: start !important;
             }
@@ -730,17 +786,25 @@ export default function ClientesPage() {
             }
 
             .cliente-mini-grid-mobile {
-              display: flex !important;
-              overflow-x: auto !important;
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
               gap: 8px !important;
-              margin-bottom: 12px !important;
-              padding-bottom: 2px !important;
+              margin-bottom: 10px !important;
+              padding-bottom: 0 !important;
             }
 
             .cliente-mini-grid-mobile > div {
-              min-width: 108px !important;
-              padding: 10px !important;
-              border-radius: 14px !important;
+              min-width: 0 !important;
+              min-height: 64px !important;
+              padding: 9px 10px !important;
+              border-radius: 13px !important;
+            }
+
+            .cliente-mini-grid-mobile span,
+            .cliente-mini-grid-mobile strong {
+              white-space: normal !important;
+              word-break: normal !important;
+              overflow-wrap: normal !important;
             }
 
             .cliente-botoes-mobile {
@@ -885,11 +949,6 @@ export default function ClientesPage() {
 
             <div style={crmDashboardStats}>
               <div style={sideStatItem}>
-                <span>Filtrados</span>
-                <strong>{metricas.encontrados}</strong>
-              </div>
-
-              <div style={sideStatItem}>
                 <span>Com CPF</span>
                 <strong>{metricas.comCpf}</strong>
               </div>
@@ -910,99 +969,45 @@ export default function ClientesPage() {
             </div>
           </section>
 
-          <section className="clientes-form-card-mobile" style={formCard}>
-            <div style={cadastroCompactHeader}>
-              <div>
-                <h2 style={sectionTitle}>Cadastrar cliente</h2>
-                <p style={cadastroCompactTexto}>Adicione um novo cliente à sua base.</p>
+          <section className="clientes-form-card-mobile" style={novoClienteCompactCard}>
+            <div style={novoClienteCompactInfo}>
+              <span style={novoClienteIcon}>+</span>
+              <div style={{ minWidth: 0 }}>
+                <h2 style={novoClienteTitulo}>Novo cliente</h2>
+                <p style={novoClienteTexto}>Cadastre rápido sem sair da lista.</p>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setFormCadastroAberto((aberto) => !aberto)}
-                aria-label={formCadastroAberto ? 'Fechar cadastro de cliente' : 'Abrir cadastro de cliente'}
-                style={{
-                  ...botaoAbrirCadastro,
-                  background: formCadastroAberto
-                    ? 'rgba(255,255,255,0.08)'
-                    : `linear-gradient(135deg, ${corPrimaria}, ${corSecundaria})`,
-                  boxShadow: formCadastroAberto
-                    ? 'none'
-                    : `0 16px 36px ${hexToRgba(corPrimaria, 0.28)}`,
-                }}
-              >
-                {formCadastroAberto ? '×' : '+'}
-              </button>
             </div>
 
-            {formCadastroAberto && (
-              <>
-                <div className="clientes-grid-form-mobile" style={gridFormulario}>
-                  <Campo
-                    label="Nome completo"
-                    placeholder="Ex: Maria Silva"
-                    value={form.nome}
-                    onChange={(value: string) => setForm({ ...form, nome: value })}
-                  />
-
-                  <Campo
-                    label="WhatsApp"
-                    placeholder="(00) 00000-0000"
-                    value={form.whatsapp}
-                    onChange={(value: string) =>
-                      setForm({ ...form, whatsapp: formatarWhatsapp(value) })
-                    }
-                  />
-
-                  <Campo
-                    label="CPF"
-                    placeholder="000.000.000-00"
-                    value={form.cpf}
-                    onChange={(value: string) => setForm({ ...form, cpf: formatarCpf(value) })}
-                  />
-
-                  <div>
-                    <label style={label}>Data de nascimento</label>
-                    <input
-                      type="date"
-                      value={form.dataNascimento}
-                      onChange={(e) => setForm({ ...form, dataNascimento: e.target.value })}
-                      style={input}
-                    />
-                  </div>
-                </div>
-
-                <button
-                  onClick={salvarCliente}
-                  disabled={salvando}
-                  style={{
-                    ...botaoPrincipal,
-                    background: `linear-gradient(135deg, ${corPrimaria}, ${corSecundaria})`,
-                    boxShadow: `0 18px 45px ${hexToRgba(corPrimaria, 0.32)}`,
-                    opacity: salvando ? 0.7 : 1,
-                  }}
-                >
-                  {salvando ? 'Salvando cliente...' : 'Salvar cliente'}
-                </button>
-              </>
-            )}
+            <button
+              type="button"
+              onClick={() => setFormCadastroAberto(true)}
+              aria-label="Abrir cadastro de cliente"
+              style={{
+                ...botaoNovoCliente,
+                background: `linear-gradient(135deg, ${corPrimaria}, ${corSecundaria})`,
+                boxShadow: `0 14px 34px ${hexToRgba(corPrimaria, 0.24)}`,
+              }}
+            >
+              Cadastrar
+            </button>
           </section>
 
           <section className="clientes-lista-card-mobile" style={listaCard}>
             <div className="clientes-lista-header-mobile" style={listaHeader}>
               <div>
-                <h2 style={sectionTitle}>Lista de clientes</h2>
-                <p style={sectionDescription}>
-                  Pesquise por nome, telefone, WhatsApp, CPF ou aniversário. Arraste os cards para navegar.
-                </p>
+                <div style={listaTitleRow}>
+                  <h2 style={sectionTitle}>Lista de clientes</h2>
+                  <span style={listaContador}>{metricas.encontrados} encontrados</span>
+                </div>
+                <p style={sectionDescription}>Busque e acesse histórico, saldo e novo agendamento.</p>
               </div>
 
               <div className="clientes-busca-mobile" style={buscaArea}>
                 <span style={buscaIcon}>🔎</span>
                 <input
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  placeholder="Buscar por nome, WhatsApp, telefone, CPF ou aniversário"
+                  value={busca || ''}
+                  onChange={(e) => setBusca(e.target.value || '')}
+                  placeholder="Buscar cliente"
                   style={inputBusca}
                 />
               </div>
@@ -1047,13 +1052,21 @@ export default function ClientesPage() {
                         {String(cliente.nome || 'C').charAt(0).toUpperCase()}
                       </div>
 
-                      <div style={{ flex: 1 }}>
-                        <strong style={clienteNome}>{cliente.nome}</strong>
-                        <div style={clienteInfo}>
-                          <span>📲 {formatarWhatsapp(cliente.whatsapp || '')}</span>
-                          <span>
-                            🪪 {cliente.cpf ? formatarCpf(cliente.cpf) : 'CPF não informado'}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={clienteNomeLinha}>
+                          <strong style={clienteNome}>{cliente.nome}</strong>
+                          <span
+                            style={{
+                              ...clienteSaldoBadge,
+                              color: corSaldoFinanceiro(valorNumerico(cliente.financeiro?.saldo)),
+                            }}
+                          >
+                            {dinheiro(valorNumerico(cliente.financeiro?.saldo))}
                           </span>
+                        </div>
+
+                        <div style={clienteInfo}>
+                          <span>📲 {formatarWhatsapp(cliente.whatsapp || '') || 'WhatsApp não informado'}</span>
                           <span>🎂 {formatarData(cliente.dataNascimento)}</span>
                         </div>
                       </div>
@@ -1061,25 +1074,13 @@ export default function ClientesPage() {
 
                     <div className="cliente-mini-grid-mobile" style={clienteMiniGrid}>
                       <div style={clienteMiniCard}>
-                        <span>WhatsApp</span>
-                        <strong>{formatarWhatsapp(cliente.whatsapp || '') || 'Não informado'}</strong>
+                        <span>Último atendimento</span>
+                        <strong>{textoUltimoAtendimento(cliente)}</strong>
                       </div>
 
                       <div style={clienteMiniCard}>
-                        <span>CPF</span>
-                        <strong>{cliente.cpf ? 'Informado' : 'Pendente'}</strong>
-                      </div>
-
-                      <div style={clienteMiniCard}>
-                        <span>Cadastro</span>
-                        <strong>{formatarData(cliente.createdAt)}</strong>
-                      </div>
-
-                      <div style={clienteMiniCard}>
-                        <span>Saldo</span>
-                        <strong style={{ color: corSaldoFinanceiro(valorNumerico(cliente.financeiro?.saldo)) }}>
-                          {dinheiro(valorNumerico(cliente.financeiro?.saldo))}
-                        </strong>
+                        <span>Atendimentos</span>
+                        <strong>{totalAtendimentosCliente(cliente)}</strong>
                       </div>
                     </div>
 
@@ -1108,6 +1109,76 @@ export default function ClientesPage() {
             )}
           </section>
         </div>
+
+        {formCadastroAberto && (
+          <div className="clientes-modal-overlay-mobile" style={modalOverlay}>
+            <div className="clientes-modal-box-mobile" style={modalBox}>
+              <div className="clientes-modal-header-mobile" style={modalHeader}>
+                <div>
+                  <h2 style={modalTitle}>Cadastrar cliente</h2>
+                  <p style={modalSubtitle}>Adicione nome, WhatsApp, CPF e aniversário em uma tela rápida.</p>
+                </div>
+
+                <button onClick={() => setFormCadastroAberto(false)} style={botaoFechar}>
+                  ×
+                </button>
+              </div>
+
+              <div className="clientes-grid-form-modal-mobile" style={gridFormularioModal}>
+                <Campo
+                  label="Nome completo"
+                  placeholder="Ex: Maria Silva"
+                  value={form.nome}
+                  onChange={(value: string) => setForm({ ...form, nome: value })}
+                />
+
+                <Campo
+                  label="WhatsApp"
+                  placeholder="(00) 00000-0000"
+                  value={form.whatsapp}
+                  onChange={(value: string) =>
+                    setForm({ ...form, whatsapp: formatarWhatsapp(value) })
+                  }
+                />
+
+                <Campo
+                  label="CPF"
+                  placeholder="000.000.000-00"
+                  value={form.cpf}
+                  onChange={(value: string) => setForm({ ...form, cpf: formatarCpf(value) })}
+                />
+
+                <div>
+                  <label style={label}>Data de nascimento</label>
+                  <input
+                    type="date"
+                    value={form.dataNascimento}
+                    onChange={(e) => setForm({ ...form, dataNascimento: e.target.value })}
+                    style={input}
+                  />
+                </div>
+              </div>
+
+              <div className="clientes-modal-actions-mobile" style={modalActions}>
+                <button onClick={() => setFormCadastroAberto(false)} style={botaoCancelar}>
+                  Cancelar
+                </button>
+
+                <button
+                  onClick={salvarCliente}
+                  disabled={salvando}
+                  style={{
+                    ...botaoSalvarModal,
+                    background: `linear-gradient(135deg, ${corPrimaria}, ${corSecundaria})`,
+                    opacity: salvando ? 0.7 : 1,
+                  }}
+                >
+                  {salvando ? 'Salvando...' : 'Salvar cliente'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {modalEditarAberto && (
           <div className="clientes-modal-overlay-mobile" style={modalOverlay}>
@@ -1894,6 +1965,69 @@ const formCard: CSSProperties = {
   marginBottom: 24,
 };
 
+const novoClienteCompactCard: CSSProperties = {
+  borderRadius: 22,
+  padding: 14,
+  background: 'rgba(15,23,42,0.78)',
+  border: '1px solid rgba(124,58,237,0.22)',
+  backdropFilter: 'blur(14px)',
+  boxShadow: '0 18px 52px rgba(0,0,0,0.20)',
+  marginBottom: 12,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+};
+
+const novoClienteCompactInfo: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  minWidth: 0,
+};
+
+const novoClienteIcon: CSSProperties = {
+  width: 38,
+  height: 38,
+  borderRadius: 14,
+  background: 'rgba(124,58,237,0.20)',
+  border: '1px solid rgba(124,58,237,0.24)',
+  color: '#ddd6fe',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 22,
+  fontWeight: 950,
+  flexShrink: 0,
+};
+
+const novoClienteTitulo: CSSProperties = {
+  margin: 0,
+  color: '#fff',
+  fontSize: 18,
+  fontWeight: 950,
+  letterSpacing: '-0.03em',
+};
+
+const novoClienteTexto: CSSProperties = {
+  margin: '4px 0 0',
+  color: '#94a3b8',
+  fontSize: 12,
+  fontWeight: 700,
+  lineHeight: 1.35,
+};
+
+const botaoNovoCliente: CSSProperties = {
+  border: 'none',
+  borderRadius: 14,
+  padding: '11px 14px',
+  color: '#fff',
+  fontSize: 13,
+  fontWeight: 950,
+  cursor: 'pointer',
+  flexShrink: 0,
+};
+
 const sectionHeader: CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
@@ -1916,7 +2050,7 @@ const sectionEyebrow: CSSProperties = {
 const sectionTitle: CSSProperties = {
   margin: 0,
   color: '#fff',
-  fontSize: 30,
+  fontSize: 28,
   fontWeight: 900,
   letterSpacing: '-0.03em',
 };
@@ -1931,8 +2065,8 @@ const sectionDescription: CSSProperties = {
 
 
 const crmDashboardCard: CSSProperties = {
-  borderRadius: 26,
-  padding: 18,
+  borderRadius: 24,
+  padding: 14,
   background: 'rgba(15,23,42,0.88)',
   border: '1px solid rgba(255,255,255,0.08)',
   backdropFilter: 'blur(14px)',
@@ -1943,9 +2077,9 @@ const crmDashboardCard: CSSProperties = {
 const crmDashboardHeader: CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
-  gap: 14,
+  gap: 12,
   alignItems: 'center',
-  marginBottom: 12,
+  marginBottom: 10,
   flexWrap: 'wrap',
 };
 
@@ -1963,8 +2097,8 @@ const crmDashboardTotalBox: CSSProperties = {
 
 const crmDashboardStats: CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-  gap: 10,
+  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+  gap: 8,
 };
 
 const cadastroCompactHeader: CSSProperties = {
@@ -2056,15 +2190,15 @@ const sideCard: CSSProperties = {
 };
 
 const sideIcon: CSSProperties = {
-  width: 44,
-  height: 44,
+  width: 42,
+  height: 42,
   borderRadius: 16,
   background: 'linear-gradient(135deg, #7c3aed, #06b6d4)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  fontSize: 28,
-  marginBottom: 18,
+  fontSize: 24,
+  marginBottom: 0,
 };
 
 const sideTitle: CSSProperties = {
@@ -2075,10 +2209,10 @@ const sideTitle: CSSProperties = {
 };
 
 const sideText: CSSProperties = {
-  margin: '14px 0 0',
+  margin: '8px 0 0',
   color: '#94a3b8',
-  lineHeight: 1.7,
-  fontSize: 14,
+  lineHeight: 1.5,
+  fontSize: 13,
 };
 
 const sideStats: CSSProperties = {
@@ -2090,12 +2224,12 @@ const sideStats: CSSProperties = {
 
 const sideStatItem: CSSProperties = {
   borderRadius: 14,
-  padding: 12,
+  padding: '9px 10px',
   background: 'rgba(2,6,23,0.56)',
   border: '1px solid rgba(255,255,255,0.06)',
   display: 'flex',
   flexDirection: 'column',
-  gap: 8,
+  gap: 5,
   color: '#fff',
 };
 
@@ -2124,10 +2258,28 @@ const listaCard: CSSProperties = {
 const listaHeader: CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
-  gap: 20,
-  marginBottom: 26,
+  gap: 14,
+  marginBottom: 16,
   flexWrap: 'wrap',
   alignItems: 'center',
+};
+
+const listaTitleRow: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  flexWrap: 'wrap',
+};
+
+const listaContador: CSSProperties = {
+  padding: '7px 10px',
+  borderRadius: 999,
+  background: 'rgba(124,58,237,0.14)',
+  border: '1px solid rgba(124,58,237,0.18)',
+  color: '#ddd6fe',
+  fontSize: 11,
+  fontWeight: 900,
+  whiteSpace: 'nowrap',
 };
 
 const buscaArea: CSSProperties = {
@@ -2209,9 +2361,9 @@ const clienteGlow: CSSProperties = {
 
 const clienteTopo: CSSProperties = {
   display: 'flex',
-  gap: 16,
+  gap: 12,
   alignItems: 'flex-start',
-  marginBottom: 20,
+  marginBottom: 12,
   position: 'relative',
   zIndex: 2,
 };
@@ -2229,49 +2381,73 @@ const avatar: CSSProperties = {
   color: '#fff',
 };
 
+const clienteNomeLinha: CSSProperties = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  gap: 8,
+  marginBottom: 7,
+};
+
 const clienteNome: CSSProperties = {
   display: 'block',
   color: '#fff',
-  fontSize: 18,
-  fontWeight: 900,
-  marginBottom: 10,
+  fontSize: 17,
+  fontWeight: 950,
+  lineHeight: 1.12,
+  minWidth: 0,
+};
+
+const clienteSaldoBadge: CSSProperties = {
+  padding: '5px 8px',
+  borderRadius: 999,
+  background: 'rgba(255,255,255,0.05)',
+  border: '1px solid rgba(255,255,255,0.07)',
+  fontSize: 11,
+  fontWeight: 950,
+  whiteSpace: 'nowrap',
+  flexShrink: 0,
 };
 
 const clienteInfo: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
-  gap: 6,
+  gap: 4,
   color: '#94a3b8',
-  fontSize: 13,
-  fontWeight: 700,
+  fontSize: 12,
+  fontWeight: 750,
 };
 
 const clienteMiniGrid: CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-  gap: 12,
-  marginBottom: 20,
+  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+  gap: 8,
+  marginBottom: 10,
 };
 
 const clienteMiniCard: CSSProperties = {
   borderRadius: 14,
-  padding: 10,
+  padding: '10px 12px',
   background: 'rgba(255,255,255,0.04)',
   border: '1px solid rgba(255,255,255,0.06)',
   display: 'flex',
   flexDirection: 'column',
-  gap: 8,
+  justifyContent: 'center',
+  gap: 6,
   color: '#fff',
+  minWidth: 0,
+  minHeight: 66,
+  overflow: 'hidden',
 };
 
 const botoesCliente: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(3, 1fr)',
-  gap: 10,
+  gap: 8,
 };
 
 const botaoEditar: CSSProperties = {
-  padding: '11px 10px',
+  padding: '10px 8px',
   borderRadius: 14,
   border: '1px solid rgba(255,255,255,0.08)',
   background: 'rgba(255,255,255,0.04)',
@@ -2293,7 +2469,7 @@ const sideCompactHeader: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: 12,
-  marginBottom: 14,
+  marginBottom: 8,
 };
 
 const sideCompactStats: CSSProperties = {

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import PremiumLayout from '@/components/layout/PremiumLayout';
 
-type PlanoTipo = 'basico' | 'plus' | 'premium';
+type PlanoTipo = 'basico' | 'premium';
 
 export default function PlanosPage() {
   const [empresa, setEmpresa] = useState<any>(null);
@@ -18,7 +18,6 @@ export default function PlanosPage() {
 
   const [configPlanos, setConfigPlanos] = useState({
     valorPlanoBasico: null as number | null,
-    valorPlanoPlus: null as number | null,
     valorPlanoPremium: null as number | null,
   });
 
@@ -67,7 +66,7 @@ export default function PlanosPage() {
       const empresaSincronizada = await sincronizarAssinaturaRecorrente(data.empresa);
 
       setEmpresa(empresaSincronizada);
-      localStorage.setItem('empresaLogada', JSON.stringify(empresaSincronizada));
+      localStorage.setItem('empresaLogada', JSON.stringify(data.empresa));
     } catch (error) {
       console.error(error);
       alert('Erro ao carregar dados da empresa.');
@@ -127,7 +126,6 @@ export default function PlanosPage() {
 
       setConfigPlanos({
         valorPlanoBasico: normalizarValorPlano(configuracao?.valorPlanoBasico),
-        valorPlanoPlus: normalizarValorPlano(configuracao?.valorPlanoPlus),
         valorPlanoPremium: normalizarValorPlano(configuracao?.valorPlanoPremium),
       });
     } catch (error) {
@@ -204,8 +202,11 @@ export default function PlanosPage() {
   }
 
   function planoAtual(): PlanoTipo {
-    if (empresa?.plano === 'plus') return 'plus';
-    if (empresa?.plano === 'premium') return 'premium';
+    const planoNormalizado = String(empresa?.plano || 'basico').toLowerCase();
+
+    if (planoNormalizado === 'plus') return 'premium';
+    if (planoNormalizado === 'premium') return 'premium';
+
     return 'basico';
   }
 
@@ -213,27 +214,21 @@ export default function PlanosPage() {
     return planoAtual() === 'basico';
   }
 
-  function planoPlus() {
-    return planoAtual() === 'plus';
-  }
-
   function planoPremium() {
     return planoAtual() === 'premium';
   }
 
   function nomePlanoAtual() {
-    if (planoPremium()) return 'Premium';
-    if (planoPlus()) return 'Plus';
     if (trialAtivo()) return 'Trial 7 dias';
-    if (licencaExpirada()) return 'Básico vencido';
+    if (licencaExpirada()) return 'Licença vencida';
+    if (planoPremium()) return 'Premium';
     return 'Básico';
   }
 
   function textoBadge() {
     if (licencaExpirada()) return 'Licença expirada';
-    if (planoPremium()) return 'Premium ativo';
-    if (planoPlus()) return 'Plus ativo';
     if (trialAtivo()) return 'Trial ativo';
+    if (planoPremium()) return 'Premium ativo';
     return 'Básico ativo';
   }
 
@@ -263,8 +258,7 @@ export default function PlanosPage() {
   }
 
   function planoCardAtivo(plano: PlanoTipo) {
-    if (plano === 'premium') return planoPremium();
-    if (plano === 'plus') return planoPlus();
+    if (plano === 'premium') return planoPremium() && !trialAtivo();
     return planoBasico() && !trialAtivo();
   }
 
@@ -272,10 +266,6 @@ export default function PlanosPage() {
     if (licencaExpirada()) return true;
 
     if (plano === 'basico') {
-      return planoPlus() || planoPremium();
-    }
-
-    if (plano === 'plus') {
       return planoPremium();
     }
 
@@ -419,13 +409,6 @@ export default function PlanosPage() {
     empresa.precoPlanoBasico ??
     null;
 
-  const valorPlanoPlus =
-    configPlanos.valorPlanoPlus ??
-    empresa.valorPlanoPlus ??
-    empresa.valorMensalPlus ??
-    empresa.precoPlanoPlus ??
-    null;
-
   const valorPlanoPremium =
     configPlanos.valorPlanoPremium ??
     empresa.valorPlanoPremium ??
@@ -508,56 +491,39 @@ export default function PlanosPage() {
           <PlanoComercialCard
             nome="Básico"
             subtitulo="Essencial"
-            destaque="Agendador simplificado"
+            destaque="Agenda online"
             valor={textoValorPlano(valorPlanoBasico)}
             cor="#14b8a6"
             ativo={planoCardAtivo('basico')}
             bloqueado={planoCardBloqueadoPorHierarquia('basico')}
             acaoTexto={planoCardAtivo('basico') ? 'Plano atual' : 'Solicitar Básico'}
-            bloqueadoTexto={sistemaBloqueado ? 'Regularize para alterar' : 'Plano superior ativo'}
+            bloqueadoTexto={sistemaBloqueado ? 'Regularize para alterar' : 'Plano Premium ativo'}
             isMobile={isMobile}
             recursosAberto={recursosAbertosPlanos.includes('basico')}
             onAlternarRecursos={() => alternarRecursosPlano('basico')}
             onClick={() => acaoPlano('basico')}
             recursos={[
+              { texto: 'Dashboard operacional', ativo: true },
               { texto: 'Agenda e controle de agendamentos', ativo: true },
+              { texto: 'Cadastro de clientes', ativo: true },
               { texto: 'Cadastro de serviços e profissionais', ativo: true },
-              { texto: 'Comprovante manual por WhatsApp', ativo: true },
-              { texto: 'Botão Google Agenda', ativo: true },
+              { texto: 'Agendamento online sem pré-pagamento', ativo: true },
+              { texto: 'WhatsApp automático', ativo: true },
+              { texto: 'Confirmações e lembretes automáticos', ativo: true },
               { texto: 'Pré-pagamento Mercado Pago', ativo: false },
-              { texto: 'WhatsApp automático', ativo: false },
-              { texto: 'Comissões e financeiro premium', ativo: false },
-            ]}
-          />
-
-          <PlanoComercialCard
-            nome="Plus"
-            subtitulo="Crescimento"
-            destaque="Pagamentos e automações"
-            valor={textoValorPlano(valorPlanoPlus)}
-            cor="#2563eb"
-            ativo={planoCardAtivo('plus')}
-            bloqueado={planoCardBloqueadoPorHierarquia('plus')}
-            acaoTexto={planoCardAtivo('plus') ? 'Plano atual' : 'Solicitar Plus'}
-            bloqueadoTexto={sistemaBloqueado ? 'Regularize para alterar' : 'Plano superior ativo'}
-            isMobile={isMobile}
-            recursosAberto={recursosAbertosPlanos.includes('plus')}
-            onAlternarRecursos={() => alternarRecursosPlano('plus')}
-            onClick={() => acaoPlano('plus')}
-            recursos={[
-              { texto: 'Tudo do Básico', ativo: true },
-              { texto: 'Comissões básicas por profissional', ativo: true },
-              { texto: 'Promoções com envio facilitado via WhatsApp', ativo: true },
-              { texto: 'Comprovantes automáticos via WhatsApp', ativo: true },
-              { texto: 'Confirmação e lembretes automáticos 1h antes', ativo: true },
-              { texto: 'Recebimentos online via Mercado Pago', ativo: true },
+{ texto: 'Financeiro', ativo: false },
+{ texto: 'Promoções', ativo: false },
+{ texto: 'Relatórios e visão gerencial', ativo: false },
+{ texto: 'Controle de repasse de comissão', ativo: false },
+{ texto: 'Fluxo de caixa e controle operacional', ativo: false },
+{ texto: 'Experiência completa Marcaê', ativo: false },
             ]}
           />
 
           <PlanoComercialCard
             nome="Premium"
             subtitulo="Completo"
-            destaque="Gestão avançada"
+            destaque="Gestão completa"
             valor={textoValorPlano(valorPlanoPremium)}
             cor="#f97316"
             ativo={planoCardAtivo('premium')}
@@ -569,12 +535,13 @@ export default function PlanosPage() {
             onAlternarRecursos={() => alternarRecursosPlano('premium')}
             onClick={() => acaoPlano('premium')}
             recursos={[
-              { texto: 'Tudo do Plus', ativo: true },
-              { texto: 'Inclusão de serviços em atendimentos realizados', ativo: true },
-              { texto: 'Dashboard premium financeiro', ativo: true },
+              { texto: 'Tudo do Básico', ativo: true },
+              { texto: 'Agendamento com pré-pagamento', ativo: true },
+              { texto: 'Financeiro completo', ativo: true },
+              { texto: 'Fluxo de caixa e controle operacional', ativo: true },
               { texto: 'Comissões automáticas', ativo: true },
               { texto: 'Controle de repasse de comissão', ativo: true },
-              { texto: 'Envio de promoções via API WhatsApp', ativo: true },
+              { texto: 'Promoções', ativo: true },
               { texto: 'Relatórios e visão gerencial', ativo: true },
               { texto: 'Experiência completa Marcaê', ativo: true },
             ]}
@@ -606,7 +573,7 @@ export default function PlanosPage() {
           </div>
 
           <div style={acoesGrid}>
-            {!sistemaBloqueado && (!planoPremium() || trialAtivo()) && (
+            {!sistemaBloqueado && !planoPremium() && (
               <div style={campoAcao}>
                 <label style={label}>Escolha o plano desejado</label>
 
@@ -623,16 +590,7 @@ export default function PlanosPage() {
                     Selecionar plano
                   </option>
 
-                  {(trialAtivo() || planoBasico()) && (
-                    <>
-                      <option value="plus">Plano Plus</option>
-                      <option value="premium">Plano Premium</option>
-                    </>
-                  )}
-
-                  {!trialAtivo() && planoPlus() && (
-                    <option value="premium">Plano Premium</option>
-                  )}
+                  <option value="premium">Plano Premium</option>
                 </select>
               </div>
             )}
@@ -706,7 +664,7 @@ function PlanoComercialCard({
         boxShadow: ativo ? `0 24px 70px ${cor}33` : '0 20px 60px rgba(0,0,0,.22)',
       }}
     >
-            {ativo && (
+      {ativo && (
         <div style={{ ...planoAtualBadge, background: cor }}>
           Plano atual
         </div>
@@ -1023,7 +981,7 @@ const infoCard = {
 
 const plansGrid = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))',
   gap: 14,
 };
 

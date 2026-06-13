@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 
-type PlanoAssinatura = 'basico' | 'plus' | 'premium';
+type PlanoAssinatura = 'basico' | 'premium';
 
 function getBaseUrl() {
   const url =
@@ -16,7 +16,7 @@ function normalizarPlano(plano?: string | null): PlanoAssinatura {
   const normalizado = String(plano || '').toLowerCase();
 
   if (normalizado === 'basico') return 'basico';
-  if (normalizado === 'plus') return 'plus';
+  if (normalizado === 'plus') return 'premium';
   if (normalizado === 'premium') return 'premium';
 
   return 'premium';
@@ -24,17 +24,13 @@ function normalizarPlano(plano?: string | null): PlanoAssinatura {
 
 function nomePlano(plano: PlanoAssinatura) {
   if (plano === 'premium') return 'Premium';
-  if (plano === 'plus') return 'Plus';
+
   return 'Básico';
 }
 
 function obterValorPlano(configuracao: any, empresa: any, plano: PlanoAssinatura) {
   if (plano === 'basico') {
     return Number(configuracao?.valorPlanoBasico || 0);
-  }
-
-  if (plano === 'plus') {
-    return Number(configuracao?.valorPlanoPlus || 0);
   }
 
   return Number(
@@ -148,7 +144,7 @@ export async function POST(req: NextRequest) {
         reason: `Assinatura Marcaê ${nomePlano(plano)} - ${empresa.nome}`,
         external_reference: externalReference,
         payer_email: payerEmail,
-        back_url: `${baseUrl}/admin?assinatura=recorrente`,
+        back_url: `${baseUrl}/dashboard?assinatura=recorrente`,
         status: 'pending',
         auto_recurring: {
           frequency: 1,

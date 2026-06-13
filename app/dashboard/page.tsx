@@ -2055,8 +2055,9 @@ const comissoesPeriodoEstimadas = agendamentosSemanaPrevisaoValidos.reduce(
           }
 
           .dashboard-hero-mobile {
-            padding: 18px !important;
-            margin-bottom: 16px !important;
+            padding: 14px !important;
+            margin-bottom: 10px !important;
+            border-radius: 20px !important;
           }
 
           .dashboard-hero-content-mobile,
@@ -2068,23 +2069,14 @@ const comissoesPeriodoEstimadas = agendamentosSemanaPrevisaoValidos.reduce(
           }
 
           .dashboard-hero-identity-mobile {
-            display: grid !important;
-            grid-template-columns: 54px minmax(0, 1fr) !important;
-            gap: 12px !important;
+            display: block !important;
             min-width: 0 !important;
-          }
-
-          .dashboard-hero-identity-mobile > div:first-child {
-            width: 54px !important;
-            height: 54px !important;
-            border-radius: 18px !important;
-            font-size: 22px !important;
           }
 
           .dashboard-hero-actions-mobile {
             display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            gap: 10px !important;
+            grid-template-columns: 1fr !important;
+            gap: 8px !important;
           }
 
           .dashboard-hero-actions-mobile a,
@@ -2093,9 +2085,9 @@ const comissoesPeriodoEstimadas = agendamentosSemanaPrevisaoValidos.reduce(
           }
 
           .dashboard-hero-mobile h1 {
-            font-size: 28px !important;
-            line-height: 1.05 !important;
-            letter-spacing: -0.05em !important;
+            font-size: 26px !important;
+            line-height: 1.02 !important;
+            letter-spacing: -0.055em !important;
           }
 
           .dashboard-hero-mobile p {
@@ -2806,17 +2798,199 @@ const comissoesPeriodoEstimadas = agendamentosSemanaPrevisaoValidos.reduce(
           }
 
           .dashboard-hero-actions-mobile {
-            grid-template-columns: 1fr 1fr !important;
-            gap: 8px !important;
+            grid-template-columns: 1fr !important;
+            gap: 7px !important;
           }
 
           .dashboard-hero-actions-mobile button {
-            min-height: 36px !important;
+            min-height: 34px !important;
             border-radius: 12px !important;
             font-size: 11px !important;
             padding: 7px 9px !important;
           }
         }
+
+
+        /* Correção final do Hero Compact Premium no mobile.
+           Remove regras antigas que tratavam o primeiro bloco do hero como logo. */
+        @media (max-width: 760px) {
+          .dashboard-hero-mobile {
+            padding: 16px !important;
+            min-height: auto !important;
+          }
+
+          .dashboard-hero-content-mobile {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+            align-items: stretch !important;
+          }
+
+          .dashboard-hero-identity-mobile {
+            display: block !important;
+            width: 100% !important;
+            min-width: 0 !important;
+          }
+
+          .dashboard-hero-identity-mobile > .dashboard-hero-text-mobile {
+            width: 100% !important;
+            height: auto !important;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            border-radius: 0 !important;
+            display: block !important;
+            overflow: visible !important;
+          }
+
+          .dashboard-hero-text-mobile {
+            width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+          }
+
+
+
+          .dashboard-hero-identity-mobile > div.dashboard-hero-text-mobile:first-child {
+            width: 100% !important;
+            height: auto !important;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            border-radius: 0 !important;
+            display: block !important;
+            overflow: visible !important;
+          }
+
+          .dashboard-hero-text-mobile > h1 {
+            display: block !important;
+            width: 100% !important;
+            height: auto !important;
+            margin: 0 0 8px !important;
+            overflow: visible !important;
+          }
+
+          .dashboard-hero-meta-mobile {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 7px !important;
+            flex-wrap: wrap !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-top: 8px !important;
+            line-height: 1.25 !important;
+            overflow: visible !important;
+          }
+
+          .dashboard-hero-meta-mobile span {
+            display: inline-flex !important;
+            width: auto !important;
+            height: auto !important;
+            min-width: 0 !important;
+            white-space: nowrap !important;
+            line-height: 1.25 !important;
+          }
+
+          .dashboard-hero-actions-mobile {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 8px !important;
+            width: 100% !important;
+            margin-top: 0 !important;
+          }
+
+          .dashboard-hero-actions-mobile button {
+            width: 100% !important;
+            min-height: 38px !important;
+            height: 38px !important;
+            padding: 8px 12px !important;
+            border-radius: 13px !important;
+            line-height: 1 !important;
+          }
+        }
+
+        /* Marcaê Compact Premium V4 — proporção real dos blocos marcados */
+        @media (max-width: 760px) {
+          .dashboard-filter-mobile {
+            padding: 10px 12px !important;
+            margin-bottom: 8px !important;
+            border-radius: 18px !important;
+          }
+
+          .dashboard-filter-mobile [style*="display: flex"] {
+            gap: 8px !important;
+          }
+
+          .dashboard-filter-mobile h2 {
+            font-size: 17px !important;
+            line-height: 1.05 !important;
+            margin: 2px 0 0 !important;
+          }
+
+          .dashboard-filter-mobile span {
+            line-height: 1.15 !important;
+          }
+
+          .dashboard-filter-actions-compact {
+            margin-top: 8px !important;
+            gap: 7px !important;
+          }
+
+          .dashboard-filter-actions-compact button {
+            min-height: 34px !important;
+            height: 34px !important;
+            padding: 7px 8px !important;
+            border-radius: 12px !important;
+            font-size: 11px !important;
+          }
+
+          .dashboard-kpi-mobile {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+            margin-top: 8px !important;
+            margin-bottom: 8px !important;
+            overflow: visible !important;
+            padding-bottom: 0 !important;
+          }
+
+          .dashboard-kpi-mobile > * {
+            min-width: 0 !important;
+            width: 100% !important;
+            min-height: 66px !important;
+            padding: 9px 10px !important;
+            border-radius: 14px !important;
+            box-shadow: none !important;
+            background: linear-gradient(180deg, rgba(255,255,255,0.062), rgba(255,255,255,0.027)) !important;
+          }
+
+          .dashboard-kpi-mobile > * > div:nth-child(2) {
+            gap: 5px !important;
+            margin-bottom: 4px !important;
+          }
+
+          .dashboard-kpi-mobile > * span {
+            font-size: 10px !important;
+            line-height: 1.05 !important;
+          }
+
+          .dashboard-kpi-mobile > * strong,
+          .dashboard-kpi-mobile > * > div:nth-child(3) {
+            font-size: 26px !important;
+            line-height: .9 !important;
+          }
+
+          .dashboard-mobile-compact-stack {
+            gap: 7px !important;
+            margin-top: 7px !important;
+          }
+
+          .dashboard-mobile-compact-stack > div {
+            padding: 9px !important;
+            border-radius: 15px !important;
+          }
+        }
+
 
         @media (min-width: 761px) {
           .dashboard-desktop-rich {
@@ -2830,56 +3004,41 @@ const comissoesPeriodoEstimadas = agendamentosSemanaPrevisaoValidos.reduce(
 
         <div className="dashboard-hero-content-mobile" style={heroContentPremium}>
           <div className="dashboard-hero-identity-mobile" style={heroIdentityPremium}>
-            <div style={logoEmpresaHeroPremium}>
-              {empresa?.logoUrl || empresa?.logo || empresa?.imagemUrl ? (
-                <img
-                  src={empresa.logoUrl || empresa.logo || empresa.imagemUrl}
-                  alt={empresa.nome}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              ) : (
-                <span>{empresa?.nome?.charAt(0)?.toUpperCase() || 'M'}</span>
-              )}
-            </div>
-
-            <div>
-              <div style={heroEyebrowPremium}>
-                <span>Central operacional premium</span>
-                <strong>{usuario?.nome || usuario?.email || 'usuário'} 👋</strong>
-              </div>
-
+            <div
+              className="dashboard-hero-text-mobile"
+              style={heroTextCompactFix}
+            >
               <h1 style={heroTitleCompact}>Dashboard</h1>
 
-              <div style={heroCompactInfo}>
-                <span>{new Date().toLocaleDateString('pt-BR')}</span>
+              <div className="dashboard-hero-meta-mobile" style={heroCompactInfo}>
+                <span>
+                  {new Date()
+                    .toLocaleDateString('pt-BR', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    })
+                    .replace('.', '')}
+                </span>
                 <span>•</span>
-                <span>Plano {empresa?.plano || 'Premium'}</span>
-              </div>
-
-              <div style={heroBadgesPremium}>
-                <span style={heroBadge}>🏢 {empresa?.nome || 'Minha empresa'}</span>
-                <span style={heroBadge}>🚀 Plano {empresa?.plano || 'Premium'}</span>
-                <span style={heroBadge}>✅ {empresa?.assinaturaStatus || 'Ativa'}</span>
-                {empresa?.assinaturaExpiraEm && (
-                  <span style={heroBadge}>
-                    📅 Vence em {new Date(empresa.assinaturaExpiraEm).toLocaleDateString('pt-BR')}
-                  </span>
-                )}
+                <span>{empresa?.plano || 'Premium'}</span>
+                <span>•</span>
+                <span>{empresa?.assinaturaStatus || 'Ativo'}</span>
               </div>
             </div>
           </div>
 
           <div className="dashboard-hero-actions-mobile" style={heroActionsPremium}>
-            <button onClick={alternarFinanceiro} style={heroButtonGhostPremium}>
-              {mostrarFinanceiro ? '🙈 Ocultar valores' : '👁 Ver valores'}
-            </button>
-
             <button onClick={abrirModalReagendamento} style={heroButtonPrimaryPremium}>
               Gerenciar operação
             </button>
 
+            <button onClick={alternarFinanceiro} style={heroButtonGhostPremium}>
+              {mostrarFinanceiro ? 'Ocultar valores' : 'Ver valores'}
+            </button>
+
             <button onClick={sair} style={heroButtonDangerPremium}>
-              🚪 Sair
+              Sair
             </button>
           </div>
         </div>
@@ -2943,10 +3102,10 @@ const comissoesPeriodoEstimadas = agendamentosSemanaPrevisaoValidos.reduce(
       </section>
 
       <section className="dashboard-kpi-mobile" style={kpiGridEnterprise}>
-        <Card titulo="Agenda hoje" valor={agendamentosHoje.length} />
-        <Card titulo="Atendimentos concluídos" valor={agendamentosConcluidosPeriodo.length} />
-        <Card titulo="Clientes no período" valor={clientesUnicosPeriodo} />
-        <Card titulo="Ocupação do dia" valor={`${ocupacaoDia}%`} />
+        <Card titulo="Agenda" valor={agendamentosHoje.length} />
+        <Card titulo="Concluídos" valor={agendamentosConcluidosPeriodo.length} />
+        <Card titulo="Clientes" valor={clientesUnicosPeriodo} />
+        <Card titulo="Ocupação" valor={`${ocupacaoDia}%`} />
       </section>
 
       <section className="dashboard-mobile-compact-stack" style={mobileCompactStack}>
@@ -3276,7 +3435,7 @@ const comissoesPeriodoEstimadas = agendamentosSemanaPrevisaoValidos.reduce(
                         <span
                           style={{
                             color: '#94a3b8',
-                            fontSize: 12,
+                            fontSize: 13,
                             fontWeight: 800,
                             textDecoration: 'line-through',
                           }}
@@ -3755,7 +3914,7 @@ boxShadow:
 {agendamento.status === 'cancelado' && (
   <div
     style={{
-      marginTop: 8,
+      marginTop: 7,
       background: 'rgba(239,68,68,0.12)',
       border: '1px solid rgba(248,113,113,0.28)',
       color: '#fecaca',
@@ -5092,20 +5251,19 @@ function Card({ titulo, valor }: any) {
     <div style={card}>
       <div style={cardGlow} />
       <div style={cardTopLine}>
-        <span style={cardIcon}>✦</span>
         <span style={cardLabel}>{titulo}</span>
+        <span style={cardIcon}>✦</span>
       </div>
-      <div style={cardValue}>{valor}</div>
-      <div style={cardHint}>Tempo real</div>
+      <strong style={cardValue}>{valor}</strong>
     </div>
   );
 }
 
 function MobileMetric({ label, value, tone }: any) {
   return (
-    <div style={{ ...mobileMetricCard, borderColor: `${tone}40` }}>
-      <span style={{ color: tone }}>{label}</span>
-      <strong>{value}</strong>
+    <div style={{ ...mobileMetricCard, borderColor: `${tone}36` }}>
+      <span style={{ ...mobileMetricLabel, color: tone }}>{label}</span>
+      <strong style={mobileMetricValue}>{value}</strong>
     </div>
   );
 }
@@ -5203,37 +5361,37 @@ const dashboardShellPremium: React.CSSProperties = {
 const dashboardHeroPremium: React.CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
-  borderRadius: 34,
-  padding: 28,
-  marginBottom: 22,
+  borderRadius: 24,
+  padding: 20,
+  marginBottom: 14,
   background:
     'linear-gradient(135deg, rgba(15,23,42,0.86), rgba(2,6,23,0.82) 48%, color-mix(in srgb, var(--marcae-primary) 32%, rgba(15,23,42,0.86)))',
   border: '1px solid rgba(255,255,255,0.12)',
   boxShadow:
-    '0 32px 90px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.06)',
+    '0 22px 60px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.05)',
   backdropFilter: 'blur(24px)',
 };
 
 const heroGlowOne: React.CSSProperties = {
   position: 'absolute',
-  width: 420,
-  height: 420,
-  right: -150,
-  top: -180,
+  width: 320,
+  height: 320,
+  right: -135,
+  top: -155,
   background:
     'radial-gradient(circle, color-mix(in srgb, var(--marcae-primary) 58%, transparent), transparent 66%)',
   filter: 'blur(18px)',
-  opacity: 0.95,
+  opacity: 0.62,
 };
 
 const heroGlowTwo: React.CSSProperties = {
   position: 'absolute',
-  width: 300,
-  height: 300,
+  width: 220,
+  height: 220,
   left: '40%',
   bottom: -165,
   background: 'radial-gradient(circle, rgba(34,197,94,0.24), transparent 66%)',
-  filter: 'blur(20px)',
+  filter: 'blur(18px)',
 };
 
 const heroContentPremium: React.CSSProperties = {
@@ -5242,15 +5400,26 @@ const heroContentPremium: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  gap: 22,
+  gap: 14,
   flexWrap: 'wrap',
 };
 
 const heroIdentityPremium: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: 18,
-  minWidth: 280,
+  gap: 12,
+  minWidth: 180,
+};
+
+const heroTextCompactFix: React.CSSProperties = {
+  width: '100%',
+  height: 'auto',
+  minWidth: 0,
+  minHeight: 0,
+  display: 'block',
+  overflow: 'visible',
+  borderRadius: 0,
+  flex: 1,
 };
 
 const logoEmpresaHeroPremium: React.CSSProperties = {
@@ -5303,7 +5472,7 @@ const heroSubtitlePremium: React.CSSProperties = {
 const heroTitleCompact: React.CSSProperties = {
   margin: 0,
   color: '#fff',
-  fontSize: 28,
+  fontSize: 30,
   lineHeight: 1,
   letterSpacing: '-0.05em',
   fontWeight: 950,
@@ -5339,7 +5508,7 @@ const heroBadge: React.CSSProperties = {
 
 const heroActionsPremium: React.CSSProperties = {
   display: 'flex',
-  gap: 10,
+  gap: 8,
   flexWrap: 'wrap',
   justifyContent: 'flex-end',
 };
@@ -5348,8 +5517,8 @@ const heroButtonGhostPremium: React.CSSProperties = {
   border: '1px solid rgba(255,255,255,0.14)',
   background: 'rgba(255,255,255,0.07)',
   color: '#fff',
-  borderRadius: 16,
-  padding: '13px 16px',
+  borderRadius: 14,
+  padding: '11px 14px',
   fontWeight: 900,
   cursor: 'pointer',
   boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
@@ -5359,20 +5528,20 @@ const heroButtonPrimaryPremium: React.CSSProperties = {
   border: 'none',
   background: 'linear-gradient(135deg, var(--marcae-primary), var(--marcae-secondary))',
   color: '#fff',
-  borderRadius: 16,
-  padding: '13px 18px',
+  borderRadius: 14,
+  padding: '11px 16px',
   fontWeight: 950,
   cursor: 'pointer',
-  boxShadow: '0 18px 40px color-mix(in srgb, var(--marcae-primary) 36%, transparent)',
+  boxShadow: '0 12px 28px color-mix(in srgb, var(--marcae-primary) 28%, transparent)',
 };
 
 const heroButtonDangerPremium: React.CSSProperties = {
-  border: '1px solid rgba(248,113,113,0.26)',
-  background: 'rgba(239,68,68,0.88)',
-  color: '#fff',
-  borderRadius: 16,
-  padding: '13px 16px',
-  fontWeight: 950,
+  border: '1px solid rgba(248,113,113,0.24)',
+  background: 'rgba(127,29,29,0.18)',
+  color: '#fecaca',
+  borderRadius: 14,
+  padding: '11px 13px',
+  fontWeight: 900,
   cursor: 'pointer',
 };
 
@@ -5451,10 +5620,10 @@ const botaoFiltroEnterprise: React.CSSProperties = {
 };
 
 const periodoEnterpriseTexto: React.CSSProperties = {
-  margin: '14px 0 0',
+  margin: '8px 0 0',
   color: '#9fb0c7',
-  fontSize: 13,
-  fontWeight: 750,
+  fontSize: 12,
+  fontWeight: 800,
 };
 
 const sectionKickerPremium: React.CSSProperties = {
@@ -5470,7 +5639,7 @@ const sectionKickerPremium: React.CSSProperties = {
 const sectionTitlePremium: React.CSSProperties = {
   margin: 0,
   color: '#f8fafc',
-  fontSize: 24,
+  fontSize: 22,
   letterSpacing: '-0.055em',
   fontWeight: 950,
 };
@@ -5484,9 +5653,9 @@ const sectionDescriptionPremium: React.CSSProperties = {
 
 const kpiGridEnterprise: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: 16,
-  marginBottom: 20,
+  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+  gap: 10,
+  marginBottom: 10,
 };
 
 const analyticsHeroGrid: React.CSSProperties = {
@@ -5835,24 +6004,25 @@ const card: React.CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
   background:
-    'linear-gradient(180deg, rgba(255,255,255,0.095), rgba(255,255,255,0.04))',
-  padding: 20,
-  borderRadius: 24,
-  border: '1px solid rgba(255,255,255,0.11)',
-  boxShadow:
-    '0 22px 60px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
-  minHeight: 116,
+    'linear-gradient(180deg, rgba(255,255,255,0.068), rgba(255,255,255,0.028))',
+  padding: '10px 11px',
+  borderRadius: 16,
+  border: '1px solid rgba(255,255,255,0.09)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+  minHeight: 72,
+  display: 'grid',
+  alignContent: 'space-between',
 };
 
 const cardGlow: React.CSSProperties = {
   position: 'absolute',
-  right: -42,
-  top: -42,
-  width: 120,
-  height: 120,
+  right: -28,
+  top: -32,
+  width: 72,
+  height: 72,
   borderRadius: '50%',
-  background: 'color-mix(in srgb, var(--marcae-primary) 34%, transparent)',
-  filter: 'blur(28px)',
+  background: 'color-mix(in srgb, var(--marcae-primary) 16%, transparent)',
+  filter: 'blur(22px)',
 };
 
 const cardTopLine: React.CSSProperties = {
@@ -5860,32 +6030,40 @@ const cardTopLine: React.CSSProperties = {
   zIndex: 2,
   display: 'flex',
   alignItems: 'center',
-  gap: 9,
-  marginBottom: 14,
+  justifyContent: 'space-between',
+  gap: 6,
+  marginBottom: 6,
 };
 
 const cardIcon: React.CSSProperties = {
-  width: 28,
-  height: 28,
-  borderRadius: 10,
+  width: 18,
+  height: 18,
+  borderRadius: 7,
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'rgba(255,255,255,0.10)',
-  color: '#fff',
+  background: 'rgba(255,255,255,0.075)',
+  color: '#dbeafe',
+  fontSize: 9,
+  flex: '0 0 auto',
 };
 
 const cardLabel: React.CSSProperties = {
-  color: '#9fb0c7',
-  fontSize: 13,
-  fontWeight: 850,
+  color: '#a8b6ca',
+  fontSize: 11,
+  fontWeight: 900,
+  lineHeight: 1.1,
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
 };
 
 const cardValue: React.CSSProperties = {
   position: 'relative',
   zIndex: 2,
-  fontSize: 34,
-  lineHeight: 1,
+  display: 'block',
+  fontSize: 28,
+  lineHeight: 0.92,
   color: '#fff',
   fontWeight: 950,
   letterSpacing: '-0.055em',
@@ -5895,9 +6073,9 @@ const cardHint: React.CSSProperties = {
   position: 'relative',
   zIndex: 2,
   color: '#7dd3fc',
-  fontSize: 12,
+  fontSize: 11,
   fontWeight: 800,
-  marginTop: 10,
+  marginTop: 6,
 };
 
 const cardFinanceiroPremium: React.CSSProperties = {
@@ -6528,11 +6706,11 @@ const mobileCompactStack: React.CSSProperties = {
 };
 
 const mobileCompactPanel: React.CSSProperties = {
-  borderRadius: 18,
-  border: '1px solid rgba(255,255,255,0.09)',
-  background: 'linear-gradient(135deg, rgba(15,23,42,0.86), rgba(30,41,59,0.46))',
-  padding: 12,
-  boxShadow: '0 12px 34px rgba(0,0,0,0.16)',
+  borderRadius: 15,
+  border: '1px solid rgba(255,255,255,0.075)',
+  background: 'linear-gradient(135deg, rgba(15,23,42,0.78), rgba(30,41,59,0.36))',
+  padding: 9,
+  boxShadow: '0 8px 20px rgba(0,0,0,0.11)',
 };
 
 const mobileCompactPanelSoft: React.CSSProperties = {
@@ -6546,7 +6724,7 @@ const mobileCompactHeaderLine: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'space-between',
   gap: 10,
-  marginBottom: 10,
+  marginBottom: 8,
 };
 
 const mobileCompactLink: React.CSSProperties = {
@@ -6577,7 +6755,7 @@ const mobileTextButton: React.CSSProperties = {
 const mobileFinanceMiniGrid: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: '1fr 1fr',
-  gap: 8,
+  gap: 6,
 };
 
 const mobileRelationshipGrid: React.CSSProperties = {
@@ -6588,12 +6766,27 @@ const mobileRelationshipGrid: React.CSSProperties = {
 
 const mobileMetricCard: React.CSSProperties = {
   minWidth: 0,
-  borderRadius: 15,
-  border: '1px solid rgba(255,255,255,0.09)',
-  background: 'rgba(2,6,23,0.34)',
-  padding: 10,
+  minHeight: 52,
+  borderRadius: 12,
+  border: '1px solid rgba(255,255,255,0.075)',
+  background: 'rgba(2,6,23,0.30)',
+  padding: '7px 8px',
   display: 'grid',
-  gap: 5,
+  alignContent: 'center',
+  gap: 2,
+};
+
+const mobileMetricLabel: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 850,
+  lineHeight: 1.1,
+};
+
+const mobileMetricValue: React.CSSProperties = {
+  color: '#f8fafc',
+  fontSize: 17,
+  fontWeight: 950,
+  lineHeight: 1.05,
 };
 
 const mobileAgendaStack: React.CSSProperties = {

@@ -16,12 +16,22 @@ function gerarSlug(texto: string) {
     .replace(/(^-|-$)/g, "");
 }
 
+function normalizarPlano(plano: string) {
+  const planoNormalizado = String(plano || "basico").toLowerCase();
+
+  if (planoNormalizado === "plus") return "premium";
+  if (planoNormalizado === "premium") return "premium";
+  if (planoNormalizado === "trial") return "trial";
+
+  return "basico";
+}
+
 function planoEhValido(plano: string) {
-  return ["basico", "plus", "premium", "trial"].includes(plano);
+  return ["basico", "premium", "trial"].includes(plano);
 }
 
 function permissoesPorPlano(plano: string) {
-  const planoNormalizado = String(plano || "basico").toLowerCase();
+  const planoNormalizado = normalizarPlano(plano);
 
   if (planoNormalizado === "trial" || planoNormalizado === "premium") {
     return {
@@ -33,19 +43,6 @@ function permissoesPorPlano(plano: string) {
       configuracoes: true,
       financeiro: true,
       comissoes: true,
-    };
-  }
-
-  if (planoNormalizado === "plus") {
-    return {
-      dashboard: true,
-      agenda: true,
-      servicos: true,
-      profissionais: true,
-      promocoes: false,
-      configuracoes: true,
-      financeiro: true,
-      comissoes: false,
     };
   }
 
@@ -124,7 +121,7 @@ export async function PATCH(req: Request, context: any) {
       const whatsapp = String(body?.whatsapp || "").trim();
       const responsavel = String(body?.responsavel || "").trim();
       const observacoesInternas = String(body?.observacoesInternas || "").trim();
-      const plano = String(body?.plano || "basico").trim().toLowerCase();
+      const plano = normalizarPlano(String(body?.plano || "basico").trim());
       const valorMensalPersonalizado = Number(
         body?.valorMensalPersonalizado || 0
       );
@@ -148,7 +145,7 @@ export async function PATCH(req: Request, context: any) {
 
       if (!planoEhValido(plano)) {
         return NextResponse.json(
-          { error: "Plano inválido. Use basico, plus, premium ou trial." },
+          { error: "Plano inválido. Use basico, premium ou trial." },
           { status: 400 }
         );
       }
@@ -342,7 +339,9 @@ export async function PATCH(req: Request, context: any) {
       const novaData = adicionarDias(base, 30);
 
       const planoAtual =
-        empresaAtual.plano === "trial" ? "basico" : empresaAtual.plano || "basico";
+        empresaAtual.plano === "trial"
+          ? "basico"
+          : normalizarPlano(empresaAtual.plano || "basico");
 
       const valorPagamento = Number(empresaAtual.valorMensalPersonalizado || 0);
 
@@ -395,7 +394,7 @@ export async function PATCH(req: Request, context: any) {
     }
 
     if (acao === "alterarPlano") {
-      const plano = String(body?.plano || "").toLowerCase();
+      const plano = normalizarPlano(String(body?.plano || "").toLowerCase());
 
       if (!planoEhValido(plano)) {
         return NextResponse.json(
@@ -449,73 +448,67 @@ export async function PATCH(req: Request, context: any) {
       return NextResponse.json({ empresa });
     }
 
-if (acao === "mercadoPago") {
-  const mercadoPagoAtivo =
-  body?.mercadoPagoAtivo === true;
+    if (acao === "mercadoPago") {
+      const mercadoPagoAtivo = body?.mercadoPagoAtivo === true;
 
-  const mercadoPagoAccessToken = String(
-    body?.mercadoPagoAccessToken || ""
-  ).trim();
+      const mercadoPagoAccessToken = String(
+        body?.mercadoPagoAccessToken || ""
+      ).trim();
 
-  const mercadoPagoPublicKey = String(
-    body?.mercadoPagoPublicKey || ""
-  ).trim();
+      const mercadoPagoPublicKey = String(
+        body?.mercadoPagoPublicKey || ""
+      ).trim();
 
-  const mercadoPagoModo = String(
-    body?.mercadoPagoModo || "sandbox"
-  ).trim();
+      const mercadoPagoModo = String(
+        body?.mercadoPagoModo || "sandbox"
+      ).trim();
 
-  if (
-    mercadoPagoAtivo &&
-    !mercadoPagoAccessToken
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          "Access Token Mercado Pago é obrigatório.",
-      },
-      { status: 400 }
-    );
-  }
+      if (mercadoPagoAtivo && !mercadoPagoAccessToken) {
+        return NextResponse.json(
+          {
+            error:
+              "Access Token Mercado Pago é obrigatório.",
+          },
+          { status: 400 }
+        );
+      }
 
-  const empresa = await prisma.$transaction(
-    async (tx) => {
-      const atualizada = await tx.empresa.update({
-        where: {
-          id: empresaId,
-        },
+      const empresa = await prisma.$transaction(async (tx) => {
+        const atualizada = await tx.empresa.update({
+          where: {
+            id: empresaId,
+          },
 
-        data: {
-          mercadoPagoAtivo,
+          data: {
+            mercadoPagoAtivo,
 
-          mercadoPagoAccessToken:
-            mercadoPagoAccessToken || null,
+            mercadoPagoAccessToken:
+              mercadoPagoAccessToken || null,
 
-          mercadoPagoPublicKey:
-            mercadoPagoPublicKey || null,
+            mercadoPagoPublicKey:
+              mercadoPagoPublicKey || null,
 
-          mercadoPagoModo:
-            mercadoPagoModo || "sandbox",
-        } as any,
+            mercadoPagoModo:
+              mercadoPagoModo || "sandbox",
+          } as any,
+        });
+
+        await registrarLogEmpresa(
+          tx,
+          empresaId,
+          "mercadoPago",
+          mercadoPagoAtivo
+            ? `Integração Mercado Pago ativada (${mercadoPagoModo}).`
+            : "Integração Mercado Pago desativada."
+        );
+
+        return atualizada;
       });
 
-      await registrarLogEmpresa(
-        tx,
-        empresaId,
-        "mercadoPago",
-        mercadoPagoAtivo
-          ? `Integração Mercado Pago ativada (${mercadoPagoModo}).`
-          : "Integração Mercado Pago desativada."
-      );
-
-      return atualizada;
+      return NextResponse.json({
+        empresa,
+      });
     }
-  );
-
-  return NextResponse.json({
-    empresa,
-  });
-}
 
     if (acao === "alterarValor") {
       const valor = Number(body?.valorMensalPersonalizado || 0);
