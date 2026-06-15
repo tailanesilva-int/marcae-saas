@@ -505,14 +505,21 @@ export default function AgendarPage() {
     setNovoHorarioReagendamento("");
   }
 
-  function redirecionarParaComprovante(agendamentoId?: string | null, ids?: string | null) {
+  function redirecionarParaComprovante(
+    agendamentoId?: string | null,
+    ids?: string | null,
+  ) {
     if (!agendamentoId) {
-      alert("Agendamento atualizado, mas não foi possível localizar o comprovante.");
+      alert(
+        "Agendamento atualizado, mas não foi possível localizar o comprovante.",
+      );
       return;
     }
 
     const idsParam = ids || agendamentoId;
-    const destino = `/sucesso/${agendamentoId}?ids=${idsParam}#topo-comprovante`;
+    const destino = `/sucesso/${agendamentoId}?ids=${encodeURIComponent(
+      idsParam,
+    )}#topo-comprovante`;
 
     try {
       if ("scrollRestoration" in window.history) {
@@ -522,23 +529,14 @@ export default function AgendarPage() {
       sessionStorage.setItem("marcae_forcar_topo_sucesso", "true");
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
-      window.scrollTo(0, 0);
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "auto",
+      });
     } catch (error) {}
 
-    window.history.scrollRestoration = 'manual';
-
-document.documentElement.scrollTop = 0;
-document.body.scrollTop = 0;
-
-window.scrollTo({
-  top: 0,
-  left: 0,
-  behavior: 'auto',
-});
-
-setTimeout(() => {
-  window.location.replace(`/sucesso/${agendamentoId}`);
-}, 50);
+    window.location.assign(destino);
   }
 
   async function confirmarReagendamento() {

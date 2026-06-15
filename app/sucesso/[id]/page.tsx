@@ -488,6 +488,7 @@ export default async function SucessoDetalhesPage({
         } as CSSProperties
       }
     >
+      <span id="topo-comprovante" className="topAnchor" aria-hidden="true" />
       <div className="sucessoScrollArea">
         <div className="backgroundGrid" />
         <div className="orb orbOne" />
@@ -925,8 +926,9 @@ export default async function SucessoDetalhesPage({
   position: relative;
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: visible;
 
   background:
     radial-gradient(circle at 15% 8%, var(--marcae-primary-soft), transparent 30%),
@@ -947,12 +949,13 @@ export default async function SucessoDetalhesPage({
   position: relative;
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
           width: 100%;
-          height: 100%;
+          height: auto;
           overflow-x: hidden;
-          overflow-y: auto;
+          overflow-y: visible;
           -webkit-overflow-scrolling: touch;
-          overscroll-behavior-y: contain;
+          overscroll-behavior-y: auto;
           display: flex;
           justify-content: center;
           align-items: flex-start;
@@ -1006,6 +1009,7 @@ export default async function SucessoDetalhesPage({
           position: relative;
           z-index: 1;
           width: min(940px, 100%);
+          min-width: 0;
           display: grid;
           grid-template-columns: 0.82fr 1fr;
           gap: 16px;
@@ -1026,6 +1030,7 @@ export default async function SucessoDetalhesPage({
         .heroPanel,
 .contentPanel,
 .emptyState {
+  min-width: 0;
   border: 1px solid rgba(237, 233, 255, 0.12);
   background: rgba(17, 20, 37, 0.96);
   box-shadow: 0 34px 90px rgba(0, 0, 0, 0.5);
@@ -1207,6 +1212,8 @@ export default async function SucessoDetalhesPage({
         .contentPanel {
           border-radius: 38px;
           padding: 24px;
+          min-width: 0;
+          overflow: visible;
         }
 
         .contentHeader {
@@ -1325,6 +1332,8 @@ export default async function SucessoDetalhesPage({
         }
 
         .serviceBody {
+          min-width: 0;
+          overflow: visible;
           padding: 18px;
           border-radius: 28px;
           background: rgba(237, 233, 255, 0.06);
@@ -1420,6 +1429,7 @@ export default async function SucessoDetalhesPage({
           font-size: 13px;
           margin-top: 4px;
           line-height: 1.25;
+          overflow-wrap: anywhere;
         }
 
         .policyNotice {
@@ -1569,6 +1579,7 @@ export default async function SucessoDetalhesPage({
           margin-top: 7px;
           font-size: 14px;
           line-height: 1.45;
+          overflow-wrap: anywhere;
         }
 
 .mapsButton {
@@ -1749,6 +1760,15 @@ export default async function SucessoDetalhesPage({
           color: var(--marcae-secondary);
         }
 
+        .topAnchor {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 1px;
+          height: 1px;
+          pointer-events: none;
+        }
+
                 @media (min-width: 981px) {
   .sucessoScrollArea {
     justify-content: center;
@@ -1814,14 +1834,65 @@ export default async function SucessoDetalhesPage({
           .heroPanel,
           .contentPanel {
             border-radius: 28px;
-            padding: 20px;
+            padding: 18px;
+          }
+
+          .heroPanel {
+            gap: 16px;
+          }
+
+          .companyMark {
+            width: 78px;
+            height: 78px;
+            border-radius: 24px;
+          }
+
+          .companyMark strong {
+            font-size: 34px;
+          }
+
+          .statusBadge {
+            margin-bottom: 10px;
           }
 
           .heroCopy h1 {
-            font-size: 48px;
+            font-size: 34px;
+            line-height: 0.98;
+            letter-spacing: -0.06em;
           }
 
-          .heroStats,
+          .heroCopy p {
+            margin-top: 10px;
+            font-size: 13px;
+            line-height: 1.45;
+          }
+
+          .heroStats {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 6px;
+          }
+
+          .heroStats div {
+            padding: 10px;
+            border-radius: 16px;
+            min-width: 0;
+          }
+
+          .heroStats span {
+            font-size: 9px;
+            letter-spacing: 0.05em;
+          }
+
+          .heroStats strong {
+            font-size: 12px;
+            overflow-wrap: anywhere;
+          }
+
+          .heroFooter {
+            padding-top: 12px;
+          }
+
           .summaryRibbon,
           .infoGrid,
           .actions,
