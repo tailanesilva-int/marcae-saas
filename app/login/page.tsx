@@ -182,7 +182,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={container}>
+    <div
+      style={{
+        ...container,
+        alignItems: mobile ? 'flex-start' : 'center',
+        overflowY: mobile ? 'auto' : 'hidden',
+        padding: mobile ? '14px' : '24px',
+      }}
+    >
       <div style={{ ...backgroundGlow, top: '-180px', left: '-180px' }} />
 
       <div style={{ ...backgroundGlow, bottom: '-220px', right: '-220px' }} />
@@ -191,39 +198,73 @@ export default function LoginPage() {
         style={{
           ...wrapper,
           flexDirection: mobile ? 'column' : 'row',
+          maxWidth: mobile ? '430px' : '1150px',
+          minHeight: mobile ? 'auto' : '680px',
+          borderRadius: mobile ? '26px' : '34px',
         }}
       >
         <div
           style={{
             ...left,
+            padding: mobile ? '22px 20px 12px' : '70px',
+            alignItems: mobile ? 'center' : 'flex-start',
+            textAlign: mobile ? 'center' : 'left',
+            justifyContent: mobile ? 'flex-start' : 'center',
             borderRight: mobile ? 'none' : '1px solid rgba(139,92,246,0.20)',
           }}
         >
-          <div style={brandBadge}>Plataforma SaaS Premium</div>
+          <div
+            style={{
+              ...brandBadge,
+              marginBottom: mobile ? '12px' : '28px',
+              padding: mobile ? '7px 12px' : '10px 18px',
+              fontSize: mobile ? '11px' : '13px',
+            }}
+          >
+            {mobile ? 'Painel da empresa' : 'Plataforma SaaS Premium'}
+          </div>
 
           <h1
             style={{
               ...logo,
-              fontSize: mobile ? '48px' : '64px',
+              fontSize: mobile ? '38px' : '64px',
+              marginBottom: mobile ? '10px' : '20px',
             }}
           >
             Marca<span style={{ color: '#A855F7' }}>ê</span>
           </h1>
 
-          <div style={logoGlow} />
-
-          <p
+          <div
             style={{
-              ...description,
-              fontSize: mobile ? '15px' : '17px',
+              ...logoGlow,
+              width: mobile ? '112px' : '180px',
+              height: mobile ? '4px' : '6px',
+              marginBottom: mobile ? '12px' : '36px',
             }}
-          >
-            Plataforma profissional para gestão completa de agendamentos,
-            financeiro, comissões e automações via WhatsApp.
-          </p>
+          />
+
+          {!mobile && (
+            <p
+              style={{
+                ...description,
+                fontSize: '17px',
+              }}
+            >
+              Plataforma profissional para gestão completa de agendamentos,
+              financeiro, comissões e automações via WhatsApp.
+            </p>
+          )}
 
           {empresaSlug && (
-            <div style={empresaBox}>
+            <div
+              style={{
+                ...empresaBox,
+                marginBottom: mobile ? '10px' : '34px',
+                padding: mobile ? '10px 14px' : '16px 20px',
+                borderRadius: mobile ? '14px' : '18px',
+                fontSize: mobile ? '12px' : '14px',
+              }}
+            >
               <span style={{ opacity: 0.7 }}>Acessando empresa</span>
 
               <strong style={{ display: 'block', marginTop: 6, fontSize: '15px' }}>
@@ -232,32 +273,74 @@ export default function LoginPage() {
             </div>
           )}
 
-          <div style={features}>
+          {!mobile && <div style={features}>
             <div style={feature}>✦ Controle automático de comissões</div>
             <div style={feature}>✦ Promoções e campanhas via WhatsApp</div>
             <div style={feature}>✦ Gestão completa de agenda e clientes</div>
             <div style={feature}>✦ Plataforma SaaS premium multiempresa</div>
-          </div>
+          </div>}
         </div>
 
-        <div style={right}>
-          <div style={card}>
-            <div style={topBadge}>Painel Administrativo</div>
+        <div
+          style={{
+            ...right,
+            padding: mobile ? '14px 18px 22px' : '40px',
+            alignItems: mobile ? 'flex-start' : 'center',
+          }}
+        >
+          <div
+            style={{
+              ...card,
+              maxWidth: mobile ? '100%' : '430px',
+            }}
+          >
+            <div
+              style={{
+                ...topBadge,
+                marginBottom: mobile ? '12px' : '24px',
+                padding: mobile ? '6px 10px' : '8px 14px',
+                fontSize: mobile ? '11px' : '12px',
+              }}
+            >
+              Painel Administrativo
+            </div>
 
-            <h2 style={title}>Entrar no painel</h2>
+            <h2
+              style={{
+                ...title,
+                fontSize: mobile ? '30px' : '46px',
+                marginBottom: mobile ? '8px' : '14px',
+              }}
+            >
+              Entrar no painel
+            </h2>
 
-            <p style={subtitle}>
-              Acesse sua conta para gerenciar serviços, profissionais, financeiro
-              e automações.
+            <p
+              style={{
+                ...subtitle,
+                fontSize: mobile ? '13px' : '15px',
+                lineHeight: mobile ? 1.45 : 1.8,
+                marginBottom: mobile ? '18px' : '36px',
+              }}
+            >
+              {mobile
+                ? 'Acesse sua conta para gerenciar sua empresa.'
+                : 'Acesse sua conta para gerenciar serviços, profissionais, financeiro e automações.'}
             </p>
 
-            <form onSubmit={handleLogin} style={form}>
+            <form
+              onSubmit={handleLogin}
+              style={{
+                ...form,
+                gap: mobile ? '12px' : '18px',
+              }}
+            >
               <input
                 type="text"
                 placeholder="Usuário ou WhatsApp"
                 value={usuario}
                 onChange={(e) => setUsuario(e.target.value)}
-                style={input}
+                style={{ ...input, ...(mobile ? inputMobile : {}) }}
                 required
               />
 
@@ -266,7 +349,7 @@ export default function LoginPage() {
                 placeholder="Sua senha"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
-                style={input}
+                style={{ ...input, ...(mobile ? inputMobile : {}) }}
                 required
               />
 
@@ -276,6 +359,7 @@ export default function LoginPage() {
                 type="submit"
                 style={{
                   ...button,
+                  ...(mobile ? buttonMobile : {}),
                   opacity: carregando ? 0.7 : 1,
                 }}
                 disabled={carregando}
@@ -283,7 +367,12 @@ export default function LoginPage() {
                 {carregando ? 'Entrando...' : 'Entrar'}
               </button>
 
-              <div style={divider}>
+              <div
+                style={{
+                  ...divider,
+                  display: mobile ? 'none' : 'flex',
+                }}
+              >
                 <div style={dividerLine} />
                 <span>ou</span>
                 <div style={dividerLine} />
@@ -291,7 +380,10 @@ export default function LoginPage() {
 
               <button
                 type="button"
-                style={secondaryButton}
+                style={{
+                  ...secondaryButton,
+                  ...(mobile ? secondaryButtonMobile : {}),
+                }}
                 onClick={() => {
                   setAbrirRecuperacao(true);
                   setEtapaRecuperacao(1);
@@ -311,8 +403,22 @@ export default function LoginPage() {
       </div>
 
       {abrirRecuperacao && (
-        <div style={modalOverlay}>
-          <div style={modalCard}>
+        <div
+          style={{
+            ...modalOverlay,
+            alignItems: mobile ? 'flex-start' : 'center',
+            padding: mobile ? '14px' : '24px',
+            overflowY: 'auto',
+          }}
+        >
+          <div
+            style={{
+              ...modalCard,
+              padding: mobile ? '24px 18px 18px' : '34px',
+              borderRadius: mobile ? '24px' : '30px',
+              marginTop: mobile ? '18px' : 0,
+            }}
+          >
             <button
               type="button"
               style={modalClose}
@@ -325,15 +431,33 @@ export default function LoginPage() {
               Recuperação via WhatsApp
             </div>
 
-            <h2 style={modalTitle}>Recuperar senha</h2>
+            <h2
+              style={{
+                ...modalTitle,
+                fontSize: mobile ? '28px' : '34px',
+              }}
+            >
+              Recuperar senha
+            </h2>
 
-            <p style={modalDescription}>
+            <p
+              style={{
+                ...modalDescription,
+                lineHeight: mobile ? 1.45 : 1.7,
+                marginBottom: mobile ? '18px' : '24px',
+              }}
+            >
               {etapaRecuperacao === 1
                 ? 'Informe seu usuário ou WhatsApp cadastrado. Enviaremos um código para o WhatsApp cadastrado.'
                 : 'Digite o código recebido no WhatsApp e cadastre uma nova senha.'}
             </p>
 
-            <div style={modalSteps}>
+            <div
+              style={{
+                ...modalSteps,
+                marginBottom: mobile ? '18px' : '24px',
+              }}
+            >
               <div
                 style={{
                   ...modalStep,
@@ -357,7 +481,12 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div style={modalForm}>
+            <div
+              style={{
+                ...modalForm,
+                gap: mobile ? '12px' : '16px',
+              }}
+            >
               {etapaRecuperacao === 1 && (
                 <>
                   <input
@@ -365,7 +494,7 @@ export default function LoginPage() {
                     placeholder="Usuário ou e-mail"
                     value={loginRecuperacao}
                     onChange={(e) => setLoginRecuperacao(e.target.value)}
-                    style={input}
+                    style={{ ...input, ...(mobile ? inputMobile : {}) }}
                   />
 
                   <button
@@ -373,6 +502,7 @@ export default function LoginPage() {
                     onClick={solicitarCodigoRecuperacao}
                     style={{
                       ...button,
+                      ...(mobile ? buttonMobile : {}),
                       opacity: carregandoRecuperacao ? 0.7 : 1,
                     }}
                     disabled={carregandoRecuperacao}
@@ -389,7 +519,7 @@ export default function LoginPage() {
                     placeholder="Código recebido"
                     value={codigoRecuperacao}
                     onChange={(e) => setCodigoRecuperacao(e.target.value)}
-                    style={input}
+                    style={{ ...input, ...(mobile ? inputMobile : {}) }}
                   />
 
                   <input
@@ -397,7 +527,7 @@ export default function LoginPage() {
                     placeholder="Nova senha"
                     value={novaSenha}
                     onChange={(e) => setNovaSenha(e.target.value)}
-                    style={input}
+                    style={{ ...input, ...(mobile ? inputMobile : {}) }}
                   />
 
                   <input
@@ -405,7 +535,7 @@ export default function LoginPage() {
                     placeholder="Confirmar nova senha"
                     value={confirmarNovaSenha}
                     onChange={(e) => setConfirmarNovaSenha(e.target.value)}
-                    style={input}
+                    style={{ ...input, ...(mobile ? inputMobile : {}) }}
                   />
 
                   <button
@@ -413,6 +543,7 @@ export default function LoginPage() {
                     onClick={redefinirSenha}
                     style={{
                       ...button,
+                      ...(mobile ? buttonMobile : {}),
                       opacity: carregandoRecuperacao ? 0.7 : 1,
                     }}
                     disabled={carregandoRecuperacao}
@@ -422,7 +553,10 @@ export default function LoginPage() {
 
                   <button
                     type="button"
-                    style={modalBackButton}
+                    style={{
+                      ...modalBackButton,
+                      height: mobile ? '46px' : '52px',
+                    }}
                     onClick={() => {
                       setEtapaRecuperacao(1);
                       setCodigoRecuperacao('');
@@ -616,6 +750,12 @@ const input = {
   boxSizing: 'border-box' as const,
 };
 
+const inputMobile = {
+  padding: '14px 15px',
+  borderRadius: '15px',
+  fontSize: '14px',
+};
+
 const button = {
   height: '58px',
   borderRadius: '18px',
@@ -627,6 +767,13 @@ const button = {
   cursor: 'pointer',
   boxShadow: '0 10px 35px rgba(124,58,237,0.45)',
   transition: 'all .2s ease',
+};
+
+const buttonMobile = {
+  height: '50px',
+  borderRadius: '15px',
+  fontSize: '15px',
+  boxShadow: '0 8px 24px rgba(124,58,237,0.34)',
 };
 
 const divider = {
@@ -654,6 +801,13 @@ const secondaryButton = {
   fontWeight: 600,
   cursor: 'pointer',
   backdropFilter: 'blur(10px)',
+};
+
+const secondaryButtonMobile = {
+  height: '44px',
+  borderRadius: '14px',
+  fontSize: '13px',
+  background: 'rgba(168,85,247,0.08)',
 };
 
 const erroBox = {

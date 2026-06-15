@@ -1809,6 +1809,57 @@ function removerAgendamentosDuplicadosAgenda(lista: any[]) {
           }
 
 
+
+          @media (max-width: 900px) {
+            .agenda-drawer-overlay-responsive {
+              width: 100vw !important;
+              height: 100dvh !important;
+              max-height: 100dvh !important;
+              overflow: hidden !important;
+              align-items: flex-end !important;
+              justify-content: center !important;
+              padding: 0 !important;
+              touch-action: none !important;
+            }
+
+            .agenda-drawer-responsive {
+              width: 100% !important;
+              max-width: 100% !important;
+              height: auto !important;
+              min-height: 0 !important;
+              max-height: calc(100dvh - 8px) !important;
+              border-radius: 26px 26px 0 0 !important;
+              padding: 18px 14px calc(190px + env(safe-area-inset-bottom)) !important;
+              overflow-x: hidden !important;
+              overflow-y: auto !important;
+              -webkit-overflow-scrolling: touch !important;
+              overscroll-behavior-y: contain !important;
+              scroll-padding-bottom: 190px !important;
+              touch-action: pan-y !important;
+            }
+
+            .agenda-drawer-responsive > *:last-child {
+              margin-bottom: 64px !important;
+            }
+
+            .agenda-drawer-responsive button,
+            .agenda-drawer-responsive input {
+              touch-action: manipulation !important;
+            }
+          }
+
+          @media (max-width: 520px) {
+            .agenda-drawer-responsive {
+              max-height: calc(100dvh - 4px) !important;
+              padding: 16px 12px calc(220px + env(safe-area-inset-bottom)) !important;
+              scroll-padding-bottom: 220px !important;
+            }
+
+            .agenda-drawer-responsive > *:last-child {
+              margin-bottom: 82px !important;
+            }
+          }
+
         `}</style>
 
         <main className="agenda-page-responsive" style={page}>
@@ -4037,11 +4088,16 @@ const drawer: CSSProperties = {
   width: 460,
   maxWidth: '100%',
   height: '100vh',
+  maxHeight: '100dvh',
   background: 'linear-gradient(180deg, rgba(15,23,42,0.98), rgba(2,6,23,0.98))',
   borderLeft: '1px solid rgba(255,255,255,0.10)',
   padding: 28,
+  paddingBottom: 120,
   boxShadow: '-30px 0 90px rgba(0,0,0,0.45)',
+  overflowX: 'hidden',
   overflowY: 'auto',
+  overscrollBehaviorY: 'contain',
+  WebkitOverflowScrolling: 'touch',
   color: '#fff',
 };
 
