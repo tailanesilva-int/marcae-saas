@@ -519,7 +519,7 @@ export default function AgendarPage() {
     const idsParam = ids || agendamentoId;
     const destino = `/sucesso/${agendamentoId}?ids=${encodeURIComponent(
       idsParam,
-    )}#topo-comprovante`;
+    )}#comprovante`;
 
     try {
       if ("scrollRestoration" in window.history) {
@@ -527,13 +527,6 @@ export default function AgendarPage() {
       }
 
       sessionStorage.setItem("marcae_forcar_topo_sucesso", "true");
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-      window.scrollTo({
-        top: 0,
-        left: 0,
-        behavior: "auto",
-      });
     } catch (error) {}
 
     window.location.assign(destino);

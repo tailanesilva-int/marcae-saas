@@ -488,7 +488,6 @@ export default async function SucessoDetalhesPage({
         } as CSSProperties
       }
     >
-      <span id="topo-comprovante" className="topAnchor" aria-hidden="true" />
       <div className="sucessoScrollArea">
         <div className="backgroundGrid" />
         <div className="orb orbOne" />
@@ -504,7 +503,12 @@ export default async function SucessoDetalhesPage({
 
             <div className="companyMark">
               {agendamento?.empresa?.logoUrl ? (
-                <img src={agendamento.empresa.logoUrl} alt={nomeEmpresa} />
+                <img
+                  src={agendamento.empresa.logoUrl}
+                  alt={nomeEmpresa}
+                  loading="eager"
+                  decoding="async"
+                />
               ) : (
                 <strong>
                   {String(nomeEmpresa || "M")
@@ -923,44 +927,37 @@ export default async function SucessoDetalhesPage({
         }
 
         .sucessoPage {
-  position: relative;
-  width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
-  overflow-x: hidden;
-  overflow-y: visible;
-
-  background:
-    radial-gradient(circle at 15% 8%, var(--marcae-primary-soft), transparent 30%),
-    radial-gradient(circle at 88% 18%, var(--marcae-secondary-soft), transparent 28%),
-    radial-gradient(circle at 50% 100%, var(--marcae-primary-soft), transparent 34%),
-    linear-gradient(
-      135deg,
-      var(--marcae-bg) 0%,
-      var(--marcae-bg-soft) 44%,
-      var(--marcae-sidebar) 100%
-    );
-
-  color: var(--marcae-text);
-  font-family: Arial, sans-serif;
-}
+          position: relative;
+          width: 100%;
+          min-height: 100dvh;
+          overflow-x: clip;
+          overflow-y: visible;
+          overflow-anchor: none;
+          background:
+            radial-gradient(circle at 15% 8%, var(--marcae-primary-soft), transparent 30%),
+            radial-gradient(circle at 88% 18%, var(--marcae-secondary-soft), transparent 28%),
+            radial-gradient(circle at 50% 100%, var(--marcae-primary-soft), transparent 34%),
+            linear-gradient(
+              135deg,
+              var(--marcae-bg) 0%,
+              var(--marcae-bg-soft) 44%,
+              var(--marcae-sidebar) 100%
+            );
+          color: var(--marcae-text);
+          font-family: Arial, sans-serif;
+        }
 
         .sucessoScrollArea {
-  position: relative;
-  width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
+          position: relative;
           width: 100%;
-          height: auto;
-          overflow-x: hidden;
-          overflow-y: visible;
-          -webkit-overflow-scrolling: touch;
-          overscroll-behavior-y: auto;
+          min-height: 100dvh;
+          overflow: visible;
           display: flex;
           justify-content: center;
           align-items: flex-start;
           padding: 28px 20px 40px;
           scroll-behavior: auto;
+          transform: translateZ(0);
         }
 
         .backgroundGrid {
@@ -1009,7 +1006,6 @@ export default async function SucessoDetalhesPage({
           position: relative;
           z-index: 1;
           width: min(940px, 100%);
-          min-width: 0;
           display: grid;
           grid-template-columns: 0.82fr 1fr;
           gap: 16px;
@@ -1030,10 +1026,9 @@ export default async function SucessoDetalhesPage({
         .heroPanel,
 .contentPanel,
 .emptyState {
-  min-width: 0;
   border: 1px solid rgba(237, 233, 255, 0.12);
   background: rgba(17, 20, 37, 0.96);
-  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 24px 58px rgba(0, 0, 0, 0.38);
 }
 
         .heroPanel {
@@ -1098,7 +1093,7 @@ export default async function SucessoDetalhesPage({
           align-items: center;
           justify-content: center;
           overflow: hidden;
-          box-shadow: 0 30px 80px var(--marcae-primary-soft);
+          box-shadow: 0 18px 42px var(--marcae-primary-soft);
         }
 
         .companyMark img {
@@ -1212,8 +1207,6 @@ export default async function SucessoDetalhesPage({
         .contentPanel {
           border-radius: 38px;
           padding: 24px;
-          min-width: 0;
-          overflow: visible;
         }
 
         .contentHeader {
@@ -1332,13 +1325,11 @@ export default async function SucessoDetalhesPage({
         }
 
         .serviceBody {
-          min-width: 0;
-          overflow: visible;
           padding: 18px;
           border-radius: 28px;
           background: rgba(237, 233, 255, 0.06);
           border: 1px solid rgba(237, 233, 255, 0.12);
-          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+          box-shadow: 0 14px 30px rgba(0, 0, 0, 0.16);
         }
 
         .serviceTop {
@@ -1429,7 +1420,6 @@ export default async function SucessoDetalhesPage({
           font-size: 13px;
           margin-top: 4px;
           line-height: 1.25;
-          overflow-wrap: anywhere;
         }
 
         .policyNotice {
@@ -1579,7 +1569,6 @@ export default async function SucessoDetalhesPage({
           margin-top: 7px;
           font-size: 14px;
           line-height: 1.45;
-          overflow-wrap: anywhere;
         }
 
 .mapsButton {
@@ -1760,15 +1749,6 @@ export default async function SucessoDetalhesPage({
           color: var(--marcae-secondary);
         }
 
-        .topAnchor {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 1px;
-          height: 1px;
-          pointer-events: none;
-        }
-
                 @media (min-width: 981px) {
   .sucessoScrollArea {
     justify-content: center;
@@ -1821,24 +1801,54 @@ export default async function SucessoDetalhesPage({
         }
 
         @media (max-width: 640px) {
+          :global(html),
+          :global(body) {
+            overflow-x: hidden;
+            overflow-y: auto;
+          }
+
+          .sucessoPage {
+            min-height: 100dvh;
+            overflow-x: clip;
+            overflow-y: visible;
+            background:
+              radial-gradient(circle at 20% 0%, var(--marcae-primary-soft), transparent 24%),
+              linear-gradient(
+                135deg,
+                var(--marcae-bg) 0%,
+                var(--marcae-bg-soft) 52%,
+                var(--marcae-sidebar) 100%
+              );
+          }
+
           .sucessoScrollArea {
-            align-items: flex-start;
-            justify-content: flex-start;
-            padding: 12px;
+            display: block;
+            min-height: auto;
+            overflow: visible;
+            padding: 10px;
+            transform: none;
+          }
+
+          .backgroundGrid,
+          .orb {
+            display: none;
           }
 
           .receiptShell {
             width: 100%;
+            display: block;
           }
 
           .heroPanel,
           .contentPanel {
-            border-radius: 28px;
-            padding: 18px;
+            border-radius: 24px;
+            padding: 16px;
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.32);
           }
 
           .heroPanel {
             gap: 16px;
+            margin-bottom: 12px;
           }
 
           .companyMark {
@@ -1847,18 +1857,9 @@ export default async function SucessoDetalhesPage({
             border-radius: 24px;
           }
 
-          .companyMark strong {
-            font-size: 34px;
-          }
-
-          .statusBadge {
-            margin-bottom: 10px;
-          }
-
           .heroCopy h1 {
-            font-size: 34px;
-            line-height: 0.98;
-            letter-spacing: -0.06em;
+            font-size: 36px;
+            line-height: 0.96;
           }
 
           .heroCopy p {
@@ -1867,37 +1868,34 @@ export default async function SucessoDetalhesPage({
             line-height: 1.45;
           }
 
-          .heroStats {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 8px;
-            margin-top: 6px;
-          }
-
-          .heroStats div {
-            padding: 10px;
-            border-radius: 16px;
-            min-width: 0;
-          }
-
-          .heroStats span {
-            font-size: 9px;
-            letter-spacing: 0.05em;
-          }
-
-          .heroStats strong {
-            font-size: 12px;
-            overflow-wrap: anywhere;
-          }
-
-          .heroFooter {
-            padding-top: 12px;
-          }
-
+          .heroStats,
           .summaryRibbon,
           .infoGrid,
           .actions,
           .promoNoticeGrid {
             grid-template-columns: 1fr;
+          }
+
+          .heroStats {
+            gap: 8px;
+            margin-top: 16px;
+          }
+
+          .heroStats div,
+          .summaryRibbon div,
+          .infoTile,
+          .detailCard {
+            border-radius: 18px;
+            padding: 12px;
+          }
+
+          .summaryRibbon {
+            gap: 10px;
+            margin-bottom: 16px;
+          }
+
+          .summaryRibbon strong {
+            font-size: 16px;
           }
 
           .contentHeader,
@@ -1906,12 +1904,36 @@ export default async function SucessoDetalhesPage({
             flex-direction: column;
           }
 
+          .contentHeader {
+            gap: 10px;
+            margin-bottom: 14px;
+          }
+
+          .contentHeader h2 {
+            font-size: 28px;
+            line-height: 1;
+          }
+
           .serviceCard {
+            display: block;
+          }
+
+          .timelineDot,
+          .serviceTimeline::before {
+            display: none;
+          }
+
+          .serviceBody {
+            border-radius: 22px;
+            padding: 14px;
+          }
+
+          .detailGrid {
             grid-template-columns: 1fr;
           }
 
-          .serviceTimeline::before {
-            display: none;
+          .servicePriceBlock {
+            align-items: flex-start;
           }
         }
       `}</style>
