@@ -3126,6 +3126,209 @@ const comissoesPeriodoEstimadas = agendamentosSemanaPrevisaoValidos.reduce(
             display: grid;
           }
         }
+
+
+        /* Marcaê Compact Premium — refinamento de densidade da Central de Atendimento mobile */
+        @media (max-width: 760px) {
+          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) {
+            padding: 10px 10px calc(150px + env(safe-area-inset-bottom)) !important;
+            scroll-padding-bottom: 160px !important;
+          }
+
+          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) .dashboard-modal-header-mobile {
+            margin: -10px -10px 8px !important;
+            padding: 10px 12px !important;
+          }
+
+          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) .dashboard-modal-grid-mobile {
+            gap: 8px !important;
+          }
+
+          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) .dashboard-painel-atendimento-mobile {
+            gap: 8px !important;
+            padding-bottom: 20px !important;
+          }
+
+          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) .dashboard-atendimento-voltar-mobile {
+            min-height: 38px !important;
+            border-radius: 12px !important;
+            font-size: 12px !important;
+            margin-bottom: 0 !important;
+          }
+
+          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) .dashboard-atendimento-selecionado-mobile,
+          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) .dashboard-painel-atendimento-mobile > div:not(.dashboard-fechamento-box-mobile):not(.dashboard-servicos-box-mobile):not(.dashboard-reagendamento-box-mobile):not(.dashboard-cancelar-atendimento-mobile) {
+            padding: 10px !important;
+            border-radius: 16px !important;
+            margin-bottom: 6px !important;
+            box-shadow: none !important;
+          }
+
+          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) .dashboard-painel-atendimento-mobile > div:not(.dashboard-fechamento-box-mobile):not(.dashboard-servicos-box-mobile):not(.dashboard-reagendamento-box-mobile):not(.dashboard-cancelar-atendimento-mobile) > div {
+            gap: 7px !important;
+          }
+
+          .dashboard-fechamento-box-mobile,
+          .dashboard-servicos-box-mobile,
+          .dashboard-reagendamento-box-mobile {
+            padding: 10px !important;
+            border-radius: 17px !important;
+            margin-top: 8px !important;
+            margin-bottom: 8px !important;
+            box-shadow: none !important;
+            border-left-width: 4px !important;
+          }
+
+          .dashboard-fechamento-box-mobile h3,
+          .dashboard-servicos-box-mobile h3,
+          .dashboard-reagendamento-box-mobile h3,
+          .dashboard-fechamento-box-mobile strong,
+          .dashboard-servicos-box-mobile strong,
+          .dashboard-reagendamento-box-mobile strong {
+            line-height: 1.12 !important;
+          }
+
+          .dashboard-fechamento-box-mobile h3 {
+            font-size: 18px !important;
+            margin: 4px 0 6px !important;
+          }
+
+          .dashboard-fechamento-box-mobile p,
+          .dashboard-servicos-box-mobile p,
+          .dashboard-reagendamento-box-mobile p,
+          .dashboard-fechamento-box-mobile small,
+          .dashboard-servicos-box-mobile small,
+          .dashboard-reagendamento-box-mobile small {
+            line-height: 1.28 !important;
+          }
+
+          .dashboard-fechamento-box-mobile p,
+          .dashboard-servicos-box-mobile p,
+          .dashboard-reagendamento-box-mobile p {
+            margin-top: 4px !important;
+            margin-bottom: 7px !important;
+            font-size: 11px !important;
+          }
+
+          .dashboard-fechamento-box-mobile > span,
+          .dashboard-servicos-box-mobile > div:first-child span,
+          .dashboard-reagendamento-box-mobile > div:first-child span {
+            padding: 4px 8px !important;
+            font-size: 9px !important;
+            margin-bottom: 5px !important;
+          }
+
+          .dashboard-fechamento-box-mobile > div,
+          .dashboard-servicos-box-mobile > div,
+          .dashboard-reagendamento-box-mobile > div {
+            margin-top: 7px !important;
+            margin-bottom: 7px !important;
+          }
+
+          .dashboard-fechamento-box-mobile [style*="padding: 12px"],
+          .dashboard-servicos-box-mobile [style*="padding: 12px"],
+          .dashboard-reagendamento-box-mobile [style*="padding: 12px"],
+          .dashboard-fechamento-box-mobile [style*="padding: 18px"],
+          .dashboard-servicos-box-mobile [style*="padding: 18px"],
+          .dashboard-reagendamento-box-mobile [style*="padding: 18px"] {
+            padding: 9px !important;
+          }
+
+          .dashboard-fechamento-box-mobile [style*="border-radius: 18px"],
+          .dashboard-servicos-box-mobile [style*="border-radius: 18px"],
+          .dashboard-reagendamento-box-mobile [style*="border-radius: 18px"],
+          .dashboard-fechamento-box-mobile [style*="border-radius: 22px"],
+          .dashboard-servicos-box-mobile [style*="border-radius: 22px"],
+          .dashboard-reagendamento-box-mobile [style*="border-radius: 22px"] {
+            border-radius: 14px !important;
+          }
+
+          .dashboard-fechamento-box-mobile [style*="gap: 10px"],
+          .dashboard-servicos-box-mobile [style*="gap: 10px"],
+          .dashboard-reagendamento-box-mobile [style*="gap: 10px"] {
+            gap: 7px !important;
+          }
+
+          .dashboard-fechamento-box-mobile [style*="gap: 8px"],
+          .dashboard-servicos-box-mobile [style*="gap: 8px"],
+          .dashboard-reagendamento-box-mobile [style*="gap: 8px"] {
+            gap: 6px !important;
+          }
+
+          .dashboard-fechamento-box-mobile [style*="margin-bottom: 14px"],
+          .dashboard-servicos-box-mobile [style*="margin-bottom: 14px"],
+          .dashboard-reagendamento-box-mobile [style*="margin-bottom: 14px"],
+          .dashboard-fechamento-box-mobile [style*="margin-bottom: 16px"],
+          .dashboard-servicos-box-mobile [style*="margin-bottom: 16px"],
+          .dashboard-reagendamento-box-mobile [style*="margin-bottom: 16px"] {
+            margin-bottom: 8px !important;
+          }
+
+          .dashboard-fechamento-box-mobile label,
+          .dashboard-servicos-box-mobile label,
+          .dashboard-reagendamento-box-mobile label {
+            font-size: 10px !important;
+            margin-bottom: 4px !important;
+            letter-spacing: .06em !important;
+          }
+
+          .dashboard-fechamento-box-mobile input,
+          .dashboard-fechamento-box-mobile select,
+          .dashboard-servicos-box-mobile input,
+          .dashboard-servicos-box-mobile select,
+          .dashboard-reagendamento-box-mobile input,
+          .dashboard-reagendamento-box-mobile select {
+            min-height: 38px !important;
+            height: 38px !important;
+            border-radius: 12px !important;
+            padding: 0 10px !important;
+            font-size: 12px !important;
+            margin-bottom: 7px !important;
+          }
+
+          .dashboard-fechamento-box-mobile textarea,
+          .dashboard-servicos-box-mobile textarea,
+          .dashboard-reagendamento-box-mobile textarea {
+            min-height: 56px !important;
+            border-radius: 12px !important;
+            padding: 9px 10px !important;
+            font-size: 12px !important;
+            margin-bottom: 7px !important;
+          }
+
+          .dashboard-fechamento-box-mobile button,
+          .dashboard-servicos-box-mobile button,
+          .dashboard-reagendamento-box-mobile button,
+          .dashboard-cancelar-atendimento-mobile {
+            min-height: 40px !important;
+            border-radius: 12px !important;
+            padding: 10px 12px !important;
+            font-size: 12px !important;
+          }
+
+          .dashboard-fechamento-box-mobile [style*="grid-template-columns"],
+          .dashboard-servicos-box-mobile [style*="grid-template-columns"],
+          .dashboard-reagendamento-box-mobile [style*="grid-template-columns"] {
+            gap: 7px !important;
+          }
+
+          .dashboard-fechamento-box-mobile [style*="grid-template-columns: repeat(auto-fit"],
+          .dashboard-servicos-box-mobile [style*="grid-template-columns: repeat(auto-fit"] {
+            grid-template-columns: 1fr !important;
+          }
+
+          .dashboard-servicos-box-mobile [style*="display: flex"],
+          .dashboard-reagendamento-box-mobile [style*="display: flex"],
+          .dashboard-fechamento-box-mobile [style*="display: flex"] {
+            gap: 7px !important;
+          }
+
+          .dashboard-servicos-box-mobile [style*="justify-content: space-between"],
+          .dashboard-reagendamento-box-mobile [style*="justify-content: space-between"] {
+            align-items: flex-start !important;
+          }
+        }
+
       `}</style>
       <header className="dashboard-hero-mobile" style={dashboardHeroPremium}>
         <div style={heroGlowOne} />
