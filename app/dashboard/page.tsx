@@ -2992,6 +2992,135 @@ const comissoesPeriodoEstimadas = agendamentosSemanaPrevisaoValidos.reduce(
         }
 
 
+        /* Marcaê Compact Premium — correção definitiva do scroll da Central de Atendimento mobile */
+        @media (max-width: 760px) {
+          .dashboard-modal-overlay-mobile {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100dvh !important;
+            max-height: 100dvh !important;
+            align-items: stretch !important;
+            justify-content: stretch !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            overscroll-behavior: contain !important;
+            z-index: 9999 !important;
+          }
+
+          .dashboard-modal-box-mobile {
+            width: 100vw !important;
+            max-width: 100vw !important;
+            height: 100dvh !important;
+            min-height: 100dvh !important;
+            max-height: 100dvh !important;
+            border-radius: 0 !important;
+            padding: 14px 14px calc(180px + env(safe-area-inset-bottom)) !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            overscroll-behavior-y: contain !important;
+            scroll-padding-bottom: 190px !important;
+            display: block !important;
+          }
+
+          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) {
+            padding-bottom: calc(220px + env(safe-area-inset-bottom)) !important;
+          }
+
+          .dashboard-modal-header-mobile {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 30 !important;
+            margin: -14px -14px 14px !important;
+            padding: 14px !important;
+            background: rgba(2,6,23,0.97) !important;
+            border-bottom: 1px solid rgba(255,255,255,0.10) !important;
+            backdrop-filter: blur(18px) !important;
+          }
+
+          .dashboard-modal-grid-mobile,
+          .dashboard-painel-atendimento-mobile,
+          .dashboard-atendimento-selecionado-mobile {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+          }
+
+          .dashboard-atendimento-selecionado-mobile {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+            padding-bottom: calc(160px + env(safe-area-inset-bottom)) !important;
+          }
+
+          .dashboard-atendimento-selecionado-mobile::after {
+            content: '' !important;
+            display: block !important;
+            width: 100% !important;
+            height: calc(120px + env(safe-area-inset-bottom)) !important;
+            min-height: calc(120px + env(safe-area-inset-bottom)) !important;
+            flex: 0 0 auto !important;
+          }
+
+          .dashboard-fechamento-box-mobile,
+          .dashboard-servicos-box-mobile,
+          .dashboard-reagendamento-box-mobile,
+          .dashboard-cancelar-atendimento-mobile {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+            flex: 0 0 auto !important;
+          }
+
+          .dashboard-fechamento-box-mobile {
+            padding: 14px !important;
+            margin-top: 14px !important;
+            margin-bottom: 28px !important;
+            scroll-margin-bottom: 180px !important;
+          }
+
+          .dashboard-fechamento-box-mobile::after {
+            content: '' !important;
+            display: block !important;
+            height: 72px !important;
+            min-height: 72px !important;
+          }
+
+          .dashboard-fechamento-box-mobile input,
+          .dashboard-fechamento-box-mobile select,
+          .dashboard-fechamento-box-mobile textarea,
+          .dashboard-fechamento-box-mobile button {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+          }
+
+          .dashboard-fechamento-box-mobile [style*="grid-template-columns: 1fr 1fr auto"],
+          .dashboard-fechamento-box-mobile [style*="grid-template-columns:1fr 1fr auto"],
+          .dashboard-fechamento-box-mobile [style*="grid-template-columns: 1fr 72px"],
+          .dashboard-fechamento-box-mobile [style*="grid-template-columns:1fr 72px"] {
+            grid-template-columns: 1fr !important;
+          }
+
+          .dashboard-fechamento-box-mobile textarea {
+            min-height: 92px !important;
+          }
+
+          .dashboard-fechamento-box-mobile button:last-child {
+            margin-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
+          }
+        }
+
+
         @media (min-width: 761px) {
           .dashboard-desktop-rich {
             display: grid;
