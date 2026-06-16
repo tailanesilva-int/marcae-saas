@@ -3121,214 +3121,154 @@ const comissoesPeriodoEstimadas = agendamentosSemanaPrevisaoValidos.reduce(
         }
 
 
+
+        /* Marcaê Compact Premium — refinamento real da etapa Fechamento no mobile */
+        @media (max-width: 760px) {
+          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) {
+            padding-bottom: calc(120px + env(safe-area-inset-bottom)) !important;
+          }
+
+          .dashboard-atendimento-selecionado-mobile {
+            gap: 8px !important;
+            padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+          }
+
+          .dashboard-atendimento-selecionado-mobile::after,
+          .dashboard-fechamento-box-mobile::after {
+            display: none !important;
+            height: 0 !important;
+            min-height: 0 !important;
+          }
+
+          .dashboard-painel-atendimento-mobile {
+            padding: 10px !important;
+            border-radius: 18px !important;
+          }
+
+          .dashboard-painel-atendimento-mobile > div[style*="margin-bottom"] {
+            margin-bottom: 7px !important;
+          }
+
+          .dashboard-fechamento-box-mobile {
+            padding: 10px !important;
+            margin-top: 8px !important;
+            margin-bottom: 12px !important;
+            border-radius: 18px !important;
+            box-shadow: none !important;
+          }
+
+          .dashboard-fechamento-box-mobile > span:first-child {
+            padding: 4px 8px !important;
+            margin-bottom: 6px !important;
+            font-size: 9px !important;
+          }
+
+          .dashboard-fechamento-box-mobile h3 {
+            font-size: 15px !important;
+            margin-bottom: 3px !important;
+          }
+
+          .dashboard-fechamento-box-mobile p {
+            font-size: 10.5px !important;
+            line-height: 1.22 !important;
+            margin-bottom: 6px !important;
+          }
+
+          .dashboard-pagamentos-fechamento-mobile {
+            gap: 7px !important;
+            margin-bottom: 8px !important;
+          }
+
+          .dashboard-pagamento-row-mobile {
+            grid-template-columns: minmax(0, 1fr) 38px !important;
+            gap: 7px !important;
+            padding: 7px !important;
+            border-radius: 13px !important;
+            background: rgba(2,6,23,0.22) !important;
+            border: 1px solid rgba(255,255,255,0.07) !important;
+          }
+
+          .dashboard-pagamento-forma-mobile {
+            grid-column: 1 / 2 !important;
+            height: 38px !important;
+            margin: 0 !important;
+          }
+
+          .dashboard-pagamento-valor-mobile {
+            grid-column: 1 / -1 !important;
+            height: 38px !important;
+            margin: 0 !important;
+          }
+
+          .dashboard-remover-pagamento-mobile {
+            grid-column: 2 / 3 !important;
+            grid-row: 1 / 2 !important;
+            width: 38px !important;
+            min-width: 38px !important;
+            max-width: 38px !important;
+            height: 38px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border-radius: 12px !important;
+          }
+
+          .dashboard-adicionar-pagamento-mobile {
+            min-height: 38px !important;
+            padding: 9px 10px !important;
+            border-radius: 12px !important;
+            margin: 0 !important;
+            font-size: 11px !important;
+          }
+
+          .dashboard-ajustes-fechamento-mobile,
+          .dashboard-resumo-ajustado-mobile,
+          .dashboard-resumo-cliente-financeiro-mobile {
+            gap: 6px !important;
+            padding: 8px !important;
+            margin-bottom: 8px !important;
+            border-radius: 13px !important;
+          }
+
+          .dashboard-valor-tipo-row-mobile {
+            grid-template-columns: minmax(0, 1fr) 58px !important;
+            gap: 6px !important;
+          }
+
+          .dashboard-fechamento-box-mobile label {
+            margin-bottom: 4px !important;
+            font-size: 10px !important;
+            line-height: 1.15 !important;
+          }
+
+          .dashboard-fechamento-box-mobile input,
+          .dashboard-fechamento-box-mobile select {
+            height: 36px !important;
+            min-height: 36px !important;
+            padding: 0 9px !important;
+            border-radius: 11px !important;
+            margin-bottom: 0 !important;
+            font-size: 12px !important;
+          }
+
+          .dashboard-fechamento-box-mobile textarea {
+            min-height: 58px !important;
+            padding: 9px !important;
+            border-radius: 11px !important;
+            margin-bottom: 7px !important;
+            font-size: 12px !important;
+          }
+
+          .dashboard-fechamento-box-mobile button:last-child {
+            margin-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+          }
+        }
+
+
         @media (min-width: 761px) {
           .dashboard-desktop-rich {
             display: grid;
           }
         }
-
-
-        /* Marcaê Compact Premium — refinamento de densidade da Central de Atendimento mobile */
-        @media (max-width: 760px) {
-          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) {
-            padding: 10px 10px calc(150px + env(safe-area-inset-bottom)) !important;
-            scroll-padding-bottom: 160px !important;
-          }
-
-          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) .dashboard-modal-header-mobile {
-            margin: -10px -10px 8px !important;
-            padding: 10px 12px !important;
-          }
-
-          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) .dashboard-modal-grid-mobile {
-            gap: 8px !important;
-          }
-
-          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) .dashboard-painel-atendimento-mobile {
-            gap: 8px !important;
-            padding-bottom: 20px !important;
-          }
-
-          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) .dashboard-atendimento-voltar-mobile {
-            min-height: 38px !important;
-            border-radius: 12px !important;
-            font-size: 12px !important;
-            margin-bottom: 0 !important;
-          }
-
-          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) .dashboard-atendimento-selecionado-mobile,
-          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) .dashboard-painel-atendimento-mobile > div:not(.dashboard-fechamento-box-mobile):not(.dashboard-servicos-box-mobile):not(.dashboard-reagendamento-box-mobile):not(.dashboard-cancelar-atendimento-mobile) {
-            padding: 10px !important;
-            border-radius: 16px !important;
-            margin-bottom: 6px !important;
-            box-shadow: none !important;
-          }
-
-          .dashboard-modal-box-mobile:has(.dashboard-atendimento-selecionado-mobile) .dashboard-painel-atendimento-mobile > div:not(.dashboard-fechamento-box-mobile):not(.dashboard-servicos-box-mobile):not(.dashboard-reagendamento-box-mobile):not(.dashboard-cancelar-atendimento-mobile) > div {
-            gap: 7px !important;
-          }
-
-          .dashboard-fechamento-box-mobile,
-          .dashboard-servicos-box-mobile,
-          .dashboard-reagendamento-box-mobile {
-            padding: 10px !important;
-            border-radius: 17px !important;
-            margin-top: 8px !important;
-            margin-bottom: 8px !important;
-            box-shadow: none !important;
-            border-left-width: 4px !important;
-          }
-
-          .dashboard-fechamento-box-mobile h3,
-          .dashboard-servicos-box-mobile h3,
-          .dashboard-reagendamento-box-mobile h3,
-          .dashboard-fechamento-box-mobile strong,
-          .dashboard-servicos-box-mobile strong,
-          .dashboard-reagendamento-box-mobile strong {
-            line-height: 1.12 !important;
-          }
-
-          .dashboard-fechamento-box-mobile h3 {
-            font-size: 18px !important;
-            margin: 4px 0 6px !important;
-          }
-
-          .dashboard-fechamento-box-mobile p,
-          .dashboard-servicos-box-mobile p,
-          .dashboard-reagendamento-box-mobile p,
-          .dashboard-fechamento-box-mobile small,
-          .dashboard-servicos-box-mobile small,
-          .dashboard-reagendamento-box-mobile small {
-            line-height: 1.28 !important;
-          }
-
-          .dashboard-fechamento-box-mobile p,
-          .dashboard-servicos-box-mobile p,
-          .dashboard-reagendamento-box-mobile p {
-            margin-top: 4px !important;
-            margin-bottom: 7px !important;
-            font-size: 11px !important;
-          }
-
-          .dashboard-fechamento-box-mobile > span,
-          .dashboard-servicos-box-mobile > div:first-child span,
-          .dashboard-reagendamento-box-mobile > div:first-child span {
-            padding: 4px 8px !important;
-            font-size: 9px !important;
-            margin-bottom: 5px !important;
-          }
-
-          .dashboard-fechamento-box-mobile > div,
-          .dashboard-servicos-box-mobile > div,
-          .dashboard-reagendamento-box-mobile > div {
-            margin-top: 7px !important;
-            margin-bottom: 7px !important;
-          }
-
-          .dashboard-fechamento-box-mobile [style*="padding: 12px"],
-          .dashboard-servicos-box-mobile [style*="padding: 12px"],
-          .dashboard-reagendamento-box-mobile [style*="padding: 12px"],
-          .dashboard-fechamento-box-mobile [style*="padding: 18px"],
-          .dashboard-servicos-box-mobile [style*="padding: 18px"],
-          .dashboard-reagendamento-box-mobile [style*="padding: 18px"] {
-            padding: 9px !important;
-          }
-
-          .dashboard-fechamento-box-mobile [style*="border-radius: 18px"],
-          .dashboard-servicos-box-mobile [style*="border-radius: 18px"],
-          .dashboard-reagendamento-box-mobile [style*="border-radius: 18px"],
-          .dashboard-fechamento-box-mobile [style*="border-radius: 22px"],
-          .dashboard-servicos-box-mobile [style*="border-radius: 22px"],
-          .dashboard-reagendamento-box-mobile [style*="border-radius: 22px"] {
-            border-radius: 14px !important;
-          }
-
-          .dashboard-fechamento-box-mobile [style*="gap: 10px"],
-          .dashboard-servicos-box-mobile [style*="gap: 10px"],
-          .dashboard-reagendamento-box-mobile [style*="gap: 10px"] {
-            gap: 7px !important;
-          }
-
-          .dashboard-fechamento-box-mobile [style*="gap: 8px"],
-          .dashboard-servicos-box-mobile [style*="gap: 8px"],
-          .dashboard-reagendamento-box-mobile [style*="gap: 8px"] {
-            gap: 6px !important;
-          }
-
-          .dashboard-fechamento-box-mobile [style*="margin-bottom: 14px"],
-          .dashboard-servicos-box-mobile [style*="margin-bottom: 14px"],
-          .dashboard-reagendamento-box-mobile [style*="margin-bottom: 14px"],
-          .dashboard-fechamento-box-mobile [style*="margin-bottom: 16px"],
-          .dashboard-servicos-box-mobile [style*="margin-bottom: 16px"],
-          .dashboard-reagendamento-box-mobile [style*="margin-bottom: 16px"] {
-            margin-bottom: 8px !important;
-          }
-
-          .dashboard-fechamento-box-mobile label,
-          .dashboard-servicos-box-mobile label,
-          .dashboard-reagendamento-box-mobile label {
-            font-size: 10px !important;
-            margin-bottom: 4px !important;
-            letter-spacing: .06em !important;
-          }
-
-          .dashboard-fechamento-box-mobile input,
-          .dashboard-fechamento-box-mobile select,
-          .dashboard-servicos-box-mobile input,
-          .dashboard-servicos-box-mobile select,
-          .dashboard-reagendamento-box-mobile input,
-          .dashboard-reagendamento-box-mobile select {
-            min-height: 38px !important;
-            height: 38px !important;
-            border-radius: 12px !important;
-            padding: 0 10px !important;
-            font-size: 12px !important;
-            margin-bottom: 7px !important;
-          }
-
-          .dashboard-fechamento-box-mobile textarea,
-          .dashboard-servicos-box-mobile textarea,
-          .dashboard-reagendamento-box-mobile textarea {
-            min-height: 56px !important;
-            border-radius: 12px !important;
-            padding: 9px 10px !important;
-            font-size: 12px !important;
-            margin-bottom: 7px !important;
-          }
-
-          .dashboard-fechamento-box-mobile button,
-          .dashboard-servicos-box-mobile button,
-          .dashboard-reagendamento-box-mobile button,
-          .dashboard-cancelar-atendimento-mobile {
-            min-height: 40px !important;
-            border-radius: 12px !important;
-            padding: 10px 12px !important;
-            font-size: 12px !important;
-          }
-
-          .dashboard-fechamento-box-mobile [style*="grid-template-columns"],
-          .dashboard-servicos-box-mobile [style*="grid-template-columns"],
-          .dashboard-reagendamento-box-mobile [style*="grid-template-columns"] {
-            gap: 7px !important;
-          }
-
-          .dashboard-fechamento-box-mobile [style*="grid-template-columns: repeat(auto-fit"],
-          .dashboard-servicos-box-mobile [style*="grid-template-columns: repeat(auto-fit"] {
-            grid-template-columns: 1fr !important;
-          }
-
-          .dashboard-servicos-box-mobile [style*="display: flex"],
-          .dashboard-reagendamento-box-mobile [style*="display: flex"],
-          .dashboard-fechamento-box-mobile [style*="display: flex"] {
-            gap: 7px !important;
-          }
-
-          .dashboard-servicos-box-mobile [style*="justify-content: space-between"],
-          .dashboard-reagendamento-box-mobile [style*="justify-content: space-between"] {
-            align-items: flex-start !important;
-          }
-        }
-
       `}</style>
       <header className="dashboard-hero-mobile" style={dashboardHeroPremium}>
         <div style={heroGlowOne} />
@@ -4486,19 +4426,21 @@ boxShadow:
   </div>
 
   <div
+    className="dashboard-pagamentos-fechamento-mobile"
     style={{
       display: 'grid',
-      gap: 10,
-      marginBottom: 12,
+      gap: 8,
+      marginBottom: 10,
     }}
   >
     {formFinalizacao.pagamentos.map(
       (pagamento: any, index: number) => (
         <div
           key={index}
+          className="dashboard-pagamento-row-mobile"
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr auto',
+            gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr) 38px',
             gap: 8,
             alignItems: 'center',
           }}
@@ -4518,6 +4460,7 @@ boxShadow:
                 pagamentos: lista,
               });
             }}
+            className="dashboard-pagamento-forma-mobile"
             style={inputData}
           >
             <option value="pix">Pix</option>
@@ -4554,6 +4497,7 @@ boxShadow:
 
               setFormFinalizacao(proximoForm);
             }}
+            className="dashboard-pagamento-valor-mobile"
             style={inputData}
           />
 
@@ -4572,6 +4516,7 @@ boxShadow:
                   pagamentos: lista,
                 });
               }}
+              className="dashboard-remover-pagamento-mobile"
               style={{
                 border: 'none',
                 background: '#dc2626',
@@ -4579,6 +4524,7 @@ boxShadow:
                 borderRadius: 10,
                 width: 38,
                 height: 38,
+                minWidth: 38,
                 cursor: 'pointer',
                 fontWeight: 900,
               }}
@@ -4591,6 +4537,7 @@ boxShadow:
     )}
 
     <button
+      className="dashboard-adicionar-pagamento-mobile"
       onClick={() =>
         setFormFinalizacao({
           ...formFinalizacao,
@@ -4618,12 +4565,13 @@ boxShadow:
   </div>
 
   <div
+    className="dashboard-ajustes-fechamento-mobile"
     style={{
       display: 'grid',
       gridTemplateColumns: '1fr',
-      gap: 10,
-      marginBottom: 12,
-      padding: 10,
+      gap: 8,
+      marginBottom: 10,
+      padding: 9,
       borderRadius: 14,
       background: 'rgba(15,23,42,0.40)',
       border: '1px solid rgba(255,255,255,0.10)',
@@ -4631,7 +4579,7 @@ boxShadow:
   >
     <div>
       <label style={labelCampoPremium}>Desconto no fechamento</label>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px', gap: 8 }}>
+      <div className="dashboard-valor-tipo-row-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 72px', gap: 8 }}>
         <input
           type="number"
           min="0"
@@ -4665,7 +4613,7 @@ boxShadow:
 
     <div>
       <label style={labelCampoPremium}>Acréscimo no fechamento</label>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px', gap: 8 }}>
+      <div className="dashboard-valor-tipo-row-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 72px', gap: 8 }}>
         <input
           type="number"
           min="0"
@@ -4729,12 +4677,13 @@ boxShadow:
 
     return (
       <div
+        className="dashboard-resumo-ajustado-mobile"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-          gap: 10,
-          marginBottom: 14,
-          padding: 12,
+          gap: 8,
+          marginBottom: 10,
+          padding: 9,
           borderRadius: 14,
           background: 'rgba(255,255,255,0.06)',
           border: '1px solid rgba(255,255,255,0.10)',
@@ -4788,6 +4737,7 @@ boxShadow:
   </div>
 
   <div
+    className="dashboard-resumo-cliente-financeiro-mobile"
     style={resumoClienteFinanceiroGrid}
   >
     <ResumoFinanceiroItem
@@ -6591,14 +6541,14 @@ const itemAgendamentoModal: React.CSSProperties = {
 
 const painelAcaoModal: React.CSSProperties = {
   background:
-    'linear-gradient(180deg, rgba(255,255,255,0.065), rgba(255,255,255,0.035))',
+    'linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.032))',
   border: '1px solid rgba(255,255,255,0.10)',
-  borderRadius: 24,
-  padding: 16,
+  borderRadius: 22,
+  padding: 12,
   alignSelf: 'start',
   boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
   position: 'sticky',
-  top: 16,
+  top: 12,
   maxHeight: 'calc(90vh - 56px)',
   overflowY: 'auto',
   display: 'flex',
@@ -6606,14 +6556,14 @@ const painelAcaoModal: React.CSSProperties = {
 };
 
 const cardInfoModal: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.06)',
+  background: 'rgba(255,255,255,0.055)',
   border: '1px solid rgba(255,255,255,0.10)',
-  padding: 12,
-  borderRadius: 15,
-  marginBottom: 10,
+  padding: 9,
+  borderRadius: 13,
+  marginBottom: 7,
   display: 'flex',
   flexDirection: 'column',
-  gap: 4,
+  gap: 3,
   color: '#f8fafc',
 };
 
@@ -6649,11 +6599,11 @@ const labelCampo: React.CSSProperties = {
 
 const inputData: React.CSSProperties = {
   width: '100%',
-  height: 44,
-  borderRadius: 13,
+  height: 40,
+  borderRadius: 12,
   border: '1px solid rgba(255,255,255,0.12)',
-  padding: '0 12px',
-  marginBottom: 10,
+  padding: '0 10px',
+  marginBottom: 0,
   background: 'rgba(2,6,23,0.72)',
   color: '#fff',
   colorScheme: 'dark',
@@ -6707,19 +6657,19 @@ const resumoFinanceiroModalLista: React.CSSProperties = {
 const financeiroAtendimentoBox: React.CSSProperties = {
   background: 'rgba(2,6,23,0.38)',
   border: '1px solid rgba(255,255,255,0.12)',
-  borderRadius: 18,
-  padding: 12,
+  borderRadius: 15,
+  padding: 9,
   display: 'grid',
-  gap: 8,
-  marginBottom: 12,
+  gap: 5,
+  marginBottom: 8,
 };
 
 const resumoFinanceiroItem: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  gap: 10,
-  fontSize: 13,
+  gap: 8,
+  fontSize: 12,
   fontWeight: 900,
   color: '#f8fafc',
 };
@@ -6788,10 +6738,10 @@ const tituloSecaoOperacional: React.CSSProperties = {
 };
 
 const descricaoSecaoOperacional: React.CSSProperties = {
-  margin: '4px 0 0',
+  margin: '3px 0 0',
   color: '#a9b8d0',
-  fontSize: 12.5,
-  lineHeight: 1.35,
+  fontSize: 11.5,
+  lineHeight: 1.28,
   fontWeight: 650,
 };
 
@@ -6804,23 +6754,23 @@ const cabecalhoFechamentoPremium: React.CSSProperties = {
 const tituloFechamentoPremium: React.CSSProperties = {
   margin: 0,
   color: '#f8fafc',
-  fontSize: 18,
+  fontSize: 16,
   fontWeight: 950,
-  lineHeight: 1.15,
+  lineHeight: 1.12,
 };
 
 const subBlocoOperacionalTitulo: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: 10,
-  padding: '10px 0 8px',
-  marginTop: 8,
+  gap: 8,
+  padding: '7px 0 6px',
+  marginTop: 6,
   color: '#f8fafc',
 };
 
 const subBlocoNumeroVerde: React.CSSProperties = {
-  width: 26,
-  height: 26,
+  width: 23,
+  height: 23,
   borderRadius: 999,
   display: 'inline-flex',
   alignItems: 'center',
@@ -6828,7 +6778,7 @@ const subBlocoNumeroVerde: React.CSSProperties = {
   background: 'rgba(34,197,94,0.18)',
   border: '1px solid rgba(74,222,128,0.30)',
   color: '#bbf7d0',
-  fontSize: 12,
+  fontSize: 11,
   fontWeight: 950,
   flex: '0 0 auto',
 };
@@ -6850,10 +6800,10 @@ const subBlocoNumeroCinza: React.CSSProperties = {
 const resumoClienteFinanceiroGrid: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-  gap: 10,
-  marginBottom: 14,
-  padding: 12,
-  borderRadius: 16,
+  gap: 6,
+  marginBottom: 8,
+  padding: 9,
+  borderRadius: 14,
   background: 'rgba(2,6,23,0.30)',
   border: '1px solid rgba(255,255,255,0.10)',
 };
@@ -6988,43 +6938,43 @@ const botaoCancelarAgendamento: React.CSSProperties = {
 };
 
 const fechamentoBox: React.CSSProperties = {
-  marginTop: 18,
+  marginTop: 10,
   background:
-    'linear-gradient(135deg, rgba(34,197,94,0.14), rgba(255,255,255,0.045))',
-  border: '1px solid rgba(74,222,128,0.24)',
-  borderLeft: '5px solid #22c55e',
-  borderRadius: 24,
-  padding: 16,
-  boxShadow: '0 22px 54px rgba(34,197,94,0.12), 0 16px 34px rgba(0,0,0,0.18)',
+    'linear-gradient(135deg, rgba(34,197,94,0.13), rgba(255,255,255,0.04))',
+  border: '1px solid rgba(74,222,128,0.22)',
+  borderLeft: '4px solid #22c55e',
+  borderRadius: 20,
+  padding: 12,
+  boxShadow: '0 14px 32px rgba(34,197,94,0.10), 0 10px 22px rgba(0,0,0,0.14)',
 };
 
 const checkLinha: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: 8,
-  marginTop: 14,
-  marginBottom: 12,
-  fontSize: 13,
+  marginTop: 8,
+  marginBottom: 8,
+  fontSize: 12,
   fontWeight: 850,
   color: '#cbd5e1',
 };
 
 const textareaFechamento: React.CSSProperties = {
   width: '100%',
-  minHeight: 80,
-  borderRadius: 13,
+  minHeight: 66,
+  borderRadius: 12,
   border: '1px solid rgba(255,255,255,0.12)',
-  padding: 12,
+  padding: 10,
   resize: 'vertical',
-  marginBottom: 12,
+  marginBottom: 8,
   background: 'rgba(2,6,23,0.72)',
   color: '#fff',
 };
 
 const botaoFinalizarAtendimento: React.CSSProperties = {
   width: '100%',
-  padding: 14,
-  borderRadius: 15,
+  padding: 12,
+  borderRadius: 14,
   border: 'none',
   background: 'linear-gradient(135deg, #16a34a, #22c55e)',
   color: '#fff',
