@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/lembretes/whatsapp",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 8 * * *"
     }
   ]
 }
