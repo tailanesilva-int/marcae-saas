@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import PremiumLayout from '@/components/layout/PremiumLayout';
 import { obterStatusLicencaEmpresa } from '@/app/lib/licencaEmpresa';
+import type { CSSProperties } from 'react';
 
 type PlanoTipo = 'basico' | 'premium';
 
@@ -1517,11 +1518,11 @@ const pixQrCode = {
   background: '#fff',
 };
 
-const pixStatusText = {
-  color: '#dcfce7',
+const pixStatusText: CSSProperties = {
+  color: '#ffffff',
   textAlign: 'center',
-  fontSize: 13,
-  fontWeight: 950,
+  fontSize: 14,
+  fontWeight: 700,
 };
 
 const pixCopiaCola = {
