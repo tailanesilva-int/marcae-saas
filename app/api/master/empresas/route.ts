@@ -137,7 +137,6 @@ export async function GET(req: Request) {
 
     const status = searchParams.get("status");
     const planoRecebido = searchParams.get("plano");
-
     const where: any = {};
 
     if (status) {
@@ -152,6 +151,8 @@ export async function GET(req: Request) {
         where.ativo = false;
       } else if (status === "trial") {
         where.trialAtivo = true;
+      } else if (status === "bloqueado") {
+        where.bloqueadoPorInadimplencia = true;
       }
     }
 
@@ -161,7 +162,36 @@ export async function GET(req: Request) {
 
     const empresas = await prisma.empresa.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        nome: true,
+        slug: true,
+        telefone: true,
+        whatsapp: true,
+        endereco: true,
+        responsavel: true,
+        observacoesInternas: true,
+        plano: true,
+        ativo: true,
+        trialAtivo: true,
+        trialExpiraEm: true,
+        assinaturaExpiraEm: true,
+        assinaturaProximaCobrancaEm: true,
+        valorMensalPersonalizado: true,
+        descontoMensal: true,
+        statusFinanceiro: true,
+        bloqueadoPorInadimplencia: true,
+        mercadoPagoAtivo: true,
+        mercadoPagoAccessToken: true,
+        mercadoPagoPublicKey: true,
+        mercadoPagoModo: true,
+        solicitouIntegracaoMp: true,
+
+  ultimoLoginEm: true,
+  ultimoLoginIp: true,
+  ultimoLoginUsuarioNome: true,
+  ultimoLoginUsuarioEmail: true,
+
         usuarios: {
           select: {
             id: true,

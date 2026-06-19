@@ -1,24 +1,45 @@
 import '@/app/lib/initScheduler';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 import { enviarWhatsapp } from '@/lib/whatsapp';
 import { podeUsarLembreteAutomatico } from '@/lib/plano';
 import { montarLinkAgendamento } from '@/lib/links';
 
-export async function GET() {
-  try {
-    const agora = new Date();
-    const daqui1h = new Date(agora.getTime() + 60 * 60 * 1000);
+export const dynamic = 'force-dynamic';
 
-    console.log('⏰ Buscando agendamentos para lembrete...');
+export async function GET(req: NextRequest) {
+  try {
+    const authHeader = req.headers.get('authorization');
+
+    if (process.env.VERCEL_CRON_SECRET) {
+  if (
+    authHeader !==
+    `Bearer ${process.env.VERCEL_CRON_SECRET}`
+  ) {
+        return NextResponse.json(
+          { success: false, error: 'Acesso não autorizado.' },
+          { status: 401 }
+        );
+      }
+    }
+
+    const agora = new Date();
+    const inicioJanela = new Date(agora.getTime() + 55 * 60 * 1000);
+    const fimJanela = new Date(agora.getTime() + 65 * 60 * 1000);
+
+    console.log('⏰ Buscando agendamentos para lembrete WhatsApp...', {
+      agora: agora.toISOString(),
+      inicioJanela: inicioJanela.toISOString(),
+      fimJanela: fimJanela.toISOString(),
+    });
 
     const agendamentos = await prisma.agendamento.findMany({
       where: {
         status: 'confirmado',
         lembreteWhatsappEnviado: false,
         dataHoraInicio: {
-          gte: agora,
-          lte: daqui1h,
+          gte: inicioJanela,
+          lte: fimJanela,
         },
       },
       include: {
@@ -27,12 +48,19 @@ export async function GET() {
         empresa: true,
         profissional: true,
       },
+      orderBy: {
+        dataHoraInicio: 'asc',
+      },
+      take: 80,
     });
 
     console.log(`📋 Encontrados ${agendamentos.length} agendamentos`);
 
     let enviados = 0;
+    let erros = 0;
     let bloqueadosPorPlano = 0;
+    let ignoradosSemWhatsapp = 0;
+    let ignoradosSemConfiguracao = 0;
 
     for (const agendamento of agendamentos) {
       try {
@@ -53,12 +81,16 @@ export async function GET() {
           !agendamento.empresa.whatsappAtivo ||
           !agendamento.empresa.whatsappInstance
         ) {
-          console.log('⚠️ Empresa sem WhatsApp configurado');
+          ignoradosSemConfiguracao++;
+          console.log(
+            `⚠️ Empresa sem WhatsApp configurado (${agendamento.empresa.nome})`
+          );
           continue;
         }
 
         if (!agendamento.cliente?.whatsapp) {
-          console.log('⚠️ Cliente sem WhatsApp');
+          ignoradosSemWhatsapp++;
+          console.log(`⚠️ Cliente sem WhatsApp (${agendamento.cliente?.nome})`);
           continue;
         }
 
@@ -114,6 +146,8 @@ Te esperamos! ✨`;
           instance: agendamento.empresa.whatsappInstance,
           numero: agendamento.cliente.whatsapp,
           mensagem,
+          tentativas: 3,
+          timeoutMs: 15000,
         });
 
         await prisma.agendamento.update({
@@ -128,7 +162,12 @@ Te esperamos! ✨`;
 
         console.log(`✅ Lembrete enviado para ${agendamento.cliente.nome}`);
       } catch (err) {
-        console.error('❌ Erro ao enviar lembrete:', err);
+        erros++;
+        console.error('❌ Erro ao enviar lembrete:', {
+          agendamentoId: agendamento.id,
+          cliente: agendamento.cliente?.nome,
+          erro: err,
+        });
       }
     }
 
@@ -136,13 +175,20 @@ Te esperamos! ✨`;
       success: true,
       total: agendamentos.length,
       enviados,
+      erros,
       bloqueadosPorPlano,
+      ignoradosSemWhatsapp,
+      ignoradosSemConfiguracao,
+      janela: {
+        inicio: inicioJanela.toISOString(),
+        fim: fimJanela.toISOString(),
+      },
     });
   } catch (error) {
     console.error('❌ Erro geral lembretes:', error);
 
     return NextResponse.json(
-      { error: 'Erro ao processar lembretes' },
+      { success: false, error: 'Erro ao processar lembretes' },
       { status: 500 }
     );
   }

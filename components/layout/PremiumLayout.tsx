@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { gerarTemaEmpresa } from "@/app/lib/theme";
+import { moduloBloqueadoPorLicenca, obterStatusLicencaEmpresa } from "@/app/lib/licencaEmpresa";
 
 type Props = {
   children: React.ReactNode;
@@ -24,6 +25,7 @@ const menu = [
   { href: "/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/agenda", label: "Agenda", icon: "📅" },
   { href: "/clientes", label: "Clientes", icon: "👥" },
+  { href: "/fichas-digitais", label: "Fichas Digitais", icon: "📋" },
   { href: "/servicos", label: "Serviços", icon: "✂️" },
   { href: "/profissionais", label: "Profissionais", icon: "🧑‍💼" },
   { href: "/promocoes", label: "Promoções", icon: "🔥" },
@@ -54,6 +56,15 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
     useState<AvisoSistemaMarcae | null>(null);
   const [avisosLidos, setAvisosLidos] = useState<string[]>([]);
   const [whatsappSuporteMarcae, setWhatsappSuporteMarcae] = useState("");
+  const [gerandoPagamentoLicenca, setGerandoPagamentoLicenca] = useState(false);
+  const [gerandoPixLicenca, setGerandoPixLicenca] = useState(false);
+  const [pixAssinatura, setPixAssinatura] = useState<any>(null);
+  const [statusPixAssinatura, setStatusPixAssinatura] = useState<
+    "idle" | "aguardando" | "aprovado" | "erro" | "expirado"
+  >("idle");
+  const [erroPixAssinatura, setErroPixAssinatura] = useState("");
+  const [segundosPixAssinatura, setSegundosPixAssinatura] = useState(0);
+  const [copiadoPixAssinatura, setCopiadoPixAssinatura] = useState(false);
 
   const ultimoCheckRef = useRef<string | null>(null);
   const notificacoesIdsRef = useRef<Set<string>>(new Set());
@@ -66,6 +77,8 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
   const corSidebar = tema.sidebar;
   const storageKey = `marcae_notificacoes_${empresa?.id || "global"}`;
   const avisosLidosStorageKey = `marcae_avisos_lidos_${empresa?.id || "global"}`;
+  const licencaEmpresa = obterStatusLicencaEmpresa(empresa || {});
+  const bloquearModalLicenca = licencaEmpresa.bloqueioTotal && pathname !== "/planos";
 
   const cssVars = {
     "--marcae-primary": tema.primary,
@@ -93,6 +106,87 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
     "--marcae-gradient-soft": tema.gradientSoft,
     "--marcae-glow": tema.glow,
   } as React.CSSProperties;
+
+  useEffect(() => {
+    if (!pixAssinatura?.expiraEm || statusPixAssinatura === "aprovado") {
+      return;
+    }
+
+    function atualizarTempoPix() {
+      const expiraEm = new Date(pixAssinatura.expiraEm).getTime();
+      const restante = Math.max(Math.floor((expiraEm - Date.now()) / 1000), 0);
+
+      setSegundosPixAssinatura(restante);
+
+      if (restante <= 0 && statusPixAssinatura === "aguardando") {
+        setStatusPixAssinatura("expirado");
+      }
+    }
+
+    atualizarTempoPix();
+    const interval = setInterval(atualizarTempoPix, 1000);
+
+    return () => clearInterval(interval);
+  }, [pixAssinatura?.expiraEm, statusPixAssinatura]);
+
+  useEffect(() => {
+    if (
+      !empresa?.id ||
+      !pixAssinatura?.paymentId ||
+      statusPixAssinatura !== "aguardando"
+    ) {
+      return;
+    }
+
+    let cancelado = false;
+
+    async function consultarStatusPix() {
+      try {
+        const res = await fetch(
+          `/api/admin/empresas/${empresa.id}/assinatura/pix/status?paymentId=${encodeURIComponent(
+            pixAssinatura.paymentId,
+          )}`,
+          { cache: "no-store" },
+        );
+
+        const data = await res.json().catch(() => null);
+
+        if (cancelado || !data?.success) return;
+
+        if (data.aprovado) {
+          setStatusPixAssinatura("aprovado");
+
+          if (data.empresa) {
+            localStorage.setItem("empresaLogada", JSON.stringify(data.empresa));
+          }
+
+          setTimeout(() => {
+            window.location.reload();
+          }, 1800);
+        }
+      } catch (error) {
+        console.error("Erro ao consultar status do Pix da assinatura:", error);
+      }
+    }
+
+    consultarStatusPix();
+    const interval = setInterval(consultarStatusPix, 5000);
+
+    return () => {
+      cancelado = true;
+      clearInterval(interval);
+    };
+  }, [empresa?.id, pixAssinatura?.paymentId, statusPixAssinatura]);
+
+  useEffect(() => {
+    if (!copiadoPixAssinatura) return;
+
+    const timeout = setTimeout(() => {
+      setCopiadoPixAssinatura(false);
+    }, 2200);
+
+    return () => clearTimeout(timeout);
+  }, [copiadoPixAssinatura]);
 
   useEffect(() => {
     setMobileMenuAberto(false);
@@ -487,6 +581,126 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
     window.location.href = "/login";
   }
 
+  async function pagarComCartaoLicenca() {
+    if (!empresa?.id) {
+      window.location.href = "/planos";
+      return;
+    }
+
+    try {
+      setGerandoPagamentoLicenca(true);
+
+      const res = await fetch(`/api/admin/empresas/${empresa.id}/assinatura/pagar`, {
+        method: "POST",
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || (!data?.success && !data?.linkPagamento)) {
+        window.location.href = "/planos";
+        return;
+      }
+
+      window.location.href = data.linkPagamento;
+    } catch (error) {
+      console.error("Erro ao gerar pagamento da licença:", error);
+      window.location.href = "/planos";
+    } finally {
+      setGerandoPagamentoLicenca(false);
+    }
+  }
+
+  function mensagemErroPixAmigavel(mensagem?: string | null) {
+    const texto = String(mensagem || '').toLowerCase();
+
+    if (
+      texto.includes('unauthorized') ||
+      texto.includes('credentials') ||
+      texto.includes('access token') ||
+      texto.includes('token') ||
+      texto.includes('live credentials')
+    ) {
+      return 'Não foi possível gerar o Pix neste momento. Tente novamente em alguns instantes ou fale com nossa equipe.';
+    }
+
+    if (texto.includes('valor') || texto.includes('amount')) {
+      return 'Não foi possível gerar o Pix porque o valor da mensalidade não foi localizado. Fale com nossa equipe para regularizar.';
+    }
+
+    return 'Não foi possível gerar o Pix neste momento. Tente novamente em alguns instantes ou fale com nossa equipe.';
+  }
+
+  async function gerarPixLicenca() {
+    if (!empresa?.id) {
+      window.location.href = "/planos";
+      return;
+    }
+
+    try {
+      setGerandoPixLicenca(true);
+      setErroPixAssinatura("");
+      setCopiadoPixAssinatura(false);
+
+      const res = await fetch(`/api/admin/empresas/${empresa.id}/assinatura/pix`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plano: String(empresa?.plano || "premium").toLowerCase(),
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.success) {
+        setStatusPixAssinatura("erro");
+        setErroPixAssinatura(mensagemErroPixAmigavel(data?.error || data?.message));
+        return;
+      }
+
+      setPixAssinatura(data);
+      setStatusPixAssinatura("aguardando");
+      setSegundosPixAssinatura(1800);
+    } catch (error) {
+      console.error("Erro ao gerar Pix da licença:", error);
+      setStatusPixAssinatura("erro");
+      setErroPixAssinatura(mensagemErroPixAmigavel());
+    } finally {
+      setGerandoPixLicenca(false);
+    }
+  }
+
+  async function copiarCodigoPixLicenca() {
+    const codigoPix = pixAssinatura?.qrCode;
+
+    if (!codigoPix) return;
+
+    try {
+      await navigator.clipboard.writeText(codigoPix);
+      setCopiadoPixAssinatura(true);
+    } catch (error) {
+      console.error("Erro ao copiar código Pix:", error);
+      alert("Não foi possível copiar automaticamente. Selecione e copie o código Pix manualmente.");
+    }
+  }
+
+  function formatarTempoPix(totalSegundos: number) {
+    const minutos = Math.floor(Math.max(totalSegundos, 0) / 60);
+    const segundos = Math.max(totalSegundos, 0) % 60;
+
+    return `${String(minutos).padStart(2, "0")}:${String(segundos).padStart(2, "0")}`;
+  }
+
+  function formatarValorPix(valor: any) {
+    return Number(valor || 0).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
+
+  function menuBloqueadoPorLicenca(href: string) {
+    return moduloBloqueadoPorLicenca(href, empresa || {});
+  }
+
   function abrirSuporteMarcae() {
     const numero = String(whatsappSuporteMarcae || "").replace(/\D/g, "");
 
@@ -499,6 +713,36 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
 
     const texto = encodeURIComponent(
       `Olá, equipe Marcaê! Preciso de suporte no sistema. Empresa: ${empresa?.nome || ""}`,
+    );
+
+    window.open(`https://wa.me/${numero}?text=${texto}`, "_blank");
+  }
+
+  function abrirAjudaPagamentoLicenca() {
+    const numero = String(whatsappSuporteMarcae || "").replace(/\D/g, "");
+
+    if (!numero) {
+      alert(
+        "WhatsApp de suporte Marcaê ainda não configurado no painel master.",
+      );
+      return;
+    }
+
+    const texto = encodeURIComponent(
+      `Olá, equipe Marcaê!
+
+Estou tentando regularizar minha assinatura.
+
+Empresa:
+${empresa?.nome || "Não informada"}
+
+Plano:
+${empresa?.plano || "Não informado"}
+
+Dias em atraso:
+${licencaEmpresa.diasAtraso}
+
+Preciso de ajuda para concluir o pagamento.`,
     );
 
     window.open(`https://wa.me/${numero}?text=${texto}`, "_blank");
@@ -582,27 +826,36 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
             <nav style={navGrid}>
               {menu.map((item) => {
                 const isActive = ativo(item.href);
+                const itemBloqueado = menuBloqueadoPorLicenca(item.href);
 
                 return (
                   <Link
                     key={item.href}
-                    href={item.href}
+                    href={itemBloqueado ? "/planos" : item.href}
                     style={{
                       ...menuItem,
-                      background: isActive
-                        ? `linear-gradient(135deg, ${corPrimaria}, ${corSecundaria})`
-                        : "rgba(255,255,255,0.02)",
-                      border: isActive
-                        ? `1px solid ${corPrimaria}66`
-                        : "1px solid rgba(255,255,255,0.04)",
-                      color: isActive ? "#fff" : "#cbd5e1",
-                      boxShadow: isActive
-                        ? `0 18px 35px ${corPrimaria}40`
-                        : "none",
+                      background: itemBloqueado
+                        ? "rgba(100,116,139,0.08)"
+                        : isActive
+                          ? `linear-gradient(135deg, ${corPrimaria}, ${corSecundaria})`
+                          : "rgba(255,255,255,0.02)",
+                      border: itemBloqueado
+                        ? "1px solid rgba(248,113,113,0.18)"
+                        : isActive
+                          ? `1px solid ${corPrimaria}66`
+                          : "1px solid rgba(255,255,255,0.04)",
+                      color: itemBloqueado ? "#94a3b8" : isActive ? "#fff" : "#cbd5e1",
+                      boxShadow: itemBloqueado
+                        ? "none"
+                        : isActive
+                          ? `0 18px 35px ${corPrimaria}40`
+                          : "none",
+                      opacity: itemBloqueado ? 0.72 : 1,
                     }}
                   >
                     <span style={menuIcon}>{item.icon}</span>
                     <span>{item.label}</span>
+                    {itemBloqueado && <span style={licenseMenuBadge}>Bloqueado</span>}
                     {isActive && <div style={activeGlow} />}
                   </Link>
                 );
@@ -795,7 +1048,7 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
               </div>
             </header>
 
-            <main style={mainContent}>{children}</main>
+            <main style={mainContent}>{bloquearModalLicenca ? null : children}</main>
           </div>
         </div>
 
@@ -867,28 +1120,37 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
               <nav style={mobileDrawerNav}>
                 {menu.map((item) => {
                   const isActive = ativo(item.href);
+                  const itemBloqueado = menuBloqueadoPorLicenca(item.href);
 
                   return (
                     <Link
                       key={item.href}
-                      href={item.href}
+                      href={itemBloqueado ? "/planos" : item.href}
                       onClick={() => setMobileMenuAberto(false)}
                       style={{
                         ...mobileDrawerItem,
-                        background: isActive
-                          ? `linear-gradient(135deg, ${corPrimaria}, ${corSecundaria})`
-                          : "rgba(255,255,255,0.035)",
-                        border: isActive
-                          ? `1px solid ${corPrimaria}66`
-                          : "1px solid rgba(255,255,255,0.06)",
-                        color: isActive ? "#fff" : "#cbd5e1",
-                        boxShadow: isActive
-                          ? `0 14px 32px ${corPrimaria}33`
-                          : "none",
+                        background: itemBloqueado
+                          ? "rgba(100,116,139,0.08)"
+                          : isActive
+                            ? `linear-gradient(135deg, ${corPrimaria}, ${corSecundaria})`
+                            : "rgba(255,255,255,0.035)",
+                        border: itemBloqueado
+                          ? "1px solid rgba(248,113,113,0.18)"
+                          : isActive
+                            ? `1px solid ${corPrimaria}66`
+                            : "1px solid rgba(255,255,255,0.06)",
+                        color: itemBloqueado ? "#94a3b8" : isActive ? "#fff" : "#cbd5e1",
+                        boxShadow: itemBloqueado
+                          ? "none"
+                          : isActive
+                            ? `0 14px 32px ${corPrimaria}33`
+                            : "none",
+                        opacity: itemBloqueado ? 0.72 : 1,
                       }}
                     >
                       <span style={menuIcon}>{item.icon}</span>
                       <span>{item.label}</span>
+                      {itemBloqueado && <span style={licenseMenuBadge}>Bloqueado</span>}
                     </Link>
                   );
                 })}
@@ -929,11 +1191,12 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
         <div className="marcae-mobile-menu" style={mobileMenu}>
           {menu.slice(0, 5).map((item) => {
             const isActive = ativo(item.href);
+            const itemBloqueado = menuBloqueadoPorLicenca(item.href);
 
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={itemBloqueado ? "/planos" : item.href}
                 onClick={() => {
                   setMobileMenuAberto(false);
                   setPainelNotificacoesAberto(false);
@@ -941,11 +1204,14 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
                 }}
                 style={{
                   ...mobileMenuItem,
-                  background: isActive
-                    ? `linear-gradient(135deg, ${corPrimaria}, ${corSecundaria})`
-                    : "transparent",
-                  color: isActive ? "#fff" : "#94a3b8",
-                  boxShadow: isActive ? `0 10px 30px ${corPrimaria}55` : "none",
+                  background: itemBloqueado
+                    ? "rgba(100,116,139,0.08)"
+                    : isActive
+                      ? `linear-gradient(135deg, ${corPrimaria}, ${corSecundaria})`
+                      : "transparent",
+                  color: itemBloqueado ? "#64748b" : isActive ? "#fff" : "#94a3b8",
+                  boxShadow: itemBloqueado ? "none" : isActive ? `0 10px 30px ${corPrimaria}55` : "none",
+                  opacity: itemBloqueado ? 0.62 : 1,
                 }}
               >
                 <span style={{ fontSize: 18 }}>{item.icon}</span>
@@ -954,6 +1220,191 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
             );
           })}
         </div>
+
+        {bloquearModalLicenca && (
+          <div style={licenseModalOverlay} role="dialog" aria-modal="true">
+            <div style={licenseModalBox}>
+              <div style={licenseModalIcon}>🔒</div>
+
+              <span style={licenseModalKicker}>Assinatura vencida</span>
+
+              <h2 style={licenseModalTitle}>Acesso temporariamente bloqueado</h2>
+
+              <p style={licenseModalText}>
+                Sua empresa está há <strong>{licencaEmpresa.diasAtraso} dias</strong> com a mensalidade em atraso.
+                Para continuar utilizando o Marcaê, regularize a assinatura.
+              </p>
+
+              {!pixAssinatura && (
+                <div style={licensePaymentOptions}>
+                  <button
+                    type="button"
+                    onClick={gerarPixLicenca}
+                    disabled={gerandoPixLicenca}
+                    style={licensePixButton}
+                  >
+                    <span style={licensePaymentIcon}>💚</span>
+                    <span style={licensePaymentText}>
+                      <strong>{gerandoPixLicenca ? "Gerando Pix..." : "Pagar via Pix agora"}</strong>
+                      <small>QR Code + Pix copia e cola dentro do Marcaê</small>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={pagarComCartaoLicenca}
+                    disabled={gerandoPagamentoLicenca}
+                    style={licenseCardButton}
+                  >
+                    <span style={licensePaymentIcon}>💳</span>
+                    <span style={licensePaymentText}>
+                      <strong>{gerandoPagamentoLicenca ? "Abrindo Mercado Pago..." : "Pagar com cartão"}</strong>
+                      <small>Cartão e outros meios no Checkout Mercado Pago</small>
+                    </span>
+                  </button>
+
+                  {erroPixAssinatura && (
+                    <div style={licensePixError}>{erroPixAssinatura}</div>
+                  )}
+
+                  <div style={licenseHelpBox}>
+                    <div>
+                      <strong>🤝 Não consegue realizar o pagamento?</strong>
+                      <span>Fale com nossa equipe para receber ajuda na regularização.</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={abrirAjudaPagamentoLicenca}
+                      style={licenseHelpButton}
+                    >
+                      💬 Falar com a equipe Marcaê
+                    </button>
+                  </div>
+
+                  <button type="button" onClick={sair} style={licenseModalSecondaryButton}>
+                    Sair
+                  </button>
+                </div>
+              )}
+
+              {pixAssinatura && (
+                <div style={licensePixArea}>
+                  <div style={licensePixHeader}>
+                    <div>
+                      <strong>Pix Mercado Pago gerado</strong>
+                      <span>Escaneie o QR Code ou copie o código Pix.</span>
+                    </div>
+
+                    <span
+                      style={{
+                        ...licensePixTimer,
+                        ...(statusPixAssinatura === "expirado" ? licensePixTimerExpired : {}),
+                      }}
+                    >
+                      {statusPixAssinatura === "expirado"
+                        ? "Expirado"
+                        : formatarTempoPix(segundosPixAssinatura)}
+                    </span>
+                  </div>
+
+                  <div style={licensePixQrBox}>
+                    {pixAssinatura.qrCodeBase64 ? (
+                      <img
+                        src={`data:image/png;base64,${pixAssinatura.qrCodeBase64}`}
+                        alt="QR Code Pix para regularizar assinatura"
+                        style={licensePixQrImage}
+                      />
+                    ) : (
+                      <div style={licensePixQrFallback}>QR Code indisponível</div>
+                    )}
+                  </div>
+
+                  <div style={licensePixMeta}>
+                    <span>Valor</span>
+                    <strong>{formatarValorPix(pixAssinatura.valor)}</strong>
+                  </div>
+
+                  <div style={licensePixCodeBox}>
+                    <span>Pix copia e cola</span>
+                    <textarea
+                      readOnly
+                      value={pixAssinatura.qrCode || ""}
+                      style={licensePixTextarea}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={copiarCodigoPixLicenca}
+                      style={licenseCopyPixButton}
+                    >
+                      {copiadoPixAssinatura ? "Código copiado!" : "Copiar código Pix"}
+                    </button>
+                  </div>
+
+                  <div
+                    style={{
+                      ...licensePixStatus,
+                      ...(statusPixAssinatura === "aprovado" ? licensePixStatusApproved : {}),
+                      ...(statusPixAssinatura === "erro" || statusPixAssinatura === "expirado"
+                        ? licensePixStatusError
+                        : {}),
+                    }}
+                  >
+                    {statusPixAssinatura === "aprovado" ? (
+                      <>✅ Pagamento confirmado! Liberando acesso...</>
+                    ) : statusPixAssinatura === "expirado" ? (
+                      <>⚠️ Este Pix expirou. Gere um novo código para pagar.</>
+                    ) : statusPixAssinatura === "erro" ? (
+                      <>⚠️ {erroPixAssinatura || "Não foi possível consultar o Pix."}</>
+                    ) : (
+                      <>⏳ Aguardando pagamento. A confirmação é automática.</>
+                    )}
+                  </div>
+
+                  <div style={licensePixActions}>
+                    <button
+                      type="button"
+                      onClick={gerarPixLicenca}
+                      disabled={gerandoPixLicenca}
+                      style={licenseModalSecondaryButton}
+                    >
+                      {gerandoPixLicenca ? "Gerando..." : "Gerar novo Pix"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={pagarComCartaoLicenca}
+                      disabled={gerandoPagamentoLicenca}
+                      style={licenseModalPrimaryButton}
+                    >
+                      {gerandoPagamentoLicenca ? "Abrindo..." : "Pagar com cartão"}
+                    </button>
+                  </div>
+
+                  <div style={licenseHelpBox}>
+                    <div>
+                      <strong>🤝 Precisa de ajuda?</strong>
+                      <span>Se tiver dificuldade com o Pix ou cartão, fale com nossa equipe.</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={abrirAjudaPagamentoLicenca}
+                      style={licenseHelpButton}
+                    >
+                      💬 Falar com a equipe Marcaê
+                    </button>
+                  </div>
+
+                  <button type="button" onClick={sair} style={licenseModalSecondaryButton}>
+                    Sair
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <style jsx>{`
           .marcae-mobile-menu-button {
@@ -1909,4 +2360,322 @@ const mobileMenuItem: React.CSSProperties = {
   textDecoration: "none",
   fontSize: 11,
   fontWeight: 800,
+};
+
+
+const licenseMenuBadge: React.CSSProperties = {
+  marginLeft: 'auto',
+  borderRadius: 999,
+  padding: '3px 7px',
+  background: 'rgba(239,68,68,0.16)',
+  border: '1px solid rgba(248,113,113,0.22)',
+  color: '#fecaca',
+  fontSize: 9,
+  fontWeight: 950,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+};
+
+const licenseModalOverlay: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 10000,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 18,
+  background: 'rgba(2,6,23,0.88)',
+  backdropFilter: 'blur(18px)',
+};
+
+const licenseModalBox: React.CSSProperties = {
+  width: 'min(620px, 100%)',
+  borderRadius: 30,
+  padding: 28,
+  background: 'linear-gradient(145deg, rgba(15,23,42,0.98), rgba(30,41,59,0.96))',
+  border: '1px solid rgba(248,113,113,0.24)',
+  boxShadow: '0 28px 90px rgba(0,0,0,0.55)',
+  color: '#fff',
+  textAlign: 'center',
+};
+
+const licenseModalIcon: React.CSSProperties = {
+  width: 62,
+  height: 62,
+  margin: '0 auto 14px',
+  borderRadius: 22,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'linear-gradient(135deg, rgba(239,68,68,0.95), rgba(124,58,237,0.90))',
+  fontSize: 28,
+  boxShadow: '0 18px 42px rgba(239,68,68,0.28)',
+};
+
+const licenseModalKicker: React.CSSProperties = {
+  display: 'inline-flex',
+  borderRadius: 999,
+  padding: '6px 10px',
+  background: 'rgba(239,68,68,0.12)',
+  border: '1px solid rgba(248,113,113,0.22)',
+  color: '#fecaca',
+  fontSize: 11,
+  fontWeight: 950,
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+};
+
+const licenseModalTitle: React.CSSProperties = {
+  margin: '14px 0 8px',
+  fontSize: 30,
+  lineHeight: 1.05,
+  letterSpacing: '-0.045em',
+  fontWeight: 950,
+};
+
+const licenseModalText: React.CSSProperties = {
+  margin: '0 auto 18px',
+  maxWidth: 430,
+  color: '#cbd5e1',
+  lineHeight: 1.6,
+  fontSize: 14,
+  fontWeight: 700,
+};
+
+const licenseModalActions: React.CSSProperties = {
+  display: 'grid',
+  gap: 10,
+};
+
+const licenseModalPrimaryButton: React.CSSProperties = {
+  minHeight: 48,
+  border: 'none',
+  borderRadius: 16,
+  background: 'linear-gradient(135deg, #ef4444, #7c3aed)',
+  color: '#fff',
+  fontWeight: 950,
+  cursor: 'pointer',
+  boxShadow: '0 16px 36px rgba(239,68,68,0.24)',
+};
+
+const licenseModalSecondaryButton: React.CSSProperties = {
+  minHeight: 46,
+  border: '1px solid rgba(255,255,255,0.12)',
+  borderRadius: 16,
+  background: 'rgba(255,255,255,0.05)',
+  color: '#e2e8f0',
+  fontWeight: 900,
+  cursor: 'pointer',
+};
+
+
+const licensePaymentOptions: React.CSSProperties = {
+  display: 'grid',
+  gap: 12,
+};
+
+const licensePixButton: React.CSSProperties = {
+  width: '100%',
+  border: '1px solid rgba(34,197,94,0.36)',
+  borderRadius: 18,
+  padding: 14,
+  background: 'linear-gradient(135deg, rgba(22,163,74,0.22), rgba(15,23,42,0.78))',
+  color: '#fff',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  textAlign: 'left',
+  cursor: 'pointer',
+};
+
+const licenseCardButton: React.CSSProperties = {
+  width: '100%',
+  border: '1px solid rgba(168,85,247,0.36)',
+  borderRadius: 18,
+  padding: 14,
+  background: 'linear-gradient(135deg, rgba(124,58,237,0.24), rgba(15,23,42,0.78))',
+  color: '#fff',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  textAlign: 'left',
+  cursor: 'pointer',
+};
+
+const licensePaymentIcon: React.CSSProperties = {
+  width: 42,
+  height: 42,
+  borderRadius: 15,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'rgba(255,255,255,0.08)',
+  border: '1px solid rgba(255,255,255,0.10)',
+  flexShrink: 0,
+  fontSize: 20,
+};
+
+const licensePaymentText: React.CSSProperties = {
+  display: 'grid',
+  gap: 3,
+};
+
+const licensePixError: React.CSSProperties = {
+  borderRadius: 14,
+  padding: 12,
+  background: 'rgba(239,68,68,0.10)',
+  border: '1px solid rgba(248,113,113,0.22)',
+  color: '#fecaca',
+  fontSize: 12,
+  fontWeight: 800,
+};
+
+const licenseHelpBox: React.CSSProperties = {
+  display: 'grid',
+  gap: 10,
+  padding: 14,
+  borderRadius: 18,
+  background: 'linear-gradient(135deg, rgba(34,197,94,0.10), rgba(15,23,42,0.72))',
+  border: '1px solid rgba(34,197,94,0.22)',
+  color: '#e2e8f0',
+  textAlign: 'left',
+};
+
+const licenseHelpButton: React.CSSProperties = {
+  minHeight: 42,
+  border: '1px solid rgba(34,197,94,0.34)',
+  borderRadius: 14,
+  background: 'rgba(34,197,94,0.16)',
+  color: '#bbf7d0',
+  fontWeight: 950,
+  cursor: 'pointer',
+};
+
+const licensePixArea: React.CSSProperties = {
+  display: 'grid',
+  gap: 12,
+  textAlign: 'left',
+};
+
+const licensePixHeader: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+  borderRadius: 18,
+  padding: 14,
+  background: 'rgba(255,255,255,0.05)',
+  border: '1px solid rgba(255,255,255,0.08)',
+};
+
+const licensePixTimer: React.CSSProperties = {
+  borderRadius: 999,
+  padding: '8px 11px',
+  background: 'rgba(34,197,94,0.14)',
+  border: '1px solid rgba(74,222,128,0.24)',
+  color: '#bbf7d0',
+  fontSize: 12,
+  fontWeight: 950,
+  flexShrink: 0,
+};
+
+const licensePixTimerExpired: React.CSSProperties = {
+  background: 'rgba(239,68,68,0.12)',
+  border: '1px solid rgba(248,113,113,0.26)',
+  color: '#fecaca',
+};
+
+const licensePixQrBox: React.CSSProperties = {
+  width: 'min(235px, 100%)',
+  margin: '0 auto',
+  borderRadius: 24,
+  padding: 12,
+  background: '#fff',
+  boxShadow: '0 18px 45px rgba(0,0,0,0.22)',
+};
+
+const licensePixQrImage: React.CSSProperties = {
+  width: '100%',
+  display: 'block',
+  borderRadius: 14,
+};
+
+const licensePixQrFallback: React.CSSProperties = {
+  minHeight: 180,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: '#0f172a',
+  fontWeight: 900,
+};
+
+const licensePixMeta: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+  padding: '12px 14px',
+  borderRadius: 16,
+  background: 'rgba(255,255,255,0.05)',
+  border: '1px solid rgba(255,255,255,0.08)',
+  color: '#e2e8f0',
+};
+
+const licensePixCodeBox: React.CSSProperties = {
+  display: 'grid',
+  gap: 8,
+};
+
+const licensePixTextarea: React.CSSProperties = {
+  width: '100%',
+  minHeight: 74,
+  resize: 'none',
+  borderRadius: 14,
+  border: '1px solid rgba(148,163,184,0.22)',
+  background: 'rgba(2,6,23,0.60)',
+  color: '#e2e8f0',
+  padding: 12,
+  fontSize: 11,
+  lineHeight: 1.45,
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const licenseCopyPixButton: React.CSSProperties = {
+  minHeight: 42,
+  border: '1px solid rgba(34,197,94,0.34)',
+  borderRadius: 14,
+  background: 'rgba(34,197,94,0.14)',
+  color: '#bbf7d0',
+  fontWeight: 950,
+  cursor: 'pointer',
+};
+
+const licensePixStatus: React.CSSProperties = {
+  borderRadius: 16,
+  padding: 12,
+  background: 'rgba(250,204,21,0.10)',
+  border: '1px solid rgba(250,204,21,0.20)',
+  color: '#fef3c7',
+  fontSize: 12,
+  fontWeight: 850,
+  textAlign: 'center',
+};
+
+const licensePixStatusApproved: React.CSSProperties = {
+  background: 'rgba(34,197,94,0.12)',
+  border: '1px solid rgba(74,222,128,0.24)',
+  color: '#bbf7d0',
+};
+
+const licensePixStatusError: React.CSSProperties = {
+  background: 'rgba(239,68,68,0.12)',
+  border: '1px solid rgba(248,113,113,0.24)',
+  color: '#fecaca',
+};
+
+const licensePixActions: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: 10,
 };

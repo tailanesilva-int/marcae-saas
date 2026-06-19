@@ -329,6 +329,73 @@ export async function PATCH(req: Request, context: any) {
       return NextResponse.json({ empresa });
     }
 
+    if (acao === "liberarDias") {
+      const dias = Number(body?.dias || 0);
+      const motivo = String(body?.motivo || "").trim();
+
+      if (!Number.isFinite(dias) || dias <= 0 || dias > 365) {
+        return NextResponse.json(
+          { error: "Informe uma quantidade de dias válida entre 1 e 365." },
+          { status: 400 }
+        );
+      }
+
+      if (!motivo) {
+        return NextResponse.json(
+          { error: "Informe o motivo da liberação." },
+          { status: 400 }
+        );
+      }
+
+      const base =
+        empresaAtual.assinaturaExpiraEm &&
+        new Date(empresaAtual.assinaturaExpiraEm) > new Date()
+          ? new Date(empresaAtual.assinaturaExpiraEm)
+          : new Date();
+
+      const novaData = adicionarDias(base, dias);
+
+      const planoAtual =
+        empresaAtual.plano === "trial"
+          ? "basico"
+          : normalizarPlano(empresaAtual.plano || "basico");
+
+      const empresa = await prisma.$transaction(async (tx) => {
+        const atualizada = await tx.empresa.update({
+          where: { id: empresaId },
+          data: {
+            plano: planoAtual,
+            ativo: true,
+            trialAtivo: false,
+            trialExpiraEm: null,
+            assinaturaStatus: "ativa",
+            assinaturaExpiraEm: novaData,
+            assinaturaProximaCobrancaEm: novaData,
+            statusFinanceiro: "em_dia",
+            bloqueadoPorInadimplencia: false,
+          },
+        });
+
+        await tx.usuarioEmpresa.updateMany({
+          where: { empresaId },
+          data: {
+            permissoes: permissoesPorPlano(planoAtual),
+          },
+        });
+
+        await registrarLogEmpresa(
+          tx,
+          empresaId,
+          "liberarDias",
+          `Liberação manual por mais ${dias} dia(s). Motivo: ${motivo}`
+        );
+
+        return atualizada;
+      });
+
+      return NextResponse.json({ empresa });
+    }
+
     if (acao === "renovar30") {
       const base =
         empresaAtual.assinaturaExpiraEm &&

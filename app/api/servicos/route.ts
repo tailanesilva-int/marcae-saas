@@ -27,6 +27,21 @@ export async function GET(req: Request) {
 
   const servicos = await prisma.servico.findMany({
     where: { empresaId },
+    include: {
+      fichaModelo: {
+        select: {
+          id: true,
+          titulo: true,
+          status: true,
+          categoria: true,
+        },
+      },
+      profissionais: {
+        include: {
+          profissional: true,
+        },
+      },
+    },
     orderBy: { createdAt: 'desc' },
   });
 
@@ -50,6 +65,7 @@ export async function POST(req: Request) {
     imagemUrl1,
     imagemUrl2,
     imagemUrl3,
+    fichaModeloId,
   } = body;
 
   const empresa = await prisma.empresa.findUnique({
@@ -61,6 +77,25 @@ export async function POST(req: Request) {
       { error: 'Pré-pagamento disponível apenas no plano premium' },
       { status: 403 }
     );
+  }
+
+  const fichaModeloIdNormalizado = fichaModeloId ? String(fichaModeloId) : null;
+
+  if (fichaModeloIdNormalizado) {
+    const fichaModelo = await prisma.fichaModelo.findFirst({
+      where: {
+        id: fichaModeloIdNormalizado,
+        empresaId,
+        status: 'ativo',
+      },
+    });
+
+    if (!fichaModelo) {
+      return NextResponse.json(
+        { error: 'Ficha digital vinculada não encontrada ou inativa.' },
+        { status: 404 }
+      );
+    }
   }
 
   const servico = await prisma.servico.create({
@@ -78,6 +113,7 @@ export async function POST(req: Request) {
       imagemUrl1: imagemUrl1 || null,
       imagemUrl2: imagemUrl2 || null,
       imagemUrl3: imagemUrl3 || null,
+      fichaModeloId: fichaModeloIdNormalizado,
     },
   });
 
@@ -104,6 +140,7 @@ export async function PUT(req: Request) {
       imagemUrl1,
       imagemUrl2,
       imagemUrl3,
+      fichaModeloId,
     } = body;
 
     if (!id) {
@@ -140,6 +177,25 @@ export async function PUT(req: Request) {
       );
     }
 
+    const fichaModeloIdNormalizado = fichaModeloId ? String(fichaModeloId) : null;
+
+    if (fichaModeloIdNormalizado) {
+      const fichaModelo = await prisma.fichaModelo.findFirst({
+        where: {
+          id: fichaModeloIdNormalizado,
+          empresaId,
+          status: 'ativo',
+        },
+      });
+
+      if (!fichaModelo) {
+        return NextResponse.json(
+          { error: 'Ficha digital vinculada não encontrada ou inativa.' },
+          { status: 404 }
+        );
+      }
+    }
+
     const servico = await prisma.servico.update({
       where: {
         id,
@@ -158,6 +214,7 @@ export async function PUT(req: Request) {
         imagemUrl2: imagemUrl2 || null,
         imagemUrl3: imagemUrl3 || null,
         ativo: ativo === undefined ? servicoExistente.ativo : ativo,
+        fichaModeloId: fichaModeloIdNormalizado,
       },
     });
 

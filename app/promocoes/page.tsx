@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import PremiumLayout from "@/components/layout/PremiumLayout";
+import { obterStatusLicencaEmpresa } from "@/app/lib/licencaEmpresa";
 
 export default function PromocoesPage() {
   const [empresa, setEmpresa] = useState<any>(null);
@@ -342,6 +343,12 @@ export default function PromocoesPage() {
         <div style={loadingCard}>Carregando módulo de promoções...</div>
       </main>
     );
+  }
+
+  const licencaEmpresa = obterStatusLicencaEmpresa(empresa);
+
+  if (licencaEmpresa.bloquearPromocoes) {
+    return <LicencaBloqueada empresa={empresa} usuario={usuario} modulo="Promoções" />;
   }
 
   return (
@@ -2318,3 +2325,23 @@ const botaoInativar = {
   fontWeight: 700,
   cursor: "pointer",
 };
+
+
+function LicencaBloqueada({ empresa, usuario, modulo }: any) {
+  return (
+    <PremiumLayout empresa={empresa} usuario={usuario}>
+      <main style={{ minHeight: '100vh', padding: 24, display: 'grid', placeItems: 'center', background: 'linear-gradient(135deg, #020617, #0f172a)' }}>
+        <section style={{ width: 'min(560px, 100%)', borderRadius: 28, padding: 28, background: 'linear-gradient(145deg, rgba(15,23,42,0.96), rgba(30,41,59,0.88))', border: '1px solid rgba(248,113,113,0.24)', boxShadow: '0 24px 70px rgba(0,0,0,0.36)', color: '#fff', textAlign: 'center' }}>
+          <div style={{ width: 58, height: 58, margin: '0 auto 14px', borderRadius: 20, display: 'grid', placeItems: 'center', background: 'linear-gradient(135deg, #f97316, #7c3aed)', fontSize: 26 }}>🔒</div>
+          <h1 style={{ margin: '0 0 8px', fontSize: 28, letterSpacing: '-0.04em' }}>{modulo} bloqueado temporariamente</h1>
+          <p style={{ margin: '0 0 18px', color: '#cbd5e1', lineHeight: 1.6, fontWeight: 700 }}>
+            Este recurso foi bloqueado devido ao atraso da assinatura. Regularize sua mensalidade para liberar novamente este módulo.
+          </p>
+          <a href="/planos" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 46, padding: '0 18px', borderRadius: 16, background: 'linear-gradient(135deg, #f97316, #7c3aed)', color: '#fff', textDecoration: 'none', fontWeight: 950 }}>
+            Regularizar pagamento
+          </a>
+        </section>
+      </main>
+    </PremiumLayout>
+  );
+}

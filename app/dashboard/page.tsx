@@ -2,6 +2,7 @@
 
 import PremiumLayout from '@/components/layout/PremiumLayout';
 import { gerarTemaEmpresa } from '@/app/lib/theme';
+import { obterStatusLicencaEmpresa } from '@/app/lib/licencaEmpresa';
 import { useEffect, useState } from 'react';
 import {
   LineChart,
@@ -60,6 +61,10 @@ const [resumoFinanceiroCliente, setResumoFinanceiroCliente] = useState<any>({
 const [carregandoFinanceiroCliente, setCarregandoFinanceiroCliente] = useState(false);
 
 const [formFinalizacao, setFormFinalizacao] = useState({
+  habilitarFechamento: false,
+  habilitarAjusteValor: false,
+  tipoAjusteFechamento: 'desconto',
+  habilitarCreditoDebito: false,
   valorDescontoAtendimento: '',
   tipoDescontoAtendimento: 'valor',
   valorAcrescimoAtendimento: '',
@@ -72,6 +77,7 @@ const [formFinalizacao, setFormFinalizacao] = useState({
   gerarCreditoCliente: false,
   valorCreditoCliente: '',
   observacaoCreditoCliente: '',
+  valorCreditoUtilizadoCliente: '',
   abaterDebitoCliente: false,
   valorAbatimentoDebitoCliente: '',
   observacaoAbatimentoDebitoCliente: '',
@@ -750,6 +756,10 @@ function promocaoDoAgendamento(agendamento: any) {
 
   function limparFormFinalizacao() {
     setFormFinalizacao({
+      habilitarFechamento: false,
+      habilitarAjusteValor: false,
+      tipoAjusteFechamento: 'desconto',
+      habilitarCreditoDebito: false,
       valorDescontoAtendimento: '',
       tipoDescontoAtendimento: 'valor',
       valorAcrescimoAtendimento: '',
@@ -762,6 +772,7 @@ function promocaoDoAgendamento(agendamento: any) {
       gerarCreditoCliente: false,
       valorCreditoCliente: '',
       observacaoCreditoCliente: '',
+      valorCreditoUtilizadoCliente: '',
       abaterDebitoCliente: false,
       valorAbatimentoDebitoCliente: '',
       observacaoAbatimentoDebitoCliente: '',
@@ -828,8 +839,14 @@ function promocaoDoAgendamento(agendamento: any) {
       0
     );
 
+    const creditoDisponivelCliente = valorNumerico(resumoFinanceiroCliente.credito);
+    const creditoInformadoCliente = valorNumerico(formFinalizacao.valorCreditoUtilizadoCliente);
     const creditoAplicavel = formFinalizacao.usarCreditoCliente
-      ? Math.min(valorNumerico(resumoFinanceiroCliente.credito), pendenteAposPagamentos)
+      ? Math.min(
+          creditoInformadoCliente > 0 ? creditoInformadoCliente : creditoDisponivelCliente,
+          creditoDisponivelCliente,
+          pendenteAposPagamentos
+        )
       : 0;
 
     return {
@@ -959,6 +976,174 @@ function promocaoDoAgendamento(agendamento: any) {
     });
   }
 
+  function registroAtivoPainel(item: any) {
+    if (!item) return false;
+
+    const ativo = item?.ativo;
+    const status = String(item?.status || item?.situacao || '').toLowerCase();
+
+    if (ativo === false) return false;
+
+    if (
+      status === 'inativo' ||
+      status === 'inativa' ||
+      status === 'desativado' ||
+      status === 'desativada' ||
+      status === 'bloqueado' ||
+      status === 'bloqueada'
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+  function normalizarIdPainel(valor: any) {
+    if (valor === null || valor === undefined || valor === '') return '';
+
+    return String(valor);
+  }
+
+  function idsServicosDoProfissionalPainel(profissional: any) {
+    const fontes = [
+      profissional?.servicos,
+      profissional?.Servicos,
+      profissional?.servicosVinculados,
+      profissional?.profissionalServicos,
+      profissional?.ProfissionalServico,
+      profissional?.ProfissionalServicos,
+      profissional?.servicosIds,
+      profissional?.servicoIds,
+    ];
+
+    const ids = fontes
+      .filter(Array.isArray)
+      .flatMap((lista: any[]) =>
+        lista
+          .map((item: any) => {
+            if (typeof item === 'string') return item;
+
+            return (
+              item?.servicoId ||
+              item?.ServicoId ||
+              item?.servico_id ||
+              item?.idServico ||
+              item?.servico?.id ||
+              item?.Servico?.id ||
+              item?.servico?.servicoId ||
+              item?.Servico?.servicoId ||
+              ''
+            );
+          })
+          .map(normalizarIdPainel)
+          .filter(Boolean)
+      );
+
+    return Array.from(new Set(ids));
+  }
+
+  function idsProfissionaisDoServicoPainel(servico: any) {
+    const fontes = [
+      servico?.profissionais,
+      servico?.Profissionais,
+      servico?.profissionaisVinculados,
+      servico?.servicoProfissionais,
+      servico?.ServicoProfissional,
+      servico?.ServicoProfissionais,
+      servico?.profissionaisIds,
+      servico?.profissionalIds,
+    ];
+
+    const ids = fontes
+      .filter(Array.isArray)
+      .flatMap((lista: any[]) =>
+        lista
+          .map((item: any) => {
+            if (typeof item === 'string') return item;
+
+            return (
+              item?.profissionalId ||
+              item?.ProfissionalId ||
+              item?.profissional_id ||
+              item?.idProfissional ||
+              item?.profissional?.id ||
+              item?.Profissional?.id ||
+              item?.profissional?.profissionalId ||
+              item?.Profissional?.profissionalId ||
+              ''
+            );
+          })
+          .map(normalizarIdPainel)
+          .filter(Boolean)
+      );
+
+    return Array.from(new Set(ids));
+  }
+
+  function profissionalAtendeServicoPainel(profissional: any, servicoId?: string) {
+    const servicoIdNormalizado = normalizarIdPainel(servicoId);
+
+    if (!servicoIdNormalizado) return true;
+
+    const idsServicos = idsServicosDoProfissionalPainel(profissional);
+
+    if (idsServicos.length > 0) {
+      return idsServicos.includes(servicoIdNormalizado);
+    }
+
+    const servico = servicosEmpresa.find(
+      (item: any) => normalizarIdPainel(item.id) === servicoIdNormalizado
+    );
+
+    const idsProfissionais = idsProfissionaisDoServicoPainel(servico);
+
+    if (idsProfissionais.length > 0) {
+      return idsProfissionais.includes(normalizarIdPainel(profissional?.id));
+    }
+
+    return false;
+  }
+
+  function servicoAtendidoPorProfissionalPainel(servico: any, profissionalId?: string) {
+    const profissionalIdNormalizado = normalizarIdPainel(profissionalId);
+
+    if (!profissionalIdNormalizado) return true;
+
+    const idsProfissionais = idsProfissionaisDoServicoPainel(servico);
+
+    if (idsProfissionais.length > 0) {
+      return idsProfissionais.includes(profissionalIdNormalizado);
+    }
+
+    const profissional = profissionaisEmpresa.find(
+      (item: any) => normalizarIdPainel(item.id) === profissionalIdNormalizado
+    );
+
+    const idsServicos = idsServicosDoProfissionalPainel(profissional);
+
+    if (idsServicos.length > 0) {
+      return idsServicos.includes(normalizarIdPainel(servico?.id));
+    }
+
+    return false;
+  }
+
+  function servicosAtivosParaAdicional(profissionalId = formServicoAdicional.profissionalId) {
+    return servicosEmpresa.filter(
+      (servico: any) =>
+        registroAtivoPainel(servico) &&
+        servicoAtendidoPorProfissionalPainel(servico, profissionalId)
+    );
+  }
+
+  function profissionaisAtivosParaAdicional(servicoId = formServicoAdicional.servicoId) {
+    return profissionaisEmpresa.filter(
+      (profissional: any) =>
+        registroAtivoPainel(profissional) &&
+        profissionalAtendeServicoPainel(profissional, servicoId)
+    );
+  }
+
   async function carregarServicosAdicionais(agendamento: any) {
     if (!empresa?.id || !agendamento?.id) return;
 
@@ -987,13 +1172,41 @@ function promocaoDoAgendamento(agendamento: any) {
   }
 
   function alterarServicoAdicionalSelecionado(servicoId: string) {
-    const servico = servicosEmpresa.find((item) => item.id === servicoId);
+    const servico = servicosAtivosParaAdicional().find((item: any) => item.id === servicoId);
+    const profissionaisVinculados = profissionaisAtivosParaAdicional(servicoId);
+    const profissionalSelecionadoAindaValido =
+      formServicoAdicional.profissionalId &&
+      profissionaisVinculados.some(
+        (profissional: any) => profissional.id === formServicoAdicional.profissionalId
+      );
 
     setFormServicoAdicional({
       ...formServicoAdicional,
       servicoId,
+      profissionalId: profissionalSelecionadoAindaValido
+        ? formServicoAdicional.profissionalId
+        : '',
       valor: servico?.valor !== undefined && servico?.valor !== null
         ? String(servico.valor)
+        : '',
+    });
+  }
+
+  function alterarProfissionalAdicionalSelecionado(profissionalId: string) {
+    const servicoSelecionadoAindaValido =
+      formServicoAdicional.servicoId &&
+      servicosAtivosParaAdicional(profissionalId).some(
+        (servico: any) => servico.id === formServicoAdicional.servicoId
+      );
+
+    setFormServicoAdicional({
+      ...formServicoAdicional,
+      profissionalId,
+      servicoId: servicoSelecionadoAindaValido
+        ? formServicoAdicional.servicoId
+        : '',
+      valor: servicoSelecionadoAindaValido
+        ? formServicoAdicional.valor
         : '',
     });
   }
@@ -1125,11 +1338,46 @@ if (
   );
 
   const pendenciaComCredito = obterPendenciaComCredito(agendamentoSelecionado);
-  const excedentePagamento = Math.max(totalPagamentosInformados - pendenteAjustadoFechamentoAtual, 0);
   const debitoClienteDisponivel = valorNumerico(resumoFinanceiroCliente.debito);
   const valorAbatimentoDebitoCliente = formFinalizacao.abaterDebitoCliente
     ? valorNumerico(formFinalizacao.valorAbatimentoDebitoCliente)
     : 0;
+  const creditoDisponivelCliente = valorNumerico(resumoFinanceiroCliente.credito);
+  const creditoInformadoCliente = valorNumerico(formFinalizacao.valorCreditoUtilizadoCliente);
+  const creditoAplicadoFechamento = formFinalizacao.usarCreditoCliente
+    ? Math.min(
+        creditoInformadoCliente > 0 ? creditoInformadoCliente : creditoDisponivelCliente,
+        creditoDisponivelCliente,
+        pendenteAjustadoFechamentoAtual
+      )
+    : 0;
+  const totalAReceberFechamento = Math.max(
+    pendenteAjustadoFechamentoAtual - creditoAplicadoFechamento,
+    0
+  ) + valorAbatimentoDebitoCliente;
+  const excedentePagamento = Math.max(totalPagamentosInformados - totalAReceberFechamento, 0);
+  const saldoFechamentoAtual = Math.max(totalAReceberFechamento - totalPagamentosInformados, 0);
+
+  if (formFinalizacao.abaterDebitoCliente) {
+    if (valorAbatimentoDebitoCliente <= 0) {
+      alert('Informe o valor do débito que será cobrado neste fechamento.');
+      return;
+    }
+
+    if (valorAbatimentoDebitoCliente > debitoClienteDisponivel) {
+      alert(
+        `O débito cobrado não pode ser maior que o débito disponível do cliente (${dinheiro(debitoClienteDisponivel)}).`
+      );
+      return;
+    }
+
+    if (saldoFechamentoAtual > 0) {
+      alert(
+        `O saldo a pagar atualizado é ${dinheiro(totalAReceberFechamento)}. Informe o recebimento completo ou desative a cobrança do débito neste fechamento.`
+      );
+      return;
+    }
+  }
 
   if (excedentePagamento > 0) {
     if (!formFinalizacao.abaterDebitoCliente && debitoClienteDisponivel > 0) {
@@ -1280,6 +1528,7 @@ if (
         gerarCreditoCliente: formFinalizacao.gerarCreditoCliente,
         valorCreditoCliente: formFinalizacao.valorCreditoCliente,
         observacaoCreditoCliente: formFinalizacao.observacaoCreditoCliente,
+        valorCreditoUtilizadoCliente: formFinalizacao.valorCreditoUtilizadoCliente,
         abaterDebitoCliente: formFinalizacao.abaterDebitoCliente,
         valorAbatimentoDebitoCliente: formFinalizacao.valorAbatimentoDebitoCliente,
         observacaoAbatimentoDebitoCliente: formFinalizacao.observacaoAbatimentoDebitoCliente,
@@ -1757,15 +2006,6 @@ async function confirmarPresenca(agendamento: any) {
     .filter((a) => a.statusPagamento === 'pago')
     .reduce((total, a) => total + calcularComissao(a), 0);
 
-  const totalAtendidos = agendamentosHoje.filter(
-    (a) => new Date(a.dataHoraInicio).getTime() < Date.now()
-  ).length;
-
-  const ocupacaoDia =
-    agendamentosHoje.length > 0
-      ? Math.round((totalAtendidos / agendamentosHoje.length) * 100)
-      : 0;
-
   const servicosRequisitadosSemana = agruparPorNome(
     agendamentosSemanaOperacional,
     nomeServico
@@ -1900,11 +2140,9 @@ const ticketMedioPeriodo =
       ? Math.round((agendamentosConcluidosPeriodo.length / agendamentosUnicos.length) * 100)
       : 0;
 
-  const agendamentosSemanaPrevisaoValidos = agendamentosSemanaPrevisaoUnicos.filter(
-    (agendamento) => agendamento.status !== 'cancelado'
-  );
+  const agendamentosPrevisaoPeriodoValidos = agendamentosPeriodoValidos;
 
-  const previsaoPeriodo = agendamentosSemanaPrevisaoValidos.reduce(
+  const previsaoPeriodo = agendamentosPrevisaoPeriodoValidos.reduce(
   (total, agendamento) => {
     const financeiro = resumoFinanceiroAtendimento(agendamento);
     return total + financeiro.total;
@@ -1912,12 +2150,12 @@ const ticketMedioPeriodo =
   0
 );
 
-const prePagamentosPeriodo = agendamentosSemanaPrevisaoValidos.reduce(
+const prePagamentosPeriodo = agendamentosPrevisaoPeriodoValidos.reduce(
   (total, agendamento) => total + valorNumerico(agendamento?.valorPrePago),
   0
 );
 
-const comissoesPeriodoEstimadas = agendamentosSemanaPrevisaoValidos.reduce(
+const comissoesPeriodoEstimadas = agendamentosPrevisaoPeriodoValidos.reduce(
   (total, agendamento) => total + calcularComissao(agendamento),
   0
 );
@@ -1952,6 +2190,7 @@ const comissoesPeriodoEstimadas = agendamentosSemanaPrevisaoValidos.reduce(
   }
 
   const tema = gerarTemaEmpresa(empresa);
+  const licencaEmpresa = obterStatusLicencaEmpresa(empresa);
 
   return (
   <PremiumLayout empresa={empresa} usuario={usuario}>
@@ -1964,6 +2203,58 @@ const comissoesPeriodoEstimadas = agendamentosSemanaPrevisaoValidos.reduce(
         '--marcae-sidebar': tema.sidebar,
       } as React.CSSProperties}
     >
+      {licencaEmpresa.mostrarBanner && (
+        <section
+          style={{
+            marginBottom: 16,
+            padding: 16,
+            borderRadius: 22,
+            background: licencaEmpresa.status === 'bloqueio_parcial'
+              ? 'linear-gradient(135deg, rgba(249,115,22,0.18), rgba(124,58,237,0.12))'
+              : 'linear-gradient(135deg, rgba(245,158,11,0.16), rgba(124,58,237,0.10))',
+            border: licencaEmpresa.status === 'bloqueio_parcial'
+              ? '1px solid rgba(251,146,60,0.28)'
+              : '1px solid rgba(251,191,36,0.24)',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 14,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div>
+            <strong style={{ display: 'block', fontSize: 15, fontWeight: 950 }}>
+              {licencaEmpresa.status === 'bloqueio_parcial'
+                ? '⚠️ Alguns recursos foram bloqueados'
+                : '⚠️ Sua assinatura está vencida'}
+            </strong>
+            <span style={{ display: 'block', marginTop: 4, color: '#cbd5e1', fontSize: 13, fontWeight: 700 }}>
+              {licencaEmpresa.mensagemCurta}. {licencaEmpresa.mensagemDetalhada}
+            </span>
+          </div>
+
+          <a
+            href="/planos"
+            style={{
+              minHeight: 40,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0 14px',
+              borderRadius: 14,
+              background: 'linear-gradient(135deg, #f97316, #7c3aed)',
+              color: '#fff',
+              textDecoration: 'none',
+              fontSize: 12,
+              fontWeight: 950,
+              boxShadow: '0 12px 28px rgba(249,115,22,0.22)',
+            }}
+          >
+            Regularizar pagamento
+          </a>
+        </section>
+      )}
       <style jsx global>{`
         html,
         body {
@@ -3174,47 +3465,79 @@ const comissoesPeriodoEstimadas = agendamentosSemanaPrevisaoValidos.reduce(
             margin-bottom: 6px !important;
           }
 
-          .dashboard-pagamentos-fechamento-mobile {
+          .dashboard-pagamento-card-compacto-mobile {
+            display: flex !important;
+            flex-direction: column !important;
             gap: 7px !important;
-            margin-bottom: 8px !important;
+            padding: 8px !important;
+            margin: 0 0 8px !important;
+            border-radius: 15px !important;
+            min-height: 0 !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+          }
+
+          .dashboard-pagamentos-fechamento-mobile {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 6px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            min-height: 0 !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
           }
 
           .dashboard-pagamento-row-mobile {
-            grid-template-columns: minmax(0, 1fr) 38px !important;
-            gap: 7px !important;
-            padding: 7px !important;
-            border-radius: 13px !important;
-            background: rgba(2,6,23,0.22) !important;
-            border: 1px solid rgba(255,255,255,0.07) !important;
-          }
-
-          .dashboard-pagamento-forma-mobile {
-            grid-column: 1 / 2 !important;
-            height: 38px !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1.2fr) minmax(82px, 0.8fr) 28px !important;
+            align-items: center !important;
+            gap: 6px !important;
+            width: 100% !important;
+            padding: 0 !important;
             margin: 0 !important;
+            border-radius: 0 !important;
+            background: transparent !important;
+            border: none !important;
+            min-height: 36px !important;
+            height: 36px !important;
           }
 
+          .dashboard-pagamento-forma-mobile,
           .dashboard-pagamento-valor-mobile {
-            grid-column: 1 / -1 !important;
-            height: 38px !important;
+            min-width: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 34px !important;
+            min-height: 34px !important;
             margin: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
           }
 
-          .dashboard-remover-pagamento-mobile {
-            grid-column: 2 / 3 !important;
-            grid-row: 1 / 2 !important;
-            width: 38px !important;
-            min-width: 38px !important;
-            max-width: 38px !important;
-            height: 38px !important;
+          .dashboard-remover-pagamento-mobile,
+          .dashboard-remover-pagamento-placeholder-mobile {
+            width: 28px !important;
+            min-width: 28px !important;
+            max-width: 28px !important;
+            height: 28px !important;
             margin: 0 !important;
             padding: 0 !important;
-            border-radius: 12px !important;
+            border-radius: 9px !important;
+            align-self: center !important;
+            justify-self: end !important;
+          }
+
+          .dashboard-remover-pagamento-placeholder-mobile {
+            visibility: hidden !important;
+            pointer-events: none !important;
           }
 
           .dashboard-adicionar-pagamento-mobile {
-            min-height: 38px !important;
-            padding: 9px 10px !important;
+            min-height: 32px !important;
+            padding: 6px 10px !important;
             border-radius: 12px !important;
             margin: 0 !important;
             font-size: 11px !important;
@@ -3377,7 +3700,7 @@ const comissoesPeriodoEstimadas = agendamentosSemanaPrevisaoValidos.reduce(
         <Card titulo="Agenda" valor={agendamentosHoje.length} />
         <Card titulo="Concluídos" valor={agendamentosConcluidosPeriodo.length} />
         <Card titulo="Clientes" valor={clientesUnicosPeriodo} />
-        <Card titulo="Ocupação" valor={`${ocupacaoDia}%`} />
+        <Card titulo="Cancelamento" valor={`${taxaCancelamentoPeriodo}%`} />
       </section>
 
       <section className="dashboard-mobile-compact-stack" style={mobileCompactStack}>
@@ -4190,7 +4513,7 @@ boxShadow:
       background: 'rgba(239,68,68,0.12)',
       border: '1px solid rgba(248,113,113,0.28)',
       color: '#fecaca',
-      borderRadius: 10,
+      borderRadius: 9,
       padding: 8,
       fontSize: 12,
       fontWeight: 800,
@@ -4277,38 +4600,78 @@ boxShadow:
                       ← Voltar para lista de atendimentos
                     </button>
 
-                    <div style={cardInfoModal}>
-                      <span style={labelModal}>Cliente</span>
-                      <strong>{nomeCliente(agendamentoSelecionado)}</strong>
-                    </div>
-
-                    <div style={cardInfoModal}>
-                      <span style={labelModal}>Serviço</span>
-                      <strong>{nomeServico(agendamentoSelecionado)}</strong>
-                    </div>
-
-                    <div style={cardInfoModal}>
-                      <span style={labelModal}>Data atual</span>
-                      <strong>{formatarDataHora(agendamentoSelecionado.dataHoraInicio)}</strong>
-                    </div>
-
                     <div
-                      style={
-                        agendamentoSelecionado.status === 'cancelado'
-                          ? cardInfoCanceladoModal
-                          : cardInfoModal
-                      }
+                      style={{
+                        display: 'grid',
+                        gap: 7,
+                        padding: '4px 4px 8px',
+                        color: '#f8fafc',
+                      }}
                     >
-                      <span
-                        style={
-                          agendamentoSelecionado.status === 'cancelado'
-                            ? labelCanceladoModal
-                            : labelModal
-                        }
+                      <strong
+                        style={{
+                          display: 'block',
+                          fontSize: 18,
+                          fontWeight: 950,
+                          lineHeight: 1.12,
+                          letterSpacing: '-0.03em',
+                        }}
                       >
-                        Status
+                        👤 {nomeCliente(agendamentoSelecionado)}
+                      </strong>
+
+                      <span
+                        style={{
+                          display: 'block',
+                          color: '#dbeafe',
+                          fontSize: 14,
+                          fontWeight: 850,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        💆 {nomeServico(agendamentoSelecionado)}
                       </span>
-                      <strong>{textoStatus(agendamentoSelecionado.status)}</strong>
+
+                      <span
+                        style={{
+                          display: 'block',
+                          color: '#cbd5e1',
+                          fontSize: 13,
+                          fontWeight: 800,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        📅 {formatarDataHora(agendamentoSelecionado.dataHoraInicio)}
+                      </span>
+
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          width: 'fit-content',
+                          color:
+                            agendamentoSelecionado.status === 'cancelado'
+                              ? '#fecaca'
+                              : agendamentoSelecionado.status === 'concluido'
+                                ? '#bfdbfe'
+                                : agendamentoSelecionado.status === 'em_atendimento'
+                                  ? '#bbf7d0'
+                                  : '#fde68a',
+                          fontSize: 13,
+                          fontWeight: 900,
+                          lineHeight: 1.2,
+                          textTransform: 'capitalize',
+                        }}
+                      >
+                        {agendamentoSelecionado.status === 'cancelado'
+                          ? '🔴'
+                          : agendamentoSelecionado.status === 'concluido'
+                            ? '🔵'
+                            : agendamentoSelecionado.status === 'em_atendimento'
+                              ? '🟢'
+                              : '🟡'}{' '}
+                        {textoStatus(agendamentoSelecionado.status)}
+                      </span>
                     </div>
 
                     {agendamentoSelecionado.status === 'cancelado' && (
@@ -4338,7 +4701,7 @@ boxShadow:
   <h3 style={tituloFechamentoPremium}>Fechamento do atendimento</h3>
 
   <p style={descricaoSecaoOperacional}>
-    Informe o que foi recebido agora. O sistema recalcula o saldo e depois libera as decisões de crédito, débito ou abatimento.
+    Confira o resumo, ative apenas as ações necessárias e finalize com as modalidades de pagamento.
   </p>
 
   {(() => {
@@ -4347,309 +4710,417 @@ boxShadow:
       resumoServicosAdicionais
     );
 
+    const recebidoAgora = formFinalizacao.pagamentos.reduce(
+      (total: number, pagamento: any) => total + valorNumerico(pagamento.valor),
+      0
+    );
+
+    const desconto = formFinalizacao.habilitarAjusteValor ? valorDescontoFechamento() : 0;
+    const acrescimo = formFinalizacao.habilitarAjusteValor ? valorAcrescimoFechamento() : 0;
+    const creditoDisponivel = valorNumerico(resumoFinanceiroCliente.credito);
+    const debitoDisponivel = valorNumerico(resumoFinanceiroCliente.debito);
+    const saldoAjustado = Math.max(financeiro.pendente - desconto + acrescimo, 0);
+    const creditoInformado = valorNumerico(formFinalizacao.valorCreditoUtilizadoCliente);
+    const creditoAbatido = formFinalizacao.usarCreditoCliente
+      ? Math.min(
+          creditoInformado > 0 ? creditoInformado : creditoDisponivel,
+          creditoDisponivel,
+          saldoAjustado
+        )
+      : 0;
+    const totalDepoisCredito = Math.max(saldoAjustado - creditoAbatido, 0);
+    const debitoCobrado = formFinalizacao.abaterDebitoCliente ? valorNumerico(formFinalizacao.valorAbatimentoDebitoCliente) : 0;
+    const totalACobrarAgora = totalDepoisCredito + debitoCobrado;
+    const totalPagoFechamento = financeiro.pago + recebidoAgora;
+    const troco = Math.max(recebidoAgora - totalACobrarAgora, 0);
+    const pendenteFinal = Math.max(totalACobrarAgora - recebidoAgora, 0);
+
     return (
-      <>
-        <div style={financeiroAtendimentoBox}>
-          <ResumoFinanceiroItem
-            label="Total"
-            valor={dinheiro(financeiro.total)}
-            cor="#f8fafc"
-          />
-
-          <ResumoFinanceiroItem
-            label="Pago"
-            valor={dinheiro(financeiro.pago)}
-            cor="#15803d"
-          />
-
-          <ResumoFinanceiroItem
-            label="Pendente"
-            valor={dinheiro(financeiro.pendente)}
-            cor={financeiro.pendente > 0 ? '#b45309' : '#15803d'}
-          />
+      <div
+        className="dashboard-resumo-ajustado-mobile"
+        style={{
+          display: 'grid',
+          gap: 7,
+          marginBottom: 12,
+          padding: 11,
+          borderRadius: 16,
+          background: 'rgba(15,23,42,0.58)',
+          border: '1px solid rgba(255,255,255,0.12)',
+        }}
+      >
+        <div style={{ marginBottom: 2 }}>
+          <strong style={{ color: '#f8fafc', fontSize: 15, fontWeight: 950 }}>
+            Resumo do fechamento
+          </strong>
+          <p style={{ margin: '3px 0 0', color: '#94a3b8', fontSize: 11, fontWeight: 800 }}>
+            Valores atualizados automaticamente conforme o fechamento é preenchido.
+          </p>
         </div>
 
+        <ResumoFinanceiroItem label="Total" valor={dinheiro(financeiro.total)} cor="#f8fafc" />
+        <ResumoFinanceiroItem label="Desconto" valor={dinheiro(desconto)} cor={desconto > 0 ? '#22c55e' : '#94a3b8'} />
+        <ResumoFinanceiroItem label="Acréscimo" valor={dinheiro(acrescimo)} cor={acrescimo > 0 ? '#f97316' : '#94a3b8'} />
+        <ResumoFinanceiroItem label="Crédito disponível" valor={carregandoFinanceiroCliente ? 'Carregando...' : dinheiro(creditoDisponivel)} cor={creditoDisponivel > 0 ? '#38bdf8' : '#94a3b8'} />
+        <ResumoFinanceiroItem label="Débito disponível" valor={carregandoFinanceiroCliente ? 'Carregando...' : dinheiro(debitoDisponivel)} cor={debitoDisponivel > 0 ? '#f97316' : '#94a3b8'} />
+        <ResumoFinanceiroItem label="Pago" valor={dinheiro(totalPagoFechamento)} cor={totalPagoFechamento > 0 ? '#22c55e' : '#94a3b8'} />
+        <ResumoFinanceiroItem label="Troco" valor={dinheiro(troco)} cor={troco > 0 ? '#facc15' : '#94a3b8'} />
+        <ResumoFinanceiroItem label="Pendente" valor={dinheiro(pendenteFinal)} cor={pendenteFinal > 0 ? '#ef4444' : '#22c55e'} />
+      </div>
+    );
+  })()}
+
+  <div style={acoesFechamentoBox}>
+    <ToggleLinha
+      titulo="Fechar atendimento"
+      descricao="Habilita pagamentos, observação e conclusão."
+      ativo={formFinalizacao.habilitarFechamento}
+      onClick={() => {
+        const ativo = !formFinalizacao.habilitarFechamento;
+        setFormFinalizacao({
+          ...formFinalizacao,
+          habilitarFechamento: ativo,
+          habilitarAjusteValor: ativo ? formFinalizacao.habilitarAjusteValor : false,
+          habilitarCreditoDebito: false,
+          usarCreditoCliente: ativo ? formFinalizacao.usarCreditoCliente : false,
+          abaterDebitoCliente: ativo ? formFinalizacao.abaterDebitoCliente : false,
+          gerarDebitoCliente: ativo ? formFinalizacao.gerarDebitoCliente : false,
+          gerarCreditoCliente: ativo ? formFinalizacao.gerarCreditoCliente : false,
+          valorDescontoAtendimento: ativo ? formFinalizacao.valorDescontoAtendimento : '',
+          valorAcrescimoAtendimento: ativo ? formFinalizacao.valorAcrescimoAtendimento : '',
+          observacaoAjusteAtendimento: ativo ? formFinalizacao.observacaoAjusteAtendimento : '',
+          valorAbatimentoDebitoCliente: ativo ? formFinalizacao.valorAbatimentoDebitoCliente : '',
+          observacaoAbatimentoDebitoCliente: ativo ? formFinalizacao.observacaoAbatimentoDebitoCliente : '',
+          valorDebitoCliente: ativo ? formFinalizacao.valorDebitoCliente : '',
+          observacaoDebitoCliente: ativo ? formFinalizacao.observacaoDebitoCliente : '',
+          valorCreditoCliente: ativo ? formFinalizacao.valorCreditoCliente : '',
+          observacaoCreditoCliente: ativo ? formFinalizacao.observacaoCreditoCliente : '',
+          valorCreditoUtilizadoCliente: ativo ? formFinalizacao.valorCreditoUtilizadoCliente : '',
+          observacao: ativo ? formFinalizacao.observacao : '',
+        });
+      }}
+    />
+
+    {formFinalizacao.habilitarFechamento && (
+      <div style={{ display: 'grid', gap: 8 }}>
         {(() => {
-          const ajusteFechamento = resumoAjusteFechamentoSalvo(
-            agendamentoSelecionado,
-            resumoServicosAdicionais
+          const creditoDisponivelCliente = valorNumerico(resumoFinanceiroCliente.credito);
+          const pendencia = obterPendenciaComCredito(agendamentoSelecionado);
+          const valorSugeridoCredito = Math.min(
+            creditoDisponivelCliente,
+            pendencia.pendenteAposPagamentos || pendenteAjustadoFechamento(agendamentoSelecionado)
           );
 
-          if (!ajusteFechamento.temAjuste) return null;
+          if (creditoDisponivelCliente <= 0) return null;
 
           return (
-            <div
-              style={{
-                marginTop: 10,
-                padding: '10px 12px',
-                borderRadius: 14,
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.10)',
-                display: 'grid',
-                gap: 6,
-              }}
-            >
-              <ResumoFinanceiroItem
-                label="Valor original"
-                valor={dinheiro(ajusteFechamento.valorOriginal)}
-                cor="#cbd5e1"
+            <div style={avisoCreditoClienteFechamento}>
+              <div style={avisoFinanceiroTopoFechamento}>
+                <strong>Cliente possui crédito de {dinheiro(creditoDisponivelCliente)}</strong>
+                <span>Deseja abater no atendimento atual?</span>
+              </div>
+
+              <ToggleSimNaoFechamento
+                titulo="Abater crédito neste atendimento"
+                descricao="Por padrão fica como Não. Ative somente se desejar usar o crédito agora."
+                ativo={formFinalizacao.usarCreditoCliente}
+                variante="verde"
+                onClick={() => {
+                  const usarCredito = !formFinalizacao.usarCreditoCliente;
+
+                  setFormFinalizacao({
+                    ...formFinalizacao,
+                    usarCreditoCliente: usarCredito,
+                    valorCreditoUtilizadoCliente: usarCredito
+                      ? String((valorSugeridoCredito > 0 ? valorSugeridoCredito : creditoDisponivelCliente).toFixed(2))
+                      : '',
+                  });
+                }}
               />
 
-              {ajusteFechamento.temDesconto && (
-                <ResumoFinanceiroItem
-                  label="Desconto aplicado"
-                  valor={dinheiro(ajusteFechamento.desconto)}
-                  cor="#22c55e"
-                />
-              )}
-
-              {ajusteFechamento.temAcrescimo && (
-                <ResumoFinanceiroItem
-                  label="Acréscimo aplicado"
-                  valor={dinheiro(ajusteFechamento.acrescimo)}
-                  cor="#f97316"
+              {formFinalizacao.usarCreditoCliente && (
+                <input
+                  type="number"
+                  placeholder={`Valor do crédito até ${dinheiro(creditoDisponivelCliente)}`}
+                  value={formFinalizacao.valorCreditoUtilizadoCliente || ''}
+                  onChange={(e) => setFormFinalizacao({ ...formFinalizacao, valorCreditoUtilizadoCliente: e.target.value })}
+                  style={{ ...inputData, minHeight: 38, height: 38 }}
                 />
               )}
             </div>
           );
         })()}
-      </>
-    );
- })()}
 
-  <div style={subBlocoOperacionalTitulo}>
-    <span style={subBlocoNumeroVerde}>1</span>
-    <div>
-      <strong>Pagamentos recebidos agora</strong>
-      <small>        Informe uma ou mais formas de pagamento deste fechamento.</small>
-    </div>
-  </div>
+        {(() => {
+          const debitoClienteDisponivel = valorNumerico(resumoFinanceiroCliente.debito);
+          const recebidoAgora = formFinalizacao.pagamentos.reduce((total: number, pagamento: any) => total + valorNumerico(pagamento.valor), 0);
+          const pendenteAjustado = pendenteAjustadoFechamento(agendamentoSelecionado);
+          const excedentePagamento = Math.max(recebidoAgora - pendenteAjustado, 0);
+          const abatimentoSugerido = Math.min(excedentePagamento, debitoClienteDisponivel);
 
-  <div
-    className="dashboard-pagamentos-fechamento-mobile"
-    style={{
-      display: 'grid',
-      gap: 8,
-      marginBottom: 10,
-    }}
-  >
-    {formFinalizacao.pagamentos.map(
-      (pagamento: any, index: number) => (
-        <div
-          key={index}
-          className="dashboard-pagamento-row-mobile"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr) 38px',
-            gap: 8,
-            alignItems: 'center',
-          }}
-        >
-          <select
-            value={pagamento.forma}
-            onChange={(e) => {
-              const lista = [
-                ...formFinalizacao.pagamentos,
-              ];
+          if (debitoClienteDisponivel <= 0) return null;
 
-              lista[index].forma =
-                e.target.value;
+          return (
+            <div style={avisoDebitoClienteFechamento}>
+              <div style={avisoFinanceiroTopoFechamento}>
+                <strong>Cliente possui débitos de {dinheiro(debitoClienteDisponivel)}</strong>
+                <span>Deseja cobrar agora neste fechamento?</span>
+              </div>
 
-              setFormFinalizacao({
-                ...formFinalizacao,
-                pagamentos: lista,
-              });
-            }}
-            className="dashboard-pagamento-forma-mobile"
-            style={inputData}
-          >
-            <option value="pix">Pix</option>
-            <option value="dinheiro">
-              Dinheiro
-            </option>
-            <option value="cartao_credito">
-              Cartão crédito
-            </option>
-            <option value="cartao_debito">
-              Cartão débito
-            </option>
-            <option value="outro">
-              Outro
-            </option>
-          </select>
+              <ToggleSimNaoFechamento
+                titulo="Cobrar débito neste fechamento"
+                descricao="Por padrão fica como Não. Ative somente se desejar cobrar o débito agora."
+                ativo={formFinalizacao.abaterDebitoCliente}
+                variante="laranja"
+                onClick={() => {
+                  const cobrarDebito = !formFinalizacao.abaterDebitoCliente;
 
-          <input
-            type="number"
-            placeholder="Valor recebido agora"
-            value={pagamento.valor || ''}
-            onChange={(e) => {
-              const lista = [
-                ...formFinalizacao.pagamentos,
-              ];
+                  setFormFinalizacao({
+                    ...formFinalizacao,
+                    abaterDebitoCliente: cobrarDebito,
+                    valorAbatimentoDebitoCliente: cobrarDebito
+                      ? String((abatimentoSugerido > 0 ? abatimentoSugerido : debitoClienteDisponivel).toFixed(2))
+                      : '',
+                    observacaoAbatimentoDebitoCliente: cobrarDebito
+                      ? formFinalizacao.observacaoAbatimentoDebitoCliente
+                      : '',
+                  });
+                }}
+              />
 
-              lista[index].valor =
-                e.target.value;
-
-              const proximoForm: any = {
-                ...formFinalizacao,
-                pagamentos: lista,
-              };
-
-              setFormFinalizacao(proximoForm);
-            }}
-            className="dashboard-pagamento-valor-mobile"
-            style={inputData}
-          />
-
-          {formFinalizacao.pagamentos.length >
-            1 && (
-            <button
-              onClick={() => {
-                const lista =
-                  formFinalizacao.pagamentos.filter(
-                    (_: any, i: number) =>
-                      i !== index
-                  );
-
-                setFormFinalizacao({
-                  ...formFinalizacao,
-                  pagamentos: lista,
-                });
-              }}
-              className="dashboard-remover-pagamento-mobile"
-              style={{
-                border: 'none',
-                background: '#dc2626',
-                color: '#fff',
-                borderRadius: 10,
-                width: 38,
-                height: 38,
-                minWidth: 38,
-                cursor: 'pointer',
-                fontWeight: 900,
-              }}
-            >
-              ×
-            </button>
-          )}
-        </div>
-      )
+              {formFinalizacao.abaterDebitoCliente && (
+                <input
+                  type="number"
+                  placeholder={`Valor do débito até ${dinheiro(debitoClienteDisponivel)}`}
+                  value={formFinalizacao.valorAbatimentoDebitoCliente || ''}
+                  onChange={(e) => setFormFinalizacao({ ...formFinalizacao, valorAbatimentoDebitoCliente: e.target.value })}
+                  style={{ ...inputData, minHeight: 38, height: 38 }}
+                />
+              )}
+            </div>
+          );
+        })()}
+      </div>
     )}
 
-    <button
-      className="dashboard-adicionar-pagamento-mobile"
-      onClick={() =>
+    <ToggleLinha
+      titulo="Aplicar ajuste financeiro"
+      descricao="Desconto ou acréscimo antes do pagamento."
+      ativo={formFinalizacao.habilitarAjusteValor}
+      disabled={!formFinalizacao.habilitarFechamento}
+      onClick={() => {
+        if (!formFinalizacao.habilitarFechamento) return;
+        const ativo = !formFinalizacao.habilitarAjusteValor;
         setFormFinalizacao({
           ...formFinalizacao,
-          pagamentos: [
-            ...formFinalizacao.pagamentos,
-            {
-              forma: 'pix',
-              valor: '',
-            },
-          ],
-        })
-      }
-      style={{
-        border: '1px dashed #7c3aed',
-        background: '#f5f3ff',
-        color: 'var(--marcae-primary)',
-        borderRadius: 12,
-        padding: 12,
-        fontWeight: 800,
-        cursor: 'pointer',
+          habilitarAjusteValor: ativo,
+          valorDescontoAtendimento: ativo ? formFinalizacao.valorDescontoAtendimento : '',
+          valorAcrescimoAtendimento: ativo ? formFinalizacao.valorAcrescimoAtendimento : '',
+          observacaoAjusteAtendimento: ativo ? formFinalizacao.observacaoAjusteAtendimento : '',
+        });
       }}
-    >
-      + Adicionar forma de pagamento
-    </button>
+    />
   </div>
 
-  <div
-    className="dashboard-ajustes-fechamento-mobile"
-    style={{
-      display: 'grid',
-      gridTemplateColumns: '1fr',
-      gap: 8,
-      marginBottom: 10,
-      padding: 9,
-      borderRadius: 14,
-      background: 'rgba(15,23,42,0.40)',
-      border: '1px solid rgba(255,255,255,0.10)',
-    }}
-  >
-    <div>
-      <label style={labelCampoPremium}>Desconto no fechamento</label>
-      <div className="dashboard-valor-tipo-row-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 72px', gap: 8 }}>
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          placeholder={formFinalizacao.tipoDescontoAtendimento === 'percentual' ? 'Ex: 10' : 'Ex: 10,00'}
-          value={formFinalizacao.valorDescontoAtendimento || ''}
-          onChange={(e) =>
+  {formFinalizacao.habilitarFechamento && formFinalizacao.habilitarAjusteValor && (
+    <div
+      style={{
+        ...subBlocoFechamentoRoxo,
+        gap: 4,
+        padding: 10,
+        marginBottom: 8,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 8,
+        }}
+      >
+        <span style={subBlocoNumeroLaranja}>2</span>
+        <div style={{ minWidth: 0 }}>
+          <strong style={{ display: 'block', fontSize: 15, lineHeight: 1.05 }}>
+            Ajuste financeiro
+          </strong>
+          <small style={{ display: 'block', marginTop: 2, color: '#cbd5e1', fontSize: 11, fontWeight: 800, lineHeight: 1.18 }}>
+            Escolha o tipo e informe o valor. O resumo atualiza em tempo real.
+          </small>
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 7,
+          marginBottom: 0,
+        }}
+      >
+        <button
+          type="button"
+          onClick={() =>
             setFormFinalizacao({
               ...formFinalizacao,
-              valorDescontoAtendimento: e.target.value,
+              tipoAjusteFechamento: 'desconto',
+              valorAcrescimoAtendimento: '',
             })
           }
-          style={{ ...inputData, minHeight: 36, padding: '8px 10px' }}
-        />
+          style={{
+            height: 34,
+            borderRadius: 11,
+            border: formFinalizacao.tipoAjusteFechamento === 'desconto'
+              ? '1px solid rgba(74,222,128,0.50)'
+              : '1px solid rgba(255,255,255,0.10)',
+            background: formFinalizacao.tipoAjusteFechamento === 'desconto'
+              ? 'linear-gradient(135deg, rgba(34,197,94,0.26), rgba(34,197,94,0.10))'
+              : 'rgba(15,23,42,0.56)',
+            color: formFinalizacao.tipoAjusteFechamento === 'desconto' ? '#bbf7d0' : '#cbd5e1',
+            fontSize: 12,
+            fontWeight: 950,
+            cursor: 'pointer',
+          }}
+        >
+          Desconto
+        </button>
 
+        <button
+          type="button"
+          onClick={() =>
+            setFormFinalizacao({
+              ...formFinalizacao,
+              tipoAjusteFechamento: 'acrescimo',
+              valorDescontoAtendimento: '',
+            })
+          }
+          style={{
+            height: 34,
+            borderRadius: 11,
+            border: formFinalizacao.tipoAjusteFechamento === 'acrescimo'
+              ? '1px solid rgba(251,146,60,0.52)'
+              : '1px solid rgba(255,255,255,0.10)',
+            background: formFinalizacao.tipoAjusteFechamento === 'acrescimo'
+              ? 'linear-gradient(135deg, rgba(249,115,22,0.30), rgba(249,115,22,0.10))'
+              : 'rgba(15,23,42,0.56)',
+            color: formFinalizacao.tipoAjusteFechamento === 'acrescimo' ? '#fed7aa' : '#cbd5e1',
+            fontSize: 12,
+            fontWeight: 950,
+            cursor: 'pointer',
+          }}
+        >
+          Acréscimo
+        </button>
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '76px minmax(0, 1fr)',
+          gap: 7,
+          alignItems: 'center',
+          marginTop: -46,
+        }}
+      >
         <select
-          value={formFinalizacao.tipoDescontoAtendimento || 'valor'}
-          onChange={(e) =>
+          value={
+            formFinalizacao.tipoAjusteFechamento === 'acrescimo'
+              ? formFinalizacao.tipoAcrescimoAtendimento
+              : formFinalizacao.tipoDescontoAtendimento
+          }
+          onChange={(e) => {
+            if (formFinalizacao.tipoAjusteFechamento === 'acrescimo') {
+              setFormFinalizacao({
+                ...formFinalizacao,
+                tipoAcrescimoAtendimento: e.target.value,
+              });
+              return;
+            }
+
             setFormFinalizacao({
               ...formFinalizacao,
               tipoDescontoAtendimento: e.target.value,
-            })
-          }
-          style={{ ...inputData, minHeight: 36, padding: '8px 8px', fontWeight: 900 }}
+            });
+          }}
+          style={{
+            ...inputData,
+            minHeight: 34,
+            height: 34,
+            borderRadius: 11,
+            padding: '0 9px',
+            fontSize: 12,
+            fontWeight: 950,
+          }}
         >
           <option value="valor">R$</option>
           <option value="percentual">%</option>
         </select>
-      </div>
-    </div>
 
-    <div>
-      <label style={labelCampoPremium}>Acréscimo no fechamento</label>
-      <div className="dashboard-valor-tipo-row-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 72px', gap: 8 }}>
         <input
           type="number"
-          min="0"
-          step="0.01"
-          placeholder={formFinalizacao.tipoAcrescimoAtendimento === 'percentual' ? 'Ex: 10' : 'Ex: 15,00'}
-          value={formFinalizacao.valorAcrescimoAtendimento || ''}
-          onChange={(e) =>
+          placeholder={
+            formFinalizacao.tipoAjusteFechamento === 'acrescimo'
+              ? 'Valor do acréscimo'
+              : 'Valor do desconto'
+          }
+          value={
+            formFinalizacao.tipoAjusteFechamento === 'acrescimo'
+              ? formFinalizacao.valorAcrescimoAtendimento
+              : formFinalizacao.valorDescontoAtendimento
+          }
+          onChange={(e) => {
+            if (formFinalizacao.tipoAjusteFechamento === 'acrescimo') {
+              setFormFinalizacao({
+                ...formFinalizacao,
+                valorAcrescimoAtendimento: e.target.value,
+              });
+              return;
+            }
+
             setFormFinalizacao({
               ...formFinalizacao,
-              valorAcrescimoAtendimento: e.target.value,
-            })
-          }
-          style={{ ...inputData, minHeight: 36, padding: '8px 10px' }}
+              valorDescontoAtendimento: e.target.value,
+            });
+          }}
+          style={{
+            ...inputData,
+            minHeight: 34,
+            height: 34,
+            borderRadius: 11,
+            padding: '0 10px',
+            fontSize: 12,
+          }}
         />
-
-        <select
-          value={formFinalizacao.tipoAcrescimoAtendimento || 'valor'}
-          onChange={(e) =>
-            setFormFinalizacao({
-              ...formFinalizacao,
-              tipoAcrescimoAtendimento: e.target.value,
-            })
-          }
-          style={{ ...inputData, minHeight: 36, padding: '8px 8px', fontWeight: 900 }}
-        >
-          <option value="valor">R$</option>
-          <option value="percentual">%</option>
-        </select>
       </div>
-    </div>
 
-    <div>
-      <label style={labelCampoPremium}>Observação do ajuste</label>
-      <input
-        type="text"
-        placeholder="Ex: Desconto combinado, taxa extra..."
+      <div
+        style={{
+          display: 'grid',
+          gap: 4,
+          padding: '8px 10px',
+          borderRadius: 12,
+          background: 'rgba(2,6,23,0.42)',
+          border: '1px solid rgba(255,255,255,0.08)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 12, fontWeight: 950 }}>
+          <span style={{ color: '#cbd5e1' }}>
+            {formFinalizacao.tipoAjusteFechamento === 'acrescimo' ? 'Acréscimo aplicado' : 'Desconto aplicado'}
+          </span>
+          <strong style={{ color: formFinalizacao.tipoAjusteFechamento === 'acrescimo' ? '#fb923c' : '#22c55e' }}>
+            {dinheiro(formFinalizacao.tipoAjusteFechamento === 'acrescimo' ? valorAcrescimoFechamento() : valorDescontoFechamento())}
+          </strong>
+        </div>
+
+        {agendamentoSelecionado && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 12, fontWeight: 950 }}>
+            <span style={{ color: '#cbd5e1' }}>Saldo após ajuste</span>
+            <strong style={{ color: '#f97316' }}>
+              {dinheiro(pendenteAjustadoFechamento(agendamentoSelecionado))}
+            </strong>
+          </div>
+        )}
+      </div>
+
+      <textarea
         value={formFinalizacao.observacaoAjusteAtendimento || ''}
         onChange={(e) =>
           setFormFinalizacao({
@@ -4657,433 +5128,159 @@ boxShadow:
             observacaoAjusteAtendimento: e.target.value,
           })
         }
-        style={{ ...inputData, minHeight: 36, padding: '8px 10px' }}
-      />
-    </div>
-  </div>
-
-  {(() => {
-    const financeiro = resumoFinanceiroAtendimento(
-      agendamentoSelecionado,
-      resumoServicosAdicionais
-    );
-
-    const pendencia = obterPendenciaComCredito(agendamentoSelecionado);
-
-    const recebidoAgora = formFinalizacao.pagamentos.reduce(
-      (total: number, pagamento: any) => total + valorNumerico(pagamento.valor),
-      0
-    );
-
-    return (
-      <div
-        className="dashboard-resumo-ajustado-mobile"
+        placeholder="Observação do ajuste. Ex: desconto autorizado."
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-          gap: 8,
-          marginBottom: 10,
+          ...textareaFechamento,
+          minHeight: 42,
+          height: 42,
+          marginBottom: 0,
           padding: 9,
-          borderRadius: 14,
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.10)',
+          borderRadius: 11,
+          fontSize: 12,
         }}
-      >
-        <ResumoFinanceiroItem
-          label="Desconto"
-          valor={dinheiro(pendencia.desconto)}
-          cor="#15803d"
-        />
-
-        <ResumoFinanceiroItem
-          label="Acréscimo"
-          valor={dinheiro(pendencia.acrescimo)}
-          cor="#f97316"
-        />
-
-        <ResumoFinanceiroItem
-          label="Saldo ajustado"
-          valor={dinheiro(pendencia.pendenteOriginal)}
-          cor={pendencia.pendenteOriginal > 0 ? '#b45309' : '#15803d'}
-        />
-
-        <ResumoFinanceiroItem
-          label="Recebido agora"
-          valor={dinheiro(recebidoAgora)}
-          cor="#15803d"
-        />
-
-        <ResumoFinanceiroItem
-          label="Saldo restante"
-          valor={dinheiro(pendencia.pendenteAposPagamentos)}
-          cor={pendencia.pendenteAposPagamentos > 0 ? '#b45309' : '#15803d'}
-        />
-
-        <ResumoFinanceiroItem
-          label="Saldo final"
-          valor={dinheiro(pendencia.pendenteFinal)}
-          cor={pendencia.pendenteFinal > 0 ? '#b45309' : '#15803d'}
-        />
-      </div>
-    );
-  })()}
-
-  <div style={subBlocoOperacionalTitulo}>
-    <span style={subBlocoNumeroLaranja}>2</span>
-    <div>
-      <strong>Ajustes financeiros do cliente</strong>
-      <small>  Consulte saldo, créditos, débitos e escolha se algo será compensado neste atendimento.</small>
-    </div>
-  </div>
-
-  <div
-    className="dashboard-resumo-cliente-financeiro-mobile"
-    style={resumoClienteFinanceiroGrid}
-  >
-    <ResumoFinanceiroItem
-      label="Crédito cliente"
-      valor={
-        carregandoFinanceiroCliente
-          ? 'Carregando...'
-          : dinheiro(resumoFinanceiroCliente.credito)
-      }
-      cor={
-        valorNumerico(resumoFinanceiroCliente.credito) > 0
-          ? '#22c55e'
-          : '#94a3b8'
-      }
-    />
-
-    <ResumoFinanceiroItem
-      label="Débito cliente"
-      valor={
-        carregandoFinanceiroCliente
-          ? 'Carregando...'
-          : dinheiro(resumoFinanceiroCliente.debito)
-      }
-      cor={
-        valorNumerico(resumoFinanceiroCliente.debito) > 0
-          ? '#ef4444'
-          : '#94a3b8'
-      }
-    />
-
-    <ResumoFinanceiroItem
-      label="Saldo cliente"
-      valor={
-        carregandoFinanceiroCliente
-          ? 'Carregando...'
-          : dinheiroComSinal(resumoFinanceiroCliente.saldo)
-      }
-      cor={corValorCliente(resumoFinanceiroCliente.saldo)}
-    />
-  </div>
-
-  {(() => {
-    const financeiro = resumoFinanceiroAtendimento(
-      agendamentoSelecionado,
-      resumoServicosAdicionais
-    );
-
-    const recebidoAgora = formFinalizacao.pagamentos.reduce(
-      (total: number, pagamento: any) => total + valorNumerico(pagamento.valor),
-      0
-    );
-
-    const pendenteAjustado = pendenteAjustadoFechamento(agendamentoSelecionado);
-    const excedentePagamento = Math.max(recebidoAgora - pendenteAjustado, 0);
-    const debitoClienteDisponivel = valorNumerico(resumoFinanceiroCliente.debito);
-    const abatimentoSugerido = Math.min(excedentePagamento, debitoClienteDisponivel);
-
-    if (excedentePagamento <= 0 || debitoClienteDisponivel <= 0) {
-      return null;
-    }
-
-    return (
-      <div style={{ marginBottom: 12 }}>
-        <div
-          style={{
-            background: 'rgba(239,68,68,0.10)',
-            border: '1px solid rgba(239,68,68,0.22)',
-            color: '#fecaca',
-            borderRadius: 14,
-            padding: 12,
-            fontSize: 13,
-            fontWeight: 800,
-            marginBottom: 10,
-          }}
-        >
-          Valor excedente recebido: {dinheiro(excedentePagamento)}. O cliente possui {dinheiro(debitoClienteDisponivel)} em débito aberto.
-        </div>
-
-        <label style={checkLinha}>
-          <input
-            type="checkbox"
-            checked={formFinalizacao.abaterDebitoCliente}
-            onChange={(e) =>
-              setFormFinalizacao({
-                ...formFinalizacao,
-                abaterDebitoCliente: e.target.checked,
-                valorAbatimentoDebitoCliente: e.target.checked
-                  ? String(abatimentoSugerido.toFixed(2))
-                  : '',
-                observacaoAbatimentoDebitoCliente: e.target.checked
-                  ? formFinalizacao.observacaoAbatimentoDebitoCliente
-                  : '',
-              })
-            }
-          />
-          Abater valor excedente nos débitos do cliente
-        </label>
-
-        {formFinalizacao.abaterDebitoCliente && (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr',
-              gap: 10,
-              marginTop: 10,
-            }}
-          >
-            <input
-              type="number"
-              placeholder={`Valor para abater até ${dinheiro(abatimentoSugerido)}`}
-              value={formFinalizacao.valorAbatimentoDebitoCliente || ''}
-              onChange={(e) =>
-                setFormFinalizacao({
-                  ...formFinalizacao,
-                  valorAbatimentoDebitoCliente: e.target.value,
-                })
-              }
-              style={inputData}
-            />
-
-            <textarea
-              value={formFinalizacao.observacaoAbatimentoDebitoCliente || ''}
-              onChange={(e) =>
-                setFormFinalizacao({
-                  ...formFinalizacao,
-                  observacaoAbatimentoDebitoCliente: e.target.value,
-                })
-              }
-              placeholder="Observação do abatimento. Ex: cliente pagou valor maior para quitar débito anterior..."
-              style={textareaFechamento}
-            />
-          </div>
-        )}
-      </div>
-    );
-  })()}
-
-  {(() => {
-    const pendencia = obterPendenciaComCredito(agendamentoSelecionado);
-
-    if (valorNumerico(resumoFinanceiroCliente.credito) <= 0 || pendencia.pendenteAposPagamentos <= 0) {
-      return null;
-    }
-
-    return (
-      <label style={checkLinha}>
-        <input
-          type="checkbox"
-          checked={formFinalizacao.usarCreditoCliente}
-          onChange={(e) =>
-            setFormFinalizacao({
-              ...formFinalizacao,
-              usarCreditoCliente: e.target.checked,
-              gerarDebitoCliente: e.target.checked && pendencia.pendenteFinal <= 0
-                ? false
-                : formFinalizacao.gerarDebitoCliente,
-              valorDebitoCliente: e.target.checked && pendencia.pendenteFinal <= 0
-                ? ''
-                : formFinalizacao.valorDebitoCliente,
-            })
-          }
-        />
-        Usar crédito disponível do cliente neste atendimento
-      </label>
-    );
-  })()}
-
-  {(() => {
-    const pendencia = obterPendenciaComCredito(agendamentoSelecionado);
-
-    if (!formFinalizacao.usarCreditoCliente || pendencia.creditoAplicavel <= 0) {
-      return null;
-    }
-
-    return (
-      <div
-        style={{
-          background: 'rgba(21,128,61,0.10)',
-          border: '1px solid rgba(21,128,61,0.20)',
-          color: '#166534',
-          borderRadius: 14,
-          padding: 12,
-          fontSize: 13,
-          fontWeight: 800,
-          marginBottom: 12,
-        }}
-      >
-        Crédito aplicado neste fechamento: {dinheiro(pendencia.creditoAplicavel)}
-      </div>
-    );
-  })()}
-
-  {(() => {
-    const pendencia = obterPendenciaComCredito(agendamentoSelecionado);
-
-    if (pendencia.pendenteFinal <= 0) {
-      return null;
-    }
-
-    return (
-      <div style={{ marginBottom: 12 }}>
-        <label style={checkLinha}>
-          <input
-            type="checkbox"
-            checked={formFinalizacao.gerarDebitoCliente}
-            onChange={(e) =>
-              setFormFinalizacao({
-                ...formFinalizacao,
-                gerarDebitoCliente: e.target.checked,
-                valorDebitoCliente: e.target.checked
-                  ? String(pendencia.pendenteFinal.toFixed(2))
-                  : '',
-                observacaoDebitoCliente: e.target.checked
-                  ? formFinalizacao.observacaoDebitoCliente
-                  : '',
-              })
-            }
-          />
-          Registrar débito no cadastro do cliente
-        </label>
-
-        {formFinalizacao.gerarDebitoCliente && (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr',
-              gap: 10,
-              marginTop: 10,
-            }}
-          >
-            <input
-              type="number"
-              placeholder={`Valor do débito até ${dinheiro(pendencia.pendenteFinal)}`}
-              value={formFinalizacao.valorDebitoCliente || ''}
-              onChange={(e) =>
-                setFormFinalizacao({
-                  ...formFinalizacao,
-                  valorDebitoCliente: e.target.value,
-                })
-              }
-              style={inputData}
-            />
-
-            <textarea
-              value={formFinalizacao.observacaoDebitoCliente || ''}
-              onChange={(e) =>
-                setFormFinalizacao({
-                  ...formFinalizacao,
-                  observacaoDebitoCliente: e.target.value,
-                })
-              }
-              placeholder="Motivo do débito. Ex: cliente pagou parte do atendimento e ficou saldo em aberto..."
-              style={textareaFechamento}
-            />
-          </div>
-        )}
-      </div>
-    );
-  })()}
-
-  <label style={checkLinha}>
-    <input
-      type="checkbox"
-      checked={formFinalizacao.gerarCreditoCliente}
-      onChange={(e) =>
-        setFormFinalizacao({
-          ...formFinalizacao,
-          gerarCreditoCliente: e.target.checked,
-          valorCreditoCliente: e.target.checked
-            ? formFinalizacao.valorCreditoCliente
-            : '',
-          observacaoCreditoCliente: e.target.checked
-            ? formFinalizacao.observacaoCreditoCliente
-            : '',
-        })
-      }
-    />
-    Lançar crédito para o cliente neste fechamento
-  </label>
-
-  {formFinalizacao.gerarCreditoCliente && (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr',
-        gap: 10,
-        marginBottom: 12,
-      }}
-    >
-      <input
-        type="number"
-        placeholder="Valor do crédito"
-        value={formFinalizacao.valorCreditoCliente || ''}
-        onChange={(e) =>
-          setFormFinalizacao({
-            ...formFinalizacao,
-            valorCreditoCliente: e.target.value,
-          })
-        }
-        style={inputData}
-      />
-
-      <textarea
-        value={formFinalizacao.observacaoCreditoCliente || ''}
-        onChange={(e) =>
-          setFormFinalizacao({
-            ...formFinalizacao,
-            observacaoCreditoCliente: e.target.value,
-          })
-        }
-        placeholder="Motivo do crédito. Ex: compensação interna, retorno de valor, cortesia..."
-        style={textareaFechamento}
       />
     </div>
   )}
 
-  <div style={subBlocoOperacionalTitulo}>
-    <span style={subBlocoNumeroCinza}>3</span>
-    <div>
-      <strong>Observação e conclusão</strong>
-      <small>Registre uma observação interna e finalize o atendimento.</small>
-    </div>
-  </div>
+  {formFinalizacao.habilitarFechamento && (
+    <>
+      <div style={subBlocoOperacionalTitulo}>
+        <span style={subBlocoNumeroCinza}>4</span>
+        <div>
+          <strong>Pagamento recebido</strong>
+          <small> Informe modalidade e valor lado a lado.</small>
+        </div>
+      </div>
 
-  <label style={labelCampo}>Observação do fechamento</label>
-  <textarea
-    value={formFinalizacao.observacao || ''}
-    onChange={(e) =>
-      setFormFinalizacao({
-        ...formFinalizacao,
-        observacao: e.target.value,
-      })
-    }
-    placeholder="Ex: Cliente pagou o restante no Pix."
-    style={textareaFechamento}
-  />
+      {(() => {
+        const financeiro = resumoFinanceiroAtendimento(
+          agendamentoSelecionado,
+          resumoServicosAdicionais
+        );
+        const desconto = formFinalizacao.habilitarAjusteValor ? valorDescontoFechamento() : 0;
+        const acrescimo = formFinalizacao.habilitarAjusteValor ? valorAcrescimoFechamento() : 0;
+        const creditoDisponivel = valorNumerico(resumoFinanceiroCliente.credito);
+        const creditoInformado = valorNumerico(formFinalizacao.valorCreditoUtilizadoCliente);
+        const saldoAjustado = Math.max(financeiro.pendente - desconto + acrescimo, 0);
+        const creditoAbatido = formFinalizacao.usarCreditoCliente
+          ? Math.min(
+              creditoInformado > 0 ? creditoInformado : creditoDisponivel,
+              creditoDisponivel,
+              saldoAjustado
+            )
+          : 0;
+        const debitoCobrado = formFinalizacao.abaterDebitoCliente
+          ? Math.min(
+              valorNumerico(formFinalizacao.valorAbatimentoDebitoCliente),
+              valorNumerico(resumoFinanceiroCliente.debito)
+            )
+          : 0;
+        const saldoAPagarAtualizado = Math.max(saldoAjustado - creditoAbatido, 0) + debitoCobrado;
 
-  <button
-    onClick={finalizarAtendimento}
-    disabled={finalizandoAtendimento}
-    style={botaoFinalizarAtendimento}
-  >
-    {finalizandoAtendimento
-      ? 'Finalizando...'
-      : 'Finalizar atendimento'}
-  </button>
+        return (
+          <div style={pagamentoCompactoCardFechamento}>
+            <div style={saldoAPagarFechamentoBox}>
+              <span>Saldo a pagar atualizado</span>
+              <strong>{dinheiro(saldoAPagarAtualizado)}</strong>
+            </div>
+
+            <div style={pagamentoLinhasCompactasFechamento}>
+              {formFinalizacao.pagamentos.map((pagamento: any, index: number) => {
+                const podeRemoverPagamento = index > 0;
+
+                return (
+                  <div
+                    key={`pagamento-fechamento-${index}`}
+                    style={pagamentoLinhaCompactaFechamento}
+                  >
+                    <select
+                      value={pagamento.forma}
+                      onChange={(e) => {
+                        const lista = formFinalizacao.pagamentos.map((item: any, i: number) =>
+                          i === index ? { ...item, forma: e.target.value } : item
+                        );
+                        setFormFinalizacao({ ...formFinalizacao, pagamentos: lista });
+                      }}
+                      style={campoPagamentoModalidadeCompacto}
+                    >
+                      <option value="pix">Pix</option>
+                      <option value="dinheiro">Dinheiro</option>
+                      <option value="cartao_credito">Cartão crédito</option>
+                      <option value="cartao_debito">Cartão débito</option>
+                      <option value="outro">Outro</option>
+                    </select>
+
+                    <input
+                      type="number"
+                      placeholder="Valor"
+                      value={pagamento.valor || ''}
+                      onChange={(e) => {
+                        const lista = formFinalizacao.pagamentos.map((item: any, i: number) =>
+                          i === index ? { ...item, valor: e.target.value } : item
+                        );
+                        setFormFinalizacao({ ...formFinalizacao, pagamentos: lista });
+                      }}
+                      style={campoPagamentoValorCompacto}
+                    />
+
+                    {podeRemoverPagamento ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const lista = formFinalizacao.pagamentos.filter(
+                            (_: any, i: number) => i !== index
+                          );
+                          setFormFinalizacao({ ...formFinalizacao, pagamentos: lista });
+                        }}
+                        style={botaoRemoverPagamentoCompacto}
+                        aria-label="Remover modalidade de pagamento"
+                      >
+                        ×
+                      </button>
+                    ) : (
+                      <span aria-hidden="true" style={espacoRemoverPagamentoCompacto} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const totalJaInformado = formFinalizacao.pagamentos.reduce(
+                  (total: number, item: any) => total + valorNumerico(item.valor),
+                  0
+                );
+                const valorRestante = Math.max(saldoAPagarAtualizado - totalJaInformado, 0);
+
+                setFormFinalizacao({
+                  ...formFinalizacao,
+                  pagamentos: [
+                    ...formFinalizacao.pagamentos,
+                    {
+                      forma: 'pix',
+                      valor: valorRestante > 0 ? String(valorRestante.toFixed(2)) : '',
+                    },
+                  ],
+                });
+              }}
+              style={botaoAdicionarPagamentoCompacto}
+            >
+              + Adicionar modalidade
+            </button>
+          </div>
+        );
+      })()}
+
+      <label style={labelCampo}>Observação do fechamento</label>
+      <textarea value={formFinalizacao.observacao || ''} onChange={(e) => setFormFinalizacao({ ...formFinalizacao, observacao: e.target.value })} placeholder="Ex: Cliente pagou o restante no Pix." style={textareaFechamento} />
+
+      <button onClick={finalizarAtendimento} disabled={finalizandoAtendimento} style={botaoFinalizarAtendimento}>
+        {finalizandoAtendimento ? 'Finalizando...' : 'Finalizar atendimento'}
+      </button>
+    </>
+  )}
 </div>
 
                     <div className="dashboard-servicos-box-mobile" style={servicosAdicionaisBox}>
@@ -5304,7 +5501,7 @@ boxShadow:
                             style={inputData}
                           >
                             <option value="">Selecione o serviço</option>
-                            {servicosEmpresa.map((servico) => (
+                            {servicosAtivosParaAdicional().map((servico: any) => (
                               <option key={servico.id} value={servico.id}>
                                 {servico.nome}
                               </option>
@@ -5316,16 +5513,11 @@ boxShadow:
                           <label style={labelCampo}>Profissional</label>
                           <select
                             value={formServicoAdicional.profissionalId}
-                            onChange={(e) =>
-                              setFormServicoAdicional({
-                                ...formServicoAdicional,
-                                profissionalId: e.target.value,
-                              })
-                            }
+                            onChange={(e) => alterarProfissionalAdicionalSelecionado(e.target.value)}
                             style={inputData}
                           >
                             <option value="">Não informar</option>
-                            {profissionaisEmpresa.map((profissional) => (
+                            {profissionaisAtivosParaAdicional().map((profissional: any) => (
                               <option key={profissional.id} value={profissional.id}>
                                 {profissional.nome}
                               </option>
@@ -5621,6 +5813,95 @@ function ResumoFinanceiroItem({ label, valor, cor }: any) {
         {valor}
       </strong>
     </div>
+  );
+}
+
+
+function ToggleLinha({ titulo, descricao, ativo, disabled, onClick }: any) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        ...toggleLinhaFechamento,
+        opacity: disabled ? 0.48 : 1,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+      }}
+    >
+      <span style={{ display: 'grid', gap: 2, minWidth: 0, textAlign: 'left' }}>
+        <strong style={{ color: '#f8fafc', fontSize: 12.5, fontWeight: 950, lineHeight: 1.1 }}>
+          {titulo}
+        </strong>
+        {descricao && (
+          <small style={{ color: '#94a3b8', fontSize: 10.5, fontWeight: 800, lineHeight: 1.18 }}>
+            {descricao}
+          </small>
+        )}
+      </span>
+
+      <span
+        style={{
+          ...toggleSwitchFechamento,
+          background: ativo ? 'linear-gradient(135deg, #22c55e, #4ade80)' : 'rgba(148,163,184,0.16)',
+          borderColor: ativo ? 'rgba(74,222,128,0.52)' : 'rgba(148,163,184,0.36)',
+          boxShadow: ativo ? '0 10px 22px rgba(34,197,94,0.22)' : 'none',
+        }}
+      >
+        <span style={{ ...toggleKnobFechamento, transform: ativo ? 'translateX(20px)' : 'translateX(0)' }} />
+      </span>
+    </button>
+  );
+}
+
+function ToggleSimNaoFechamento({ titulo, descricao, ativo, onClick, variante = 'verde' }: any) {
+  const ativoVerde = variante === 'verde';
+  const corAtiva = ativoVerde ? '#22c55e' : '#f97316';
+  const corAtivaClara = ativoVerde ? '#4ade80' : '#fb923c';
+  const textoAtivo = ativoVerde ? '#bbf7d0' : '#fed7aa';
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={toggleSimNaoFechamentoLinha}
+    >
+      <span style={{ display: 'grid', gap: 2, minWidth: 0, textAlign: 'left' }}>
+        <strong style={{ color: '#f8fafc', fontSize: 12, fontWeight: 950, lineHeight: 1.08 }}>
+          {titulo}
+        </strong>
+        {descricao && (
+          <small style={{ color: '#cbd5e1', fontSize: 10.2, fontWeight: 800, lineHeight: 1.16 }}>
+            {descricao}
+          </small>
+        )}
+      </span>
+
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <span
+          style={{
+            minWidth: 28,
+            textAlign: 'right',
+            color: ativo ? textoAtivo : '#cbd5e1',
+            fontSize: 10.5,
+            fontWeight: 950,
+            textTransform: 'uppercase',
+          }}
+        >
+          {ativo ? 'Sim' : 'Não'}
+        </span>
+        <span
+          style={{
+            ...toggleSwitchCompactoFechamento,
+            background: ativo ? `linear-gradient(135deg, ${corAtiva}, ${corAtivaClara})` : 'rgba(148,163,184,0.16)',
+            borderColor: ativo ? `${corAtivaClara}88` : 'rgba(148,163,184,0.36)',
+            boxShadow: ativo ? `0 8px 18px ${corAtiva}33` : 'none',
+          }}
+        >
+          <span style={{ ...toggleKnobCompactoFechamento, transform: ativo ? 'translateX(17px)' : 'translateX(0)' }} />
+        </span>
+      </span>
+    </button>
   );
 }
 
@@ -6677,7 +6958,7 @@ const resumoFinanceiroItem: React.CSSProperties = {
 const badgeStatusFinanceiro: React.CSSProperties = {
   border: '1px solid rgba(255,255,255,0.14)',
   borderRadius: 999,
-  padding: '8px 10px',
+  padding: '7px 10px',
   fontSize: 12,
   fontWeight: 900,
   whiteSpace: 'nowrap',
@@ -6833,7 +7114,7 @@ const badgeTotalAtendimento: React.CSSProperties = {
   color: '#ddd6fe',
   border: '1px solid rgba(167,139,250,0.24)',
   borderRadius: 999,
-  padding: '8px 10px',
+  padding: '7px 10px',
   fontSize: 12,
   fontWeight: 900,
   whiteSpace: 'nowrap',
@@ -6958,6 +7239,271 @@ const checkLinha: React.CSSProperties = {
   fontWeight: 850,
   color: '#cbd5e1',
 };
+
+const acoesFechamentoBox: React.CSSProperties = {
+  display: 'grid',
+  gap: 8,
+  marginBottom: 12,
+  padding: 10,
+  borderRadius: 16,
+  background: 'rgba(255,255,255,0.045)',
+  border: '1px solid rgba(255,255,255,0.10)',
+};
+
+const toggleLinhaFechamento: React.CSSProperties = {
+  width: '100%',
+  minHeight: 54,
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) auto',
+  alignItems: 'center',
+  gap: 10,
+  padding: '9px 10px',
+  borderRadius: 14,
+  border: '1px solid rgba(255,255,255,0.10)',
+  background: 'rgba(15,23,42,0.58)',
+  color: '#fff',
+};
+
+const toggleSwitchFechamento: React.CSSProperties = {
+  width: 48,
+  height: 28,
+  borderRadius: 999,
+  border: '1px solid rgba(148,163,184,0.36)',
+  padding: 3,
+  display: 'inline-flex',
+  alignItems: 'center',
+  transition: 'all 0.18s ease',
+  flex: '0 0 auto',
+};
+
+const toggleKnobFechamento: React.CSSProperties = {
+  width: 20,
+  height: 20,
+  borderRadius: 999,
+  background: '#fff',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.34)',
+  transition: 'transform 0.18s ease',
+};
+
+const botaoSegmentadoFechamento: React.CSSProperties = {
+  minHeight: 38,
+  borderRadius: 13,
+  border: '1px solid rgba(255,255,255,0.12)',
+  padding: '0 10px',
+  fontSize: 12,
+  fontWeight: 950,
+  cursor: 'pointer',
+};
+
+const miniAcaoFinanceiraBox: React.CSSProperties = {
+  display: 'grid',
+  gap: 8,
+  padding: 9,
+  borderRadius: 14,
+  background: 'rgba(15,23,42,0.48)',
+  border: '1px solid rgba(255,255,255,0.09)',
+};
+
+const subBlocoFechamentoRoxo: React.CSSProperties = {
+  display: 'grid',
+  gap: 9,
+  marginBottom: 12,
+  padding: 10,
+  borderRadius: 16,
+  background: 'rgba(124,58,237,0.09)',
+  border: '1px solid rgba(167,139,250,0.20)',
+};
+
+const subBlocoFechamentoAzul: React.CSSProperties = {
+  display: 'grid',
+  gap: 9,
+  marginBottom: 12,
+  padding: 10,
+  borderRadius: 16,
+  background: 'rgba(14,165,233,0.08)',
+  border: '1px solid rgba(56,189,248,0.18)',
+};
+
+
+const toggleSimNaoFechamentoLinha: React.CSSProperties = {
+  width: '100%',
+  minHeight: 48,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 10,
+  padding: '9px 10px',
+  borderRadius: 14,
+  border: '1px solid rgba(255,255,255,0.12)',
+  background: 'rgba(15,23,42,0.54)',
+  cursor: 'pointer',
+};
+
+const toggleSwitchCompactoFechamento: React.CSSProperties = {
+  width: 42,
+  height: 24,
+  borderRadius: 999,
+  border: '1px solid rgba(148,163,184,0.36)',
+  padding: 2,
+  display: 'inline-flex',
+  alignItems: 'center',
+  transition: 'all 0.18s ease',
+};
+
+const toggleKnobCompactoFechamento: React.CSSProperties = {
+  width: 18,
+  height: 18,
+  borderRadius: 999,
+  background: '#fff',
+  boxShadow: '0 4px 10px rgba(2,6,23,0.32)',
+  transition: 'transform 0.18s ease',
+};
+
+const avisoFinanceiroTopoFechamento: React.CSSProperties = {
+  display: 'grid',
+  gap: 3,
+  marginBottom: 8,
+};
+
+const avisoDebitoClienteFechamento: React.CSSProperties = {
+  padding: 9,
+  borderRadius: 14,
+  background: 'rgba(249,115,22,0.10)',
+  border: '1px solid rgba(251,146,60,0.24)',
+  color: '#fed7aa',
+  fontSize: 12,
+  fontWeight: 850,
+};
+
+
+const pagamentoCompactoCardFechamento: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 7,
+  padding: 7,
+  marginBottom: 6,
+  borderRadius: 14,
+  background: 'rgba(15,23,42,0.58)',
+  border: '1px solid rgba(255,255,255,0.08)',
+  minHeight: 'unset',
+  height: 'fit-content',
+  maxHeight: 'none',
+  overflow: 'visible',
+};
+
+const pagamentoLinhasCompactasFechamento: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 6,
+  width: '100%',
+  margin: 0,
+  padding: 0,
+  minHeight: 'unset',
+};
+
+const pagamentoLinhaCompactaFechamento: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1.08fr) minmax(86px, 0.78fr) 26px',
+  alignItems: 'center',
+  columnGap: 6,
+  width: '100%',
+  margin: 0,
+  padding: 0,
+  minHeight: 34,
+};
+
+const campoPagamentoModalidadeCompacto: React.CSSProperties = {
+  ...inputData,
+  minWidth: 0,
+  width: '100%',
+  height: 34,
+  minHeight: 34,
+  borderRadius: 11,
+  margin: 0,
+  padding: '0 9px',
+  fontSize: 12,
+  lineHeight: '34px',
+};
+
+const campoPagamentoValorCompacto: React.CSSProperties = {
+  ...inputData,
+  minWidth: 0,
+  width: '100%',
+  height: 34,
+  minHeight: 34,
+  borderRadius: 11,
+  margin: 0,
+  padding: '0 9px',
+  fontSize: 12,
+  lineHeight: '34px',
+};
+
+const espacoRemoverPagamentoCompacto: React.CSSProperties = {
+  width: 26,
+  height: 26,
+  minWidth: 26,
+  display: 'block',
+};
+
+const botaoRemoverPagamentoCompacto: React.CSSProperties = {
+  width: 26,
+  height: 26,
+  minWidth: 26,
+  borderRadius: 9,
+  border: '1px solid rgba(255,255,255,0.12)',
+  background: 'rgba(239,68,68,0.16)',
+  color: '#fecaca',
+  fontWeight: 950,
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+  margin: 0,
+  lineHeight: 1,
+};
+
+const botaoAdicionarPagamentoCompacto: React.CSSProperties = {
+  width: '100%',
+  minHeight: 32,
+  height: 32,
+  borderRadius: 11,
+  border: '1px dashed rgba(167,139,250,0.55)',
+  background: 'rgba(255,255,255,0.92)',
+  color: '#7c3aed',
+  fontWeight: 950,
+  fontSize: 11,
+  cursor: 'pointer',
+  margin: 0,
+  padding: 0,
+};
+
+const saldoAPagarFechamentoBox: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 10,
+  padding: '7px 10px',
+  borderRadius: 12,
+  background: 'linear-gradient(135deg, rgba(34,197,94,0.18), rgba(15,23,42,0.72))',
+  border: '1px solid rgba(34,197,94,0.28)',
+  color: '#e2e8f0',
+  fontSize: 13,
+  fontWeight: 900,
+};
+
+const saldoAPagarFechamentoBoxSpan: React.CSSProperties = {};
+
+const avisoCreditoClienteFechamento: React.CSSProperties = {
+  padding: 9,
+  borderRadius: 14,
+  background: 'rgba(56,189,248,0.10)',
+  border: '1px solid rgba(125,211,252,0.24)',
+  color: '#bae6fd',
+  fontSize: 12,
+  fontWeight: 850,
+};
+
 
 const textareaFechamento: React.CSSProperties = {
   width: '100%',
@@ -7229,7 +7775,7 @@ const mobileInsightRow: React.CSSProperties = {
   borderRadius: 13,
   background: 'rgba(2,6,23,0.30)',
   border: '1px solid rgba(255,255,255,0.07)',
-  padding: '8px 10px',
+  padding: '7px 10px',
 };
 
 const mobileInsightIcon: React.CSSProperties = {

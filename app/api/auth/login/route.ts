@@ -53,6 +53,42 @@ export async function POST(req: NextRequest) {
     const perfil = usuario.perfil || 'admin';
     const acessoTotal = perfil === 'admin';
 
+    const ip =
+      req.headers.get('x-forwarded-for')?.split(',')?.[0]?.trim() ||
+      req.headers.get('x-real-ip') ||
+      null;
+
+    const agora = new Date();
+
+    await prisma.$transaction([
+      prisma.usuarioEmpresa.update({
+        where: { id: usuario.id },
+        data: {
+          ultimoLoginEm: agora,
+          ultimoLoginIp: ip,
+        } as any,
+      }),
+      prisma.empresa.update({
+        where: { id: empresa.id },
+        data: {
+          ultimoLoginEm: agora,
+          ultimoLoginIp: ip,
+          ultimoLoginUsuarioId: usuario.id,
+          ultimoLoginUsuarioNome: usuario.nome,
+          ultimoLoginUsuarioEmail: usuario.email,
+        } as any,
+      }),
+    ]);
+
+    const empresaAtualizada = {
+      ...empresa,
+      ultimoLoginEm: agora,
+      ultimoLoginIp: ip,
+      ultimoLoginUsuarioId: usuario.id,
+      ultimoLoginUsuarioNome: usuario.nome,
+      ultimoLoginUsuarioEmail: usuario.email,
+    };
+
     return NextResponse.json({
       success: true,
       usuario: {
@@ -63,7 +99,7 @@ export async function POST(req: NextRequest) {
         acessoTotal,
         permissoes: acessoTotal ? null : usuario.permissoes,
       },
-      empresa,
+      empresa: empresaAtualizada,
     });
   } catch (error) {
     console.error('Erro login:', error);

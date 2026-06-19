@@ -425,42 +425,99 @@ export async function POST(req: Request) {
       }
 
       const agora = new Date();
-      const vencimento = new Date();
-      vencimento.setDate(vencimento.getDate() + 30);
+      const vencimento = adicionarDias(agora, 30);
+      const planoAssinatura = normalizarPlano(
+        metadata.plano ||
+          String(pagamentoMP.external_reference || '').split(':')[1] ||
+          'premium'
+      );
 
-      await (prisma as any).pagamentoAssinatura.updateMany({
-        where: {
-          empresaId,
-          preferenceId: pagamentoMP.preference_id
-            ? String(pagamentoMP.preference_id)
-            : undefined,
-        },
-        data: {
-          status: statusAssinatura,
+      const wherePagamentoAssinatura: any[] = [];
+
+      if (paymentId) {
+        wherePagamentoAssinatura.push({
           paymentId: String(paymentId),
-          dataPagamento: statusMP === 'approved' ? agora : undefined,
-          vencimento: statusMP === 'approved' ? vencimento : undefined,
-        },
-      });
+        });
+      }
+
+      if (pagamentoMP.preference_id) {
+        wherePagamentoAssinatura.push({
+          preferenceId: String(pagamentoMP.preference_id),
+        });
+      }
+
+      const pagamentoAssinaturaExistente =
+        wherePagamentoAssinatura.length > 0
+          ? await (prisma as any).pagamentoAssinatura.findFirst({
+              where: {
+                empresaId,
+                OR: wherePagamentoAssinatura,
+              },
+              orderBy: {
+                createdAt: 'desc',
+              },
+            })
+          : null;
+
+      if (pagamentoAssinaturaExistente) {
+        await (prisma as any).pagamentoAssinatura.update({
+          where: {
+            id: pagamentoAssinaturaExistente.id,
+          },
+          data: {
+            status: statusAssinatura,
+            paymentId: String(paymentId),
+            dataPagamento: statusMP === 'approved' ? agora : undefined,
+            vencimento: statusMP === 'approved' ? vencimento : undefined,
+          },
+        });
+      } else {
+        await (prisma as any).pagamentoAssinatura.create({
+          data: {
+            empresaId,
+            valor: Number(pagamentoMP.transaction_amount || 0),
+            status: statusAssinatura,
+            tipo:
+              pagamentoMP.payment_method_id === 'pix'
+                ? `pix_${planoAssinatura}`
+                : `manual_${planoAssinatura}`,
+            paymentId: String(paymentId),
+            preferenceId: pagamentoMP.preference_id
+              ? String(pagamentoMP.preference_id)
+              : null,
+            dataPagamento: statusMP === 'approved' ? agora : null,
+            vencimento: statusMP === 'approved' ? vencimento : null,
+          },
+        });
+      }
 
       if (statusMP === 'approved') {
         await prisma.empresa.update({
           where: { id: empresaId },
           data: {
-            plano: 'premium',
+            plano: planoAssinatura,
             assinaturaStatus: 'ativa',
             assinaturaExpiraEm: vencimento,
+            assinaturaProximaCobrancaEm: vencimento,
+            assinaturaRecorrenteAtiva: false,
+            ultimoPagamentoEm: agora,
+            modoPagamentoAssinatura: 'manual',
+            formaPagamentoAssinatura:
+              pagamentoMP.payment_method_id === 'pix' ? 'pix' : 'checkout',
+            statusFinanceiro: 'em_dia',
+            bloqueadoPorInadimplencia: false,
             trialAtivo: false,
           } as any,
         });
       }
 
-      console.log('✅ Assinatura manual atualizada com sucesso');
+      console.log('✅ Assinatura manual/Pix atualizada com sucesso');
 
       return NextResponse.json({
         received: true,
         tipo: 'assinatura',
         empresaId,
+        status: statusMP,
       });
     }
 

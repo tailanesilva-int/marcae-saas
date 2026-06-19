@@ -32,7 +32,6 @@ export function montarMensagemConfirmacao({
         })
       : null;
 
-  // 🔥 AGORA DINÂMICO (domínio central)
   const baseUrl = getPublicBaseUrl();
   const linkAgendamento = `${baseUrl}/agendar/${slugEmpresa}`;
 
@@ -304,48 +303,127 @@ type EnviarWhatsappParams = {
   instance: string;
   numero: string;
   mensagem: string;
+  tentativas?: number;
+  timeoutMs?: number;
 };
+
+function aguardar(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function normalizarNumeroWhatsapp(numero: string) {
+  let numeroLimpo = String(numero || '').replace(/\D/g, '');
+
+  if (numeroLimpo.length === 10 || numeroLimpo.length === 11) {
+    numeroLimpo = `55${numeroLimpo}`;
+  }
+
+  return numeroLimpo;
+}
+
+async function lerRespostaEvolution(response: Response) {
+  const texto = await response.text();
+
+  if (!texto) return null;
+
+  try {
+    return JSON.parse(texto);
+  } catch {
+    return texto;
+  }
+}
 
 export async function enviarWhatsapp({
   instance,
   numero,
   mensagem,
+  tentativas = 3,
+  timeoutMs = 15000,
 }: EnviarWhatsappParams) {
   if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) {
-    throw new Error("Configuração da Evolution API ausente.");
+    throw new Error('Configuração da Evolution API ausente.');
   }
 
   if (!instance) {
-    throw new Error("Instância do WhatsApp não informada.");
+    throw new Error('Instância do WhatsApp não informada.');
   }
 
-  let numeroLimpo = numero.replace(/\D/g, "");
+  const numeroLimpo = normalizarNumeroWhatsapp(numero);
 
-if (numeroLimpo.length === 10 || numeroLimpo.length === 11) {
-  numeroLimpo = `55${numeroLimpo}`;
-}
+  if (!numeroLimpo) {
+    throw new Error('Número de WhatsApp inválido.');
+  }
 
-  const response = await fetch(
-    `${EVOLUTION_API_URL}/message/sendText/${instance}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: EVOLUTION_API_KEY,
-      },
-      body: JSON.stringify({
-        number: numeroLimpo,
-        text: mensagem,
-      }),
+  if (!mensagem) {
+    throw new Error('Mensagem do WhatsApp não informada.');
+  }
+
+  let ultimoErro: unknown = null;
+
+  for (let tentativa = 1; tentativa <= tentativas; tentativa++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(
+        `${EVOLUTION_API_URL}/message/sendText/${instance}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: EVOLUTION_API_KEY,
+          },
+          body: JSON.stringify({
+            number: numeroLimpo,
+            text: mensagem,
+          }),
+          signal: controller.signal,
+        }
+      );
+
+      clearTimeout(timeout);
+
+      const data = await lerRespostaEvolution(response);
+
+      if (!response.ok) {
+        console.error('Erro Evolution API:', {
+          tentativa,
+          status: response.status,
+          numero: numeroLimpo,
+          instance,
+          data,
+        });
+
+        throw new Error(
+          `Erro ao enviar WhatsApp. Status Evolution: ${response.status}`
+        );
+      }
+
+      return data;
+    } catch (error: any) {
+      clearTimeout(timeout);
+      ultimoErro = error;
+
+      const erroTimeout =
+        error?.name === 'AbortError'
+          ? `Timeout de ${timeoutMs}ms ao enviar WhatsApp.`
+          : error?.message || 'Erro desconhecido ao enviar WhatsApp.';
+
+      console.error('Falha no envio WhatsApp:', {
+        tentativa,
+        tentativas,
+        numero: numeroLimpo,
+        instance,
+        erro: erroTimeout,
+      });
+
+      if (tentativa < tentativas) {
+        await aguardar(1000 * tentativa);
+      }
     }
-  );
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    console.error("Erro Evolution API:", JSON.stringify(data, null, 2));
-    throw new Error("Erro ao enviar WhatsApp.");
   }
 
-  return data;
+  throw ultimoErro instanceof Error
+    ? ultimoErro
+    : new Error('Erro ao enviar WhatsApp após múltiplas tentativas.');
 }

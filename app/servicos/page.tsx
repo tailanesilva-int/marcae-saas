@@ -8,6 +8,7 @@ export default function ServicosPage() {
   const [empresa, setEmpresa] = useState<any>(null);
   const [usuario, setUsuario] = useState<any>(null);
   const [servicos, setServicos] = useState<any[]>([]);
+  const [modelosFicha, setModelosFicha] = useState<any[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [editandoId, setEditandoId] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<
@@ -36,6 +37,7 @@ export default function ServicosPage() {
     imagemUrl1: "",
     imagemUrl2: "",
     imagemUrl3: "",
+    fichaModeloId: "",
     ativo: true,
   });
 
@@ -53,6 +55,7 @@ export default function ServicosPage() {
     setUsuario(usuarioStorage ? JSON.parse(usuarioStorage) : null);
 
     carregarServicos(emp.id);
+    carregarModelosFicha(emp.id);
   }, []);
 
   async function carregarServicos(empresaId: string) {
@@ -65,6 +68,21 @@ export default function ServicosPage() {
 
     setServicos(data.servicos || []);
     setCarregando(false);
+  }
+
+  async function carregarModelosFicha(empresaId: string) {
+    try {
+      const res = await fetch(
+        `/api/fichas-digitais/modelos?empresaId=${empresaId}&status=ativo`,
+        { cache: "no-store" },
+      );
+      const data = await res.json();
+
+      setModelosFicha(Array.isArray(data.modelos) ? data.modelos : []);
+    } catch (error) {
+      console.error("Erro ao carregar modelos de ficha digital:", error);
+      setModelosFicha([]);
+    }
   }
 
   function dinheiro(valor: any) {
@@ -102,6 +120,7 @@ export default function ServicosPage() {
       imagemUrl1: form.imagemUrl1,
       imagemUrl2: form.imagemUrl2,
       imagemUrl3: form.imagemUrl3,
+      fichaModeloId: form.fichaModeloId || null,
       ativo: statusAtivo === undefined ? form.ativo : statusAtivo,
     };
   }
@@ -122,6 +141,7 @@ export default function ServicosPage() {
       imagemUrl1: "",
       imagemUrl2: "",
       imagemUrl3: "",
+      fichaModeloId: "",
       ativo: true,
     });
   }
@@ -145,6 +165,7 @@ export default function ServicosPage() {
       imagemUrl1: servico.imagemUrl1 || "",
       imagemUrl2: servico.imagemUrl2 || "",
       imagemUrl3: servico.imagemUrl3 || "",
+      fichaModeloId: servico.fichaModeloId || servico.fichaModelo?.id || "",
       ativo: servico.ativo !== false,
     });
 
@@ -267,6 +288,7 @@ export default function ServicosPage() {
           imagemUrl1: servico.imagemUrl1 || "",
           imagemUrl2: servico.imagemUrl2 || "",
           imagemUrl3: servico.imagemUrl3 || "",
+          fichaModeloId: servico.fichaModeloId || servico.fichaModelo?.id || null,
           ativo: servico.ativo === false,
         }),
       });
@@ -350,6 +372,10 @@ export default function ServicosPage() {
       (servico) => servico.exigePrePagamento,
     ).length;
 
+    const comFichaDigital = servicos.filter(
+      (servico) => servico.fichaModeloId || servico.fichaModelo,
+    ).length;
+
     const ticketMedio =
       totalServicos > 0
         ? servicos.reduce(
@@ -387,6 +413,7 @@ export default function ServicosPage() {
     return {
       totalServicos,
       comPrePagamento,
+      comFichaDigital,
       ticketMedio,
       duracaoMedia,
       custoTotal,
@@ -420,6 +447,8 @@ export default function ServicosPage() {
       servico.valor,
       servico.duracaoMin,
       servico.capacidadeSimultanea,
+      servico.fichaModelo?.titulo,
+      servico.fichaModeloId ? "ficha digital vinculada formulário questionário" : "sem ficha digital",
       servico.exigePrePagamento
         ? "pre pagamento pré-pagamento sinal"
         : "sem pre sem pré",
@@ -1612,6 +1641,44 @@ export default function ServicosPage() {
                     </div>
                   </details>
 
+                  <section style={formGrupoCompacto}>
+                    <div style={formGrupoTopo}>
+                      <span style={formGrupoBadge}>04</span>
+                      <div>
+                        <strong style={formGrupoTitulo}>Ficha digital vinculada</strong>
+                        <small style={formGrupoTexto}>
+                          Escolha uma ficha para este serviço. No agendador, ela
+                          só será exibida quando este serviço for selecionado.
+                        </small>
+                      </div>
+                    </div>
+
+                    <div style={{ ...campo, gridColumn: "1 / -1" }}>
+                      <label style={label}>Ficha digital do serviço</label>
+                      <select
+                        style={inputCompacto}
+                        value={form.fichaModeloId}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            fichaModeloId: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="">Nenhuma ficha digital</option>
+                        {modelosFicha.map((modelo) => (
+                          <option key={modelo.id} value={modelo.id}>
+                            {modelo.titulo}
+                          </option>
+                        ))}
+                      </select>
+                      <small style={hint}>
+                        Use apenas quando o serviço precisar de questionário,
+                        consentimento, assinatura, fotos ou LGPD.
+                      </small>
+                    </div>
+                  </section>
+
                   <section style={prePagamentoBoxCompacto}>
                     <label style={checkLinhaCompacta}>
                       <input
@@ -1914,6 +1981,16 @@ export default function ServicosPage() {
                             }{" "}
                             fotos
                           </span>
+
+                          {s.fichaModelo ? (
+                            <span style={badgeFichaDigitalCompacto}>
+                              📋 {s.fichaModelo.titulo}
+                            </span>
+                          ) : (
+                            <span style={badgeSemFichaCompacto}>
+                              Sem ficha digital
+                            </span>
+                          )}
                         </div>
 
                         <details
@@ -3586,6 +3663,31 @@ const badgeSemPreCompacto: CSSProperties = {
   textOverflow: "ellipsis",
 };
 
+
+const badgeFichaDigitalCompacto: CSSProperties = {
+  height: 28,
+  padding: "0 9px",
+  borderRadius: 999,
+  background: "rgba(124,58,237,0.16)",
+  border: "1px solid rgba(167,139,250,0.22)",
+  color: "#ddd6fe",
+  fontSize: 10.5,
+  fontWeight: 900,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minWidth: 0,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
+const badgeSemFichaCompacto: CSSProperties = {
+  ...badgeFichaDigitalCompacto,
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.07)",
+  color: "#94a3b8",
+};
 const badgeFotosCompacto: CSSProperties = {
   width: "100%",
   minWidth: 0,

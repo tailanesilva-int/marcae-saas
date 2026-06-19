@@ -282,6 +282,7 @@ export async function POST(req: Request) {
       dataHoraInicio,
       clienteId,
       cliente,
+      fichasRegistrosPorServico,
     } = body;
 
     if (!empresaId) {
@@ -555,6 +556,36 @@ export async function POST(req: Request) {
           },
         });
       });
+
+      const fichaRegistroVinculada = Array.isArray(fichasRegistrosPorServico)
+        ? fichasRegistrosPorServico.find(
+            (ficha: any) =>
+              ficha?.servicoId === item.servicoId && ficha?.registroId,
+          )
+        : item.fichaRegistroId
+          ? { servicoId: item.servicoId, registroId: item.fichaRegistroId }
+          : null;
+
+      if (fichaRegistroVinculada?.registroId) {
+        await prisma.fichaRegistro.updateMany({
+          where: {
+            id: fichaRegistroVinculada.registroId,
+            empresaId,
+            modelo: {
+              servicos: {
+                some: {
+                  id: item.servicoId,
+                },
+              },
+            },
+          },
+          data: {
+            agendamentoId: novoAgendamento.id,
+            clienteId: clienteFinal.id,
+            status: 'preenchida',
+          },
+        });
+      }
 
       if (promocaoAplicada && promocaoAtiva?.id) {
         const cpfLimpoPromocao = limparCpf(clienteFinal.cpf);

@@ -2,6 +2,50 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 import { enviarWhatsapp } from '@/lib/whatsapp';
 
+const TAMANHO_LOTE = 10;
+const INTERVALO_ENTRE_LOTES_MS = 1200;
+
+function aguardar(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function normalizarNumero(numero: string) {
+  let numeroLimpo = String(numero || '').replace(/\D/g, '');
+
+  if (numeroLimpo.length === 10 || numeroLimpo.length === 11) {
+    numeroLimpo = `55${numeroLimpo}`;
+  }
+
+  return numeroLimpo;
+}
+
+function montarMensagemPromocao({
+  mensagemWhatsapp,
+  cliente,
+  empresa,
+  titulo,
+  descricao,
+}: {
+  mensagemWhatsapp: string;
+  cliente: any;
+  empresa: any;
+  titulo?: string | null;
+  descricao?: string | null;
+}) {
+  const mensagemBase = mensagemWhatsapp
+    .replaceAll('{nome}', cliente.nome || 'cliente')
+    .replaceAll('{empresa}', empresa.nome || '')
+    .replaceAll('{titulo}', titulo || '')
+    .replaceAll('{descricao}', descricao || '');
+
+  return `${mensagemBase}
+
+━━━━━━━━━━━━━━
+🏢 ${empresa.nome}
+📍 ${empresa.endereco || 'Endereço não informado'}
+📞 ${empresa.telefone || empresa.whatsapp || 'Telefone não informado'}`;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -57,6 +101,9 @@ export async function POST(req: Request) {
           not: '',
         },
       },
+      orderBy: {
+        nome: 'asc',
+      },
     });
 
     clientes = clientes.filter((cliente) => !!cliente.whatsapp);
@@ -79,43 +126,71 @@ export async function POST(req: Request) {
 
     let enviados = 0;
     let erros = 0;
+    const detalhesErros: Array<{
+      clienteId: string;
+      clienteNome: string;
+      motivo: string;
+    }> = [];
 
-    for (const cliente of clientes) {
-      try {
-        let numero = String(cliente.whatsapp || '').replace(/\D/g, '');
+    for (let i = 0; i < clientes.length; i += TAMANHO_LOTE) {
+      const lote = clientes.slice(i, i + TAMANHO_LOTE);
 
-        if (!numero) {
-          erros++;
-          continue;
+      const resultados = await Promise.allSettled(
+        lote.map(async (cliente) => {
+          const numero = normalizarNumero(cliente.whatsapp || '');
+
+          if (!numero) {
+            throw new Error('Número de WhatsApp inválido.');
+          }
+
+          const mensagemFinal = montarMensagemPromocao({
+            mensagemWhatsapp,
+            cliente,
+            empresa,
+            titulo,
+            descricao,
+          });
+
+          await enviarWhatsapp({
+            instance: empresa.whatsappInstance,
+            numero,
+            mensagem: mensagemFinal,
+            tentativas: 3,
+            timeoutMs: 15000,
+          });
+
+          return cliente;
+        })
+      );
+
+      resultados.forEach((resultado, index) => {
+        const cliente = lote[index];
+
+        if (resultado.status === 'fulfilled') {
+          enviados++;
+          return;
         }
 
-        if (!numero.startsWith('55')) {
-          numero = `55${numero}`;
-        }
+        erros++;
 
-        const mensagemBase = mensagemWhatsapp
-          .replaceAll('{nome}', cliente.nome || 'cliente')
-          .replaceAll('{empresa}', empresa.nome || '')
-          .replaceAll('{titulo}', titulo || '')
-          .replaceAll('{descricao}', descricao || '');
+        const motivo =
+          resultado.reason instanceof Error
+            ? resultado.reason.message
+            : 'Erro desconhecido ao enviar promoção.';
 
-        const mensagemFinal = `${mensagemBase}
-
-━━━━━━━━━━━━━━
-🏢 ${empresa.nome}
-📍 ${empresa.endereco || 'Endereço não informado'}
-📞 ${empresa.telefone || empresa.whatsapp || 'Telefone não informado'}`;
-
-        await enviarWhatsapp({
-          instance: empresa.whatsappInstance,
-          numero,
-          mensagem: mensagemFinal,
+        detalhesErros.push({
+          clienteId: cliente.id,
+          clienteNome: cliente.nome || 'Cliente sem nome',
+          motivo,
         });
 
-        enviados++;
-      } catch (error) {
-        console.error(`Erro ao enviar para ${cliente.nome}:`, error);
-        erros++;
+        console.error(`Erro ao enviar promoção para ${cliente.nome}:`, motivo);
+      });
+
+      const aindaTemProximoLote = i + TAMANHO_LOTE < clientes.length;
+
+      if (aindaTemProximoLote) {
+        await aguardar(INTERVALO_ENTRE_LOTES_MS);
       }
     }
 
@@ -136,6 +211,7 @@ export async function POST(req: Request) {
       totalClientes: clientes.length,
       enviados,
       erros,
+      detalhesErros: detalhesErros.slice(0, 20),
     });
   } catch (error) {
     console.error('Erro ao enviar promoção:', error);

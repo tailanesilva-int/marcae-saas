@@ -8,59 +8,64 @@ datasource db {
 }
 
 model Empresa {
-  id                                 String                @id @default(dbgenerated("(gen_random_uuid())::text"))
-  slug                               String                @unique
+  id                                 String                          @id @default(dbgenerated("(gen_random_uuid())::text"))
+  slug                               String                          @unique
   nome                               String
-corPrimaria   String? @default("#7c3aed")
-corSecundaria String? @default("#a855f7")
-corSidebar    String? @default("#0f172a")
+  corPrimaria                        String?                         @default("#7c3aed")
+  corSecundaria                      String?                         @default("#a855f7")
+  corSidebar                         String?                         @default("#0f172a")
   descricao                          String?
   telefone                           String?
   endereco                           String?
   logoUrl                            String?
   midiaUrl                           String?
-  tipoMidia                          String?               @default("imagem")
-  ativo                              Boolean               @default(true)
-  createdAt                          DateTime              @default(now()) @db.Timestamp(6)
-  updatedAt                          DateTime              @default(now()) @updatedAt @db.Timestamp(6)
+  tipoMidia                          String?                         @default("imagem")
+  ativo                              Boolean                         @default(true)
+  createdAt                          DateTime                        @default(now()) @db.Timestamp(6)
+  updatedAt                          DateTime                        @default(now()) @updatedAt @db.Timestamp(6)
   whatsapp                           String?
   instagram                          String?
   whatsappInstance                   String?
-  whatsappAtivo                      Boolean               @default(false)
-  plano                              String?               @default("basico")
-  trialAtivo                         Boolean               @default(true)
-  trialExpiraEm                      DateTime?             @db.Timestamp(6)
-  assinaturaStatus                   String                @default("trial")
-  assinaturaExpiraEm                 DateTime?             @db.Timestamp(6)
+  whatsappAtivo                      Boolean                         @default(false)
+  plano                              String?                         @default("basico")
+  trialAtivo                         Boolean                         @default(true)
+  trialExpiraEm                      DateTime?                       @db.Timestamp(6)
+  assinaturaStatus                   String                          @default("trial")
+  assinaturaExpiraEm                 DateTime?                       @db.Timestamp(6)
   mercadoPagoAssinaturaId            String?
   responsavel                        String?
-  assinaturaProximaCobrancaEm        DateTime?             @db.Timestamp(6)
-  assinaturaRecorrenteAtiva          Boolean               @default(false)
-  assinaturaUltimoLembreteWhatsappEm DateTime?             @db.Timestamp(6)
-  modoPagamentoAssinatura            String                @default("manual")
-  formaPagamentoAssinatura           String                @default("pix")
-  bloqueadoPorInadimplencia          Boolean               @default(false)
-  descontoMensal                     Decimal?              @db.Decimal(10, 2)
+  assinaturaProximaCobrancaEm        DateTime?                       @db.Timestamp(6)
+  assinaturaRecorrenteAtiva          Boolean                         @default(false)
+  assinaturaUltimoLembreteWhatsappEm DateTime?                       @db.Timestamp(6)
+  modoPagamentoAssinatura            String                          @default("manual")
+  formaPagamentoAssinatura           String                          @default("pix")
+  bloqueadoPorInadimplencia          Boolean                         @default(false)
+  descontoMensal                     Decimal?                        @db.Decimal(10, 2)
   observacoesInternas                String?
-  statusFinanceiro                   String                @default("em_dia")
-  ultimoPagamentoEm                  DateTime?             @db.Timestamp(6)
-  valorMensalPersonalizado           Decimal?              @db.Decimal(10, 2)
-  tipoCalculoComissao                String                @default("servico_executado")
+  statusFinanceiro                   String                          @default("em_dia")
+  ultimoPagamentoEm                  DateTime?                       @db.Timestamp(6)
+  ultimoLoginEm                      DateTime?                       @db.Timestamp(6)
+  ultimoLoginIp                      String?
+  ultimoLoginUsuarioId               String?
+  ultimoLoginUsuarioNome             String?
+  ultimoLoginUsuarioEmail            String?
+  valorMensalPersonalizado           Decimal?                        @db.Decimal(10, 2)
+  tipoCalculoComissao                String                          @default("servico_executado")
   mercadoPagoAccessToken             String?
-  mercadoPagoAtivo                   Boolean               @default(false)
-  mercadoPagoAtualizadoEm            DateTime?             @db.Timestamp(6)
-  mercadoPagoModo                    String                @default("sandbox")
+  mercadoPagoAtivo                   Boolean                         @default(false)
+  mercadoPagoAtualizadoEm            DateTime?                       @db.Timestamp(6)
+  mercadoPagoModo                    String                          @default("sandbox")
   mercadoPagoPublicKey               String?
-  mercadoPagoStatus                  String                @default("nao_configurado")
-  solicitouIntegracaoMp              Boolean               @default(false)
+  mercadoPagoStatus                  String                          @default("nao_configurado")
+  solicitouIntegracaoMp              Boolean                         @default(false)
   instagramUrl                       String?
-  diasInadimplente                   Int                   @default(0)
-  ultimoAvisoBloqueioEnviadoEm       DateTime?             @db.Timestamp(6)
-  ultimoAvisoPagamentoAprovadoEm     DateTime?             @db.Timestamp(6)
-  ultimoAvisoPagamentoRecusadoEm     DateTime?             @db.Timestamp(6)
-  ultimoLembreteFinanceiroEnviadoEm  DateTime?             @db.Timestamp(6)
+  diasInadimplente                   Int                             @default(0)
+  ultimoAvisoBloqueioEnviadoEm       DateTime?                       @db.Timestamp(6)
+  ultimoAvisoPagamentoAprovadoEm     DateTime?                       @db.Timestamp(6)
+  ultimoAvisoPagamentoRecusadoEm     DateTime?                       @db.Timestamp(6)
+  ultimoLembreteFinanceiroEnviadoEm  DateTime?                       @db.Timestamp(6)
   agendamentos                       Agendamento[]
-  clienteMovimentacoesFinanceiras     ClienteMovimentacaoFinanceira[]
+  clienteMovimentacoesFinanceiras    ClienteMovimentacaoFinanceira[]
   caixasDiarios                      CaixaDiario[]
   caixaMovimentacoes                 CaixaMovimentacao[]
   agendamentoServicos                AgendamentoServico[]
@@ -78,59 +83,67 @@ corSidebar    String? @default("#0f172a")
   promocoesUsos                      PromocaoUso[]
   servicos                           Servico[]
   usuarios                           UsuarioEmpresa[]
-  avisosSistema                     AvisoSistema[]
+  avisosSistema                      AvisoSistema[]
+  fichasModelos                      FichaModelo[]
+  fichasRegistros                    FichaRegistro[]
+  fichasArquivos                     FichaArquivo[]
 }
 
 model Cliente {
-  id             String        @id @default(dbgenerated("(gen_random_uuid())::text"))
-  empresaId      String
-  nome           String
-  whatsapp       String
-  cpf            String?
-  dataNascimento DateTime?     @db.Timestamp(6)
-  createdAt      DateTime      @default(now()) @db.Timestamp(6)
-  updatedAt      DateTime      @default(now()) @updatedAt @db.Timestamp(6)
-  agendamentos   Agendamento[]
+  id                       String                          @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId                String
+  nome                     String
+  whatsapp                 String
+  cpf                      String?
+  dataNascimento           DateTime?                       @db.Timestamp(6)
+  createdAt                DateTime                        @default(now()) @db.Timestamp(6)
+  updatedAt                DateTime                        @default(now()) @updatedAt @db.Timestamp(6)
+  agendamentos             Agendamento[]
   movimentacoesFinanceiras ClienteMovimentacaoFinanceira[]
-  empresa        Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  Pagamento      Pagamento[]
-  promocoesUsos  PromocaoUso[]
+  empresa                  Empresa                         @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Pagamento                Pagamento[]
+  promocoesUsos            PromocaoUso[]
+  fichasRegistros          FichaRegistro[]
 
   @@unique([empresaId, cpf])
 }
 
 model Servico {
-  id                       String                   @id @default(dbgenerated("(gen_random_uuid())::text"))
-  empresaId                String
-  nome                     String
-  descricao                String?
+  id                          String                   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId                   String
+  nome                        String
+  descricao                   String?
   recomendacoesPreAtendimento String?
-  imagemUrl1 String?
-  imagemUrl2 String?
-  imagemUrl3 String?
-  duracaoMin               Int                      @default(30)
-  capacidadeSimultanea      Int                      @default(1)
-  valor                    Decimal                  @default(0) @db.Decimal(10, 2)
-  ativo                    Boolean                  @default(true)
-  exigePagamento           Boolean                  @default(false)
-  tipoPagamento            String?
-  permiteAgendamentoOnline Boolean                  @default(true)
-  ordem                    Int                      @default(0)
-  createdAt                DateTime                 @default(now()) @db.Timestamp(6)
-  updatedAt                DateTime                 @default(now()) @updatedAt @db.Timestamp(6)
-  exigePrePagamento        Boolean?                 @default(false)
-  valorPrePagamento        Decimal?                 @db.Decimal
-  tipoPrePagamento         String?
-  tipoComissao             String?
-  valorComissao            Decimal?                 @db.Decimal(10, 2)
-  custo                    Decimal?                 @db.Decimal(10, 2)
-  agendamentos             Agendamento[]
-  agendamentoServicos      AgendamentoServico[]
-  disponibilidades         DisponibilidadeServico[]
-  profissionais            ProfissionalServico[]
-  empresa                  Empresa                  @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  ProfissionalToServico    ProfissionalToServico[]
-  promocoes                       PromocaoServico[]
+  imagemUrl1                  String?
+  imagemUrl2                  String?
+  imagemUrl3                  String?
+  duracaoMin                  Int                      @default(30)
+  capacidadeSimultanea        Int                      @default(1)
+  valor                       Decimal                  @default(0) @db.Decimal(10, 2)
+  ativo                       Boolean                  @default(true)
+  exigePagamento              Boolean                  @default(false)
+  tipoPagamento               String?
+  permiteAgendamentoOnline    Boolean                  @default(true)
+  ordem                       Int                      @default(0)
+  createdAt                   DateTime                 @default(now()) @db.Timestamp(6)
+  updatedAt                   DateTime                 @default(now()) @updatedAt @db.Timestamp(6)
+  exigePrePagamento           Boolean?                 @default(false)
+  valorPrePagamento           Decimal?                 @db.Decimal
+  tipoPrePagamento            String?
+  tipoComissao                String?
+  valorComissao               Decimal?                 @db.Decimal(10, 2)
+  custo                       Decimal?                 @db.Decimal(10, 2)
+  fichaModeloId              String?
+  agendamentos                Agendamento[]
+  agendamentoServicos         AgendamentoServico[]
+  disponibilidades            DisponibilidadeServico[]
+  profissionais               ProfissionalServico[]
+  empresa                     Empresa                  @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  fichaModelo                 FichaModelo?             @relation(fields: [fichaModeloId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  ProfissionalToServico       ProfissionalToServico[]
+  promocoes                   PromocaoServico[]
+
+  @@index([fichaModeloId])
 }
 
 model Profissional {
@@ -143,9 +156,9 @@ model Profissional {
   ordem                 Int                     @default(0)
   createdAt             DateTime                @default(now()) @db.Timestamp(6)
   updatedAt             DateTime                @default(now()) @updatedAt @db.Timestamp(6)
-  modoComissao  String @default("geral")
-tipoComissao  String?
-valorComissao Float?
+  modoComissao          String                  @default("geral")
+  tipoComissao          String?
+  valorComissao         Float?
   agendamentos          Agendamento[]
   agendamentoServicos   AgendamentoServico[]
   comissoes             Comissao[]
@@ -157,20 +170,20 @@ valorComissao Float?
 }
 
 model ProfissionalServico {
-  id              String   @id @default(cuid())
-  empresaId       String
-  profissionalId  String
-  servicoId       String
+  id             String @id @default(cuid())
+  empresaId      String
+  profissionalId String
+  servicoId      String
 
-  tipoComissao    String?
-  valorComissao   Float?
+  tipoComissao  String?
+  valorComissao Float?
 
-  createdAt       DateTime @default(now())
+  createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 
-  empresa         Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
-  profissional    Profissional  @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
-  servico         Servico       @relation(fields: [servicoId], references: [id], onDelete: Cascade)
+  empresa      Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  profissional Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  servico      Servico      @relation(fields: [servicoId], references: [id], onDelete: Cascade)
 
   @@unique([profissionalId, servicoId])
 }
@@ -204,54 +217,55 @@ model DisponibilidadeServico {
 }
 
 model Agendamento {
-  id                        String               @id @default(dbgenerated("(gen_random_uuid())::text"))
-  empresaId                 String
-  servicoId                 String
-  profissionalId            String?
-  data                      String?
-  horaInicio                String?
-  duracaoMin                Int
-  clienteNome               String?
-  clienteCpf                String?
-  clienteNascimento         String?
-  clienteWhatsapp           String?
-  status                    String               @default("pendente")
-  createdAt                 DateTime             @default(now()) @db.Timestamp(6)
-  nomeCliente               String?
-  telefoneCliente           String?
-  clienteId                 String?
-  dataHoraInicio            DateTime?            @db.Timestamp(6)
-  dataHoraFim               DateTime?            @db.Timestamp(6)
-  valorTotal                Decimal              @default(0) @db.Decimal
-  valorPrePago              Decimal?             @db.Decimal
-  valorOriginalServico      Decimal?             @db.Decimal(10, 2)
-  valorComDesconto          Decimal?             @db.Decimal(10, 2)
-  valorEconomizado          Decimal?             @db.Decimal(10, 2)
-  promocaoId                String?
-  promocaoTitulo            String?
-  promocaoDescricao         String?
-  promocaoTipo              String?
-  promocaoDesconto          Decimal?             @db.Decimal(10, 2)
-  promocaoTipoDesconto      String?
-  promocaoUsoUnicoCpf       Boolean              @default(false)
-  statusPagamento           String               @default("pendente")
-  origem                    String               @default("online")
-  lembreteWhatsappEnviado   Boolean              @default(false)
-  lembreteWhatsappEnviadoAt DateTime?            @db.Timestamp(6)
-  updatedAt                 DateTime             @default(now()) @updatedAt @db.Timestamp(6)
-  comissaoGerada            Boolean              @default(false)
-  canceladoEm               DateTime?            @db.Timestamp(6)
-  motivoCancelamento        String?
-  grupoAgendamentoId        String?
-  cliente                   Cliente?             @relation(fields: [clienteId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  empresa                   Empresa              @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  profissional              Profissional?        @relation(fields: [profissionalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  servico                   Servico              @relation(fields: [servicoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  servicosAdicionais        AgendamentoServico[]
-  comissoes                 Comissao[]
-  pagamento                 Pagamento[]
-  promocoesUsos             PromocaoUso[]
+  id                              String                          @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId                       String
+  servicoId                       String
+  profissionalId                  String?
+  data                            String?
+  horaInicio                      String?
+  duracaoMin                      Int
+  clienteNome                     String?
+  clienteCpf                      String?
+  clienteNascimento               String?
+  clienteWhatsapp                 String?
+  status                          String                          @default("pendente")
+  createdAt                       DateTime                        @default(now()) @db.Timestamp(6)
+  nomeCliente                     String?
+  telefoneCliente                 String?
+  clienteId                       String?
+  dataHoraInicio                  DateTime?                       @db.Timestamp(6)
+  dataHoraFim                     DateTime?                       @db.Timestamp(6)
+  valorTotal                      Decimal                         @default(0) @db.Decimal
+  valorPrePago                    Decimal?                        @db.Decimal
+  valorOriginalServico            Decimal?                        @db.Decimal(10, 2)
+  valorComDesconto                Decimal?                        @db.Decimal(10, 2)
+  valorEconomizado                Decimal?                        @db.Decimal(10, 2)
+  promocaoId                      String?
+  promocaoTitulo                  String?
+  promocaoDescricao               String?
+  promocaoTipo                    String?
+  promocaoDesconto                Decimal?                        @db.Decimal(10, 2)
+  promocaoTipoDesconto            String?
+  promocaoUsoUnicoCpf             Boolean                         @default(false)
+  statusPagamento                 String                          @default("pendente")
+  origem                          String                          @default("online")
+  lembreteWhatsappEnviado         Boolean                         @default(false)
+  lembreteWhatsappEnviadoAt       DateTime?                       @db.Timestamp(6)
+  updatedAt                       DateTime                        @default(now()) @updatedAt @db.Timestamp(6)
+  comissaoGerada                  Boolean                         @default(false)
+  canceladoEm                     DateTime?                       @db.Timestamp(6)
+  motivoCancelamento              String?
+  grupoAgendamentoId              String?
+  cliente                         Cliente?                        @relation(fields: [clienteId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  empresa                         Empresa                         @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profissional                    Profissional?                   @relation(fields: [profissionalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  servico                         Servico                         @relation(fields: [servicoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  servicosAdicionais              AgendamentoServico[]
+  comissoes                       Comissao[]
+  pagamento                       Pagamento[]
+  promocoesUsos                   PromocaoUso[]
   clienteMovimentacoesFinanceiras ClienteMovimentacaoFinanceira[]
+  fichasRegistros                 FichaRegistro[]
 
   @@index([grupoAgendamentoId])
 }
@@ -347,43 +361,43 @@ model Comissao {
 }
 
 model Promocao {
-  id                    String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  id                    String            @id @default(dbgenerated("(gen_random_uuid())::text"))
   empresaId             String
   servicoId             String?
-  tipo                  String    @default("geral")
+  tipo                  String            @default("geral")
   titulo                String
   descricao             String?
   mensagemWhatsapp      String?
-  dataInicio            DateTime? @db.Timestamp(6)
-  dataFim               DateTime? @db.Timestamp(6)
+  dataInicio            DateTime?         @db.Timestamp(6)
+  dataFim               DateTime?         @db.Timestamp(6)
   tipoDesconto          String?
-  desconto              Decimal?  @db.Decimal(10, 2)
-  status                String    @default("ativa")
-  createdAt             DateTime  @default(now()) @db.Timestamp(6)
-  updatedAt             DateTime  @default(now()) @updatedAt @db.Timestamp(6)
-  whatsappEnviadoAt     DateTime? @db.Timestamp(6)
-  whatsappTotalEnviados Int       @default(0)
-  whatsappTotalErros    Int       @default(0)
-  usoUnicoCpf           Boolean   @default(false)
+  desconto              Decimal?          @db.Decimal(10, 2)
+  status                String            @default("ativa")
+  createdAt             DateTime          @default(now()) @db.Timestamp(6)
+  updatedAt             DateTime          @default(now()) @updatedAt @db.Timestamp(6)
+  whatsappEnviadoAt     DateTime?         @db.Timestamp(6)
+  whatsappTotalEnviados Int               @default(0)
+  whatsappTotalErros    Int               @default(0)
+  usoUnicoCpf           Boolean           @default(false)
   servicos              PromocaoServico[]
   usos                  PromocaoUso[]
-  empresa               Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  empresa               Empresa           @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model PromocaoUso {
-  id            String      @id @default(cuid())
+  id            String   @id @default(cuid())
   empresaId     String
   promocaoId    String
   clienteId     String?
   agendamentoId String?
   cpf           String
-  usedAt        DateTime    @default(now()) @db.Timestamp(6)
-  createdAt     DateTime    @default(now()) @db.Timestamp(6)
+  usedAt        DateTime @default(now()) @db.Timestamp(6)
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
 
-  empresa       Empresa     @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  promocao      Promocao    @relation(fields: [promocaoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  cliente       Cliente?    @relation(fields: [clienteId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  agendamento   Agendamento? @relation(fields: [agendamentoId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  empresa     Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  promocao    Promocao     @relation(fields: [promocaoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  cliente     Cliente?     @relation(fields: [clienteId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  agendamento Agendamento? @relation(fields: [agendamentoId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@unique([promocaoId, cpf])
   @@index([empresaId])
@@ -393,22 +407,23 @@ model PromocaoUso {
 }
 
 model UsuarioEmpresa {
-  id                         String    @id @default(uuid())
-  empresaId                  String
-  nome                       String
-  email                      String    @unique
-  whatsapp                   String?
-  senhaHash                  String
-  perfil                     String?   @default("admin")
-  ativo                      Boolean?  @default(true)
-  codigoRecuperacao          String?
-  codigoRecuperacaoExpiraEm  DateTime? @db.Timestamp(6)
-  createdAt                  DateTime? @default(now()) @db.Timestamp(6)
-  updatedAt                  DateTime? @default(now()) @updatedAt @db.Timestamp(6)
-  permissoes                 Json?
-  empresa                    Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_empresa")
+  id                        String    @id @default(uuid())
+  empresaId                 String
+  nome                      String
+  email                     String    @unique
+  whatsapp                  String?
+  senhaHash                 String
+  perfil                    String?   @default("admin")
+  ativo                     Boolean?  @default(true)
+  codigoRecuperacao         String?
+  codigoRecuperacaoExpiraEm DateTime? @db.Timestamp(6)
+  createdAt                 DateTime? @default(now()) @db.Timestamp(6)
+  updatedAt                 DateTime? @default(now()) @updatedAt @db.Timestamp(6)
+  permissoes                Json?
+  ultimoLoginEm             DateTime? @db.Timestamp(6)
+  ultimoLoginIp             String?
+  empresa                   Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_empresa")
 }
-
 
 model UsuarioMaster {
   id          String    @id @default(cuid())
@@ -497,22 +512,22 @@ model ComissaoPagamento {
 }
 
 model ClienteMovimentacaoFinanceira {
-  id            String       @id @default(dbgenerated("(gen_random_uuid())::text"))
-  empresaId     String
-  clienteId     String
-  agendamentoId String?
-  tipo          String
-  valor         Decimal      @default(0) @db.Decimal(10, 2)
-  origem        String       @default("ajuste_manual")
-  status        String       @default("ativo")
-  observacao    String?
+  id                   String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId            String
+  clienteId            String
+  agendamentoId        String?
+  tipo                 String
+  valor                Decimal  @default(0) @db.Decimal(10, 2)
+  origem               String   @default("ajuste_manual")
+  status               String   @default("ativo")
+  observacao           String?
   usadoEmAgendamentoId String?
-  createdAt     DateTime     @default(now()) @db.Timestamp(6)
-  updatedAt     DateTime     @default(now()) @updatedAt @db.Timestamp(6)
+  createdAt            DateTime @default(now()) @db.Timestamp(6)
+  updatedAt            DateTime @default(now()) @updatedAt @db.Timestamp(6)
 
-  empresa       Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  cliente       Cliente      @relation(fields: [clienteId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  agendamento   Agendamento? @relation(fields: [agendamentoId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  empresa     Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  cliente     Cliente      @relation(fields: [clienteId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  agendamento Agendamento? @relation(fields: [agendamentoId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([empresaId])
   @@index([clienteId])
@@ -521,7 +536,6 @@ model ClienteMovimentacaoFinanceira {
   @@index([status])
   @@index([createdAt])
 }
-
 
 model AvisoSistema {
   id         String    @id @default(cuid())
@@ -535,7 +549,7 @@ model AvisoSistema {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
-  empresa    Empresa?  @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  empresa Empresa? @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([ativo])
   @@index([empresaId])
@@ -551,65 +565,64 @@ model ConfiguracaoSaas {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  whatsappSuporte  String?
+  whatsappSuporte String?
 }
 
 model PromocaoServico {
-  id          String    @id @default(cuid())
-  promocaoId  String
-  servicoId   String
+  id         String @id @default(cuid())
+  promocaoId String
+  servicoId  String
 
-  promocao    Promocao  @relation(fields: [promocaoId], references: [id], onDelete: Cascade)
-  servico     Servico   @relation(fields: [servicoId], references: [id], onDelete: Cascade)
+  promocao Promocao @relation(fields: [promocaoId], references: [id], onDelete: Cascade)
+  servico  Servico  @relation(fields: [servicoId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([promocaoId, servicoId])
 }
 
-
 model CaixaDiario {
-  id                 String              @id @default(dbgenerated("(gen_random_uuid())::text"))
-  empresaId          String
-  data               DateTime            @db.Date
-  status             String              @default("aberto")
-  saldoInicial       Decimal             @default(0) @db.Decimal(10, 2)
-  saldoSistema       Decimal             @default(0) @db.Decimal(10, 2)
-  saldoDinheiroSistema Decimal           @default(0) @db.Decimal(10, 2)
-  saldoPixSistema      Decimal           @default(0) @db.Decimal(10, 2)
-  saldoDebitoSistema   Decimal           @default(0) @db.Decimal(10, 2)
-  saldoCreditoSistema  Decimal           @default(0) @db.Decimal(10, 2)
-  saldoOutroSistema    Decimal           @default(0) @db.Decimal(10, 2)
-  saldoInformado     Decimal?            @db.Decimal(10, 2)
-  saldoDinheiroInformado Decimal?        @db.Decimal(10, 2)
-  saldoPixInformado      Decimal?        @db.Decimal(10, 2)
-  saldoDebitoInformado   Decimal?        @db.Decimal(10, 2)
-  saldoCreditoInformado  Decimal?        @db.Decimal(10, 2)
-  saldoOutroInformado    Decimal?        @db.Decimal(10, 2)
-  diferenca          Decimal?            @db.Decimal(10, 2)
-  diferencaDinheiro  Decimal?            @db.Decimal(10, 2)
-  diferencaPix       Decimal?            @db.Decimal(10, 2)
-  diferencaDebito    Decimal?            @db.Decimal(10, 2)
-  diferencaCredito   Decimal?            @db.Decimal(10, 2)
-  diferencaOutro     Decimal?            @db.Decimal(10, 2)
-  abertoEm           DateTime            @default(now()) @db.Timestamp(6)
-  fechadoEm          DateTime?           @db.Timestamp(6)
-  abertoPorUsuarioId String?
-  abertoPorNome      String?
-  fechadoPorUsuarioId String?
-  fechadoPorNome     String?
-  observacaoAbertura String?
-  observacaoFechamento String?
-conferenciaStatus String   @default("pendente")
-conferidoEm DateTime?      @db.Timestamp(6)
-conferidoPorUsuarioId String?
-conferidoPorNome String?
-observacaoConferencia String?
-  createdAt          DateTime            @default(now()) @db.Timestamp(6)
-  updatedAt          DateTime            @default(now()) @updatedAt @db.Timestamp(6)
+  id                     String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId              String
+  data                   DateTime  @db.Date
+  status                 String    @default("aberto")
+  saldoInicial           Decimal   @default(0) @db.Decimal(10, 2)
+  saldoSistema           Decimal   @default(0) @db.Decimal(10, 2)
+  saldoDinheiroSistema   Decimal   @default(0) @db.Decimal(10, 2)
+  saldoPixSistema        Decimal   @default(0) @db.Decimal(10, 2)
+  saldoDebitoSistema     Decimal   @default(0) @db.Decimal(10, 2)
+  saldoCreditoSistema    Decimal   @default(0) @db.Decimal(10, 2)
+  saldoOutroSistema      Decimal   @default(0) @db.Decimal(10, 2)
+  saldoInformado         Decimal?  @db.Decimal(10, 2)
+  saldoDinheiroInformado Decimal?  @db.Decimal(10, 2)
+  saldoPixInformado      Decimal?  @db.Decimal(10, 2)
+  saldoDebitoInformado   Decimal?  @db.Decimal(10, 2)
+  saldoCreditoInformado  Decimal?  @db.Decimal(10, 2)
+  saldoOutroInformado    Decimal?  @db.Decimal(10, 2)
+  diferenca              Decimal?  @db.Decimal(10, 2)
+  diferencaDinheiro      Decimal?  @db.Decimal(10, 2)
+  diferencaPix           Decimal?  @db.Decimal(10, 2)
+  diferencaDebito        Decimal?  @db.Decimal(10, 2)
+  diferencaCredito       Decimal?  @db.Decimal(10, 2)
+  diferencaOutro         Decimal?  @db.Decimal(10, 2)
+  abertoEm               DateTime  @default(now()) @db.Timestamp(6)
+  fechadoEm              DateTime? @db.Timestamp(6)
+  abertoPorUsuarioId     String?
+  abertoPorNome          String?
+  fechadoPorUsuarioId    String?
+  fechadoPorNome         String?
+  observacaoAbertura     String?
+  observacaoFechamento   String?
+  conferenciaStatus      String    @default("pendente")
+  conferidoEm            DateTime? @db.Timestamp(6)
+  conferidoPorUsuarioId  String?
+  conferidoPorNome       String?
+  observacaoConferencia  String?
+  createdAt              DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt              DateTime  @default(now()) @updatedAt @db.Timestamp(6)
 
-  empresa            Empresa             @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  movimentacoes      CaixaMovimentacao[]
+  empresa       Empresa             @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  movimentacoes CaixaMovimentacao[]
 
   @@index([empresaId, data])
   @@index([empresaId])
@@ -618,26 +631,171 @@ observacaoConferencia String?
 }
 
 model CaixaMovimentacao {
-  id            String       @id @default(dbgenerated("(gen_random_uuid())::text"))
-  empresaId     String
-  caixaId       String?
-  tipo          String
-  categoria     String      @default("operacional")
+  id             String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId      String
+  caixaId        String?
+  tipo           String
+  categoria      String   @default("operacional")
   formaPagamento String?
-  valor         Decimal      @default(0) @db.Decimal(10, 2)
-  descricao     String
-  origem        String      @default("manual")
-  referenciaId  String?
-  usuarioId     String?
-  usuarioNome   String?
-  createdAt     DateTime    @default(now()) @db.Timestamp(6)
-  updatedAt     DateTime    @default(now()) @updatedAt @db.Timestamp(6)
+  valor          Decimal  @default(0) @db.Decimal(10, 2)
+  descricao      String
+  origem         String   @default("manual")
+  referenciaId   String?
+  usuarioId      String?
+  usuarioNome    String?
+  createdAt      DateTime @default(now()) @db.Timestamp(6)
+  updatedAt      DateTime @default(now()) @updatedAt @db.Timestamp(6)
 
-  empresa       Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  caixa         CaixaDiario? @relation(fields: [caixaId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  empresa Empresa      @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  caixa   CaixaDiario? @relation(fields: [caixaId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([empresaId])
   @@index([caixaId])
+  @@index([tipo])
+  @@index([categoria])
+  @@index([createdAt])
+}
+
+model FichaModelo {
+  id                   String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId            String
+  titulo               String
+  descricao            String?
+  categoria            String?  @default("geral")
+  status               String   @default("ativo")
+  exigeAssinatura      Boolean  @default(false)
+  exigeAceiteLgpd      Boolean  @default(true)
+  permitirFotos        Boolean  @default(false)
+  preencherNoAgendador Boolean  @default(false)
+  ordem                Int      @default(0)
+  criadoPorUsuarioId   String?
+  criadoPorNome        String?
+  createdAt            DateTime @default(now()) @db.Timestamp(6)
+  updatedAt            DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  empresa   Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  campos    FichaCampo[]
+  registros FichaRegistro[]
+  servicos  Servico[]
+
+  @@index([empresaId])
+  @@index([status])
+  @@index([categoria])
+  @@index([ordem])
+}
+
+model FichaCampo {
+  id          String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId   String
+  modeloId    String
+  titulo      String
+  descricao   String?
+  tipo        String   @default("texto")
+  obrigatorio Boolean  @default(false)
+  respondidoPor String @default("cliente")
+  opcoes      Json?
+  placeholder String?
+  ordem       Int      @default(0)
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  modelo    FichaModelo     @relation(fields: [modeloId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  respostas FichaResposta[]
+
+  @@index([empresaId])
+  @@index([modeloId])
+  @@index([tipo])
+  @@index([respondidoPor])
+  @@index([ordem])
+  @@index([ativo])
+}
+
+model FichaRegistro {
+  id                     String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId              String
+  modeloId               String
+  clienteId              String?
+  agendamentoId          String?
+  tituloSnapshot         String
+  status                 String    @default("rascunho")
+  origem                 String    @default("painel")
+  preenchidoPorTipo      String?
+  preenchidoPorNome      String?
+  preenchidoPorUsuarioId String?
+  assinado               Boolean   @default(false)
+  assinaturaImagemUrl    String?
+  assinaturaNome         String?
+  assinaturaCpf          String?
+  assinadoEm             DateTime? @db.Timestamp(6)
+  aceiteLgpd             Boolean   @default(false)
+  aceiteLgpdTexto        String?
+  aceiteLgpdEm           DateTime? @db.Timestamp(6)
+  ip                     String?
+  userAgent              String?
+  observacaoInterna      String?
+  createdAt              DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt              DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+
+  empresa     Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  modelo      FichaModelo     @relation(fields: [modeloId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  cliente     Cliente?        @relation(fields: [clienteId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  agendamento Agendamento?    @relation(fields: [agendamentoId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  respostas   FichaResposta[]
+  arquivos    FichaArquivo[]
+
+  @@index([empresaId])
+  @@index([modeloId])
+  @@index([clienteId])
+  @@index([agendamentoId])
+  @@index([status])
+  @@index([origem])
+  @@index([createdAt])
+}
+
+model FichaResposta {
+  id          String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId   String
+  registroId  String
+  campoId     String?
+  campoTitulo String
+  campoTipo   String
+  valorTexto  String?
+  valorNumero Decimal?  @db.Decimal(12, 2)
+  valorData   DateTime? @db.Timestamp(6)
+  valorJson   Json?
+  ordem       Int       @default(0)
+  createdAt   DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+
+  registro FichaRegistro @relation(fields: [registroId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  campo    FichaCampo?   @relation(fields: [campoId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([empresaId])
+  @@index([registroId])
+  @@index([campoId])
+  @@index([ordem])
+}
+
+model FichaArquivo {
+  id           String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  empresaId    String
+  registroId   String
+  tipo         String   @default("foto")
+  categoria    String?
+  url          String
+  nomeArquivo  String?
+  mimeType     String?
+  tamanhoBytes Int?
+  descricao    String?
+  ordem        Int      @default(0)
+  createdAt    DateTime @default(now()) @db.Timestamp(6)
+
+  empresa  Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  registro FichaRegistro @relation(fields: [registroId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([empresaId])
+  @@index([registroId])
   @@index([tipo])
   @@index([categoria])
   @@index([createdAt])

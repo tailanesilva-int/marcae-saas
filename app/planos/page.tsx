@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import PremiumLayout from '@/components/layout/PremiumLayout';
+import { obterStatusLicencaEmpresa } from '@/app/lib/licencaEmpresa';
 
 type PlanoTipo = 'basico' | 'premium';
 
@@ -11,6 +12,10 @@ export default function PlanosPage() {
 
   const [salvando, setSalvando] = useState(false);
   const [gerandoPagamento, setGerandoPagamento] = useState(false);
+  const [gerandoPix, setGerandoPix] = useState(false);
+  const [pixPagamento, setPixPagamento] = useState<any>(null);
+  const [statusPix, setStatusPix] = useState<'idle' | 'pendente' | 'aprovado' | 'erro'>('idle');
+  const [copiadoPix, setCopiadoPix] = useState(false);
   const [ativandoRecorrencia, setAtivandoRecorrencia] = useState(false);
   const [sincronizandoRecorrencia, setSincronizandoRecorrencia] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -36,6 +41,25 @@ export default function PlanosPage() {
 
     return () => window.removeEventListener('resize', atualizarMobile);
   }, []);
+
+  useEffect(() => {
+    if (!empresa?.id || !pixPagamento?.paymentId || statusPix === 'aprovado') return;
+
+    let cancelado = false;
+
+    async function verificar() {
+      await consultarStatusPix(cancelado);
+    }
+
+    verificar();
+
+    const interval = setInterval(verificar, 5000);
+
+    return () => {
+      cancelado = true;
+      clearInterval(interval);
+    };
+  }, [empresa?.id, pixPagamento?.paymentId, statusPix]);
 
   async function carregarDados() {
     const empresaStorage = localStorage.getItem('empresaLogada');
@@ -307,6 +331,8 @@ export default function PlanosPage() {
 
       const res = await fetch(`/api/admin/empresas/${empresa.id}/assinatura/pagar`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ modo: 'manual', plano: planoAtual() }),
       });
 
       const data = await res.json();
@@ -322,6 +348,87 @@ export default function PlanosPage() {
       alert('Erro ao gerar pagamento da mensalidade.');
     } finally {
       setGerandoPagamento(false);
+    }
+  }
+
+  async function gerarPixMensalidade() {
+    if (!empresa?.id) return;
+
+    try {
+      setGerandoPix(true);
+      setStatusPix('pendente');
+      setCopiadoPix(false);
+
+      const res = await fetch(`/api/admin/empresas/${empresa.id}/assinatura/pix`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plano: planoAtual() }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.success) {
+        setStatusPix('erro');
+        alert(data?.error || 'Erro ao gerar Pix da mensalidade.');
+        return;
+      }
+
+      setPixPagamento(data);
+    } catch (error) {
+      console.error(error);
+      setStatusPix('erro');
+      alert('Erro ao gerar Pix da mensalidade.');
+    } finally {
+      setGerandoPix(false);
+    }
+  }
+
+  async function consultarStatusPix(cancelado = false) {
+    if (!empresa?.id || !pixPagamento?.paymentId) return;
+
+    try {
+      const res = await fetch(
+        `/api/admin/empresas/${empresa.id}/assinatura/pix/status?paymentId=${pixPagamento.paymentId}`,
+        { cache: 'no-store' }
+      );
+
+      const data = await res.json().catch(() => null);
+
+      if (cancelado || !data?.success) return;
+
+      if (data.aprovado) {
+        setStatusPix('aprovado');
+
+        if (data.empresa) {
+          setEmpresa(data.empresa);
+          localStorage.setItem('empresaLogada', JSON.stringify(data.empresa));
+        }
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 1400);
+      } else {
+        setStatusPix('pendente');
+      }
+    } catch (error) {
+      if (!cancelado) {
+        console.error('Erro ao consultar status do Pix:', error);
+      }
+    }
+  }
+
+  async function copiarCodigoPix() {
+    if (!pixPagamento?.qrCode) return;
+
+    try {
+      await navigator.clipboard.writeText(pixPagamento.qrCode);
+      setCopiadoPix(true);
+
+      setTimeout(() => {
+        setCopiadoPix(false);
+      }, 2200);
+    } catch (error) {
+      alert('Não foi possível copiar o código Pix.');
     }
   }
 
@@ -395,7 +502,8 @@ export default function PlanosPage() {
     );
   }
 
-  const sistemaBloqueado = licencaExpirada();
+  const licencaEmpresa = obterStatusLicencaEmpresa(empresa);
+  const sistemaBloqueado = licencaEmpresa.status === 'bloqueio_total';
   const diasParaExpirar = diasRestantes(dataAssinaturaExpira());
 
   const cobrancaRecorrenteAtiva =
@@ -452,7 +560,7 @@ export default function PlanosPage() {
           </div>
         </section>
 
-        {sistemaBloqueado && (
+        {licencaEmpresa.status === 'bloqueio_total' && (
           <section style={{ ...alertaExpirado, ...(isMobile ? alertaExpiradoMobile : {}) }}>
             <div>
               <strong>⚠️ Sua licença está vencida</strong>
@@ -471,11 +579,17 @@ export default function PlanosPage() {
           </section>
         )}
 
-        {!sistemaBloqueado && diasParaExpirar !== null && diasParaExpirar <= 3 && (
+        {licencaEmpresa.mostrarBanner && (
           <section style={{ ...alertaAviso, ...(isMobile ? alertaAvisoMobile : {}) }}>
-            ⚠️ Seu plano está prestes a expirar. Evite interrupções nos agendamentos, mensagens e recursos contratados.
+            ⚠️ {licencaEmpresa.mensagemCurta}. {licencaEmpresa.mensagemDetalhada}
           </section>
         )}
+
+        <section style={{ ...infoGrid, ...(isMobile ? infoGridMobile : {}) }}>
+          <InfoCard titulo="Etapa atual" valor={licencaEmpresa.status === 'ativo' ? 'Ativo' : licencaEmpresa.status === 'aviso' ? 'Aviso' : licencaEmpresa.status === 'bloqueio_parcial' ? 'Bloqueio parcial' : 'Bloqueio total'} />
+          <InfoCard titulo="Dias em atraso" valor={String(licencaEmpresa.diasAtraso)} />
+          <InfoCard titulo="Recursos bloqueados" valor={licencaEmpresa.status === 'bloqueio_parcial' ? 'Promoções, relatórios e comissões' : licencaEmpresa.status === 'bloqueio_total' ? 'Acesso geral' : 'Nenhum'} />
+        </section>
 
         <section style={{ ...infoGrid, ...(isMobile ? infoGridMobile : {}) }}>
           <InfoCard titulo="Plano atual" valor={nomePlanoAtual()} />
@@ -546,6 +660,93 @@ export default function PlanosPage() {
               { texto: 'Experiência completa Marcaê', ativo: true },
             ]}
           />
+        </section>
+
+        <section style={{ ...regularizacaoPixBox, ...(isMobile ? regularizacaoPixBoxMobile : {}) }}>
+          <div>
+            <span style={eyebrowDark}>Regularização rápida</span>
+            <h2 style={sectionTitle}>Pague por Pix e libere na hora</h2>
+            <p style={sectionDescription}>
+              O QR Code é gerado pelo Mercado Pago. Após a confirmação, o Marcaê renova a assinatura automaticamente.
+            </p>
+          </div>
+
+          <div style={pixGrid}>
+            <div style={pixCard}>
+              <div style={pixCardHeader}>
+                <span style={pixIcon}>💚</span>
+                <div>
+                  <strong style={pixTitle}>Pix instantâneo</strong>
+                  <span style={pixHint}>Recomendado para regularizar agora.</span>
+                </div>
+              </div>
+
+              {!pixPagamento && (
+                <button
+                  disabled={gerandoPix}
+                  onClick={gerarPixMensalidade}
+                  style={primaryButton}
+                >
+                  {gerandoPix ? 'Gerando Pix...' : 'Gerar QR Code Pix'}
+                </button>
+              )}
+
+              {pixPagamento && (
+                <div style={pixContent}>
+                  {pixPagamento.qrCodeBase64 && (
+                    <img
+                      src={`data:image/png;base64,${pixPagamento.qrCodeBase64}`}
+                      alt="QR Code Pix da mensalidade"
+                      style={pixQrCode}
+                    />
+                  )}
+
+                  <strong style={pixStatusText}>
+                    {statusPix === 'aprovado'
+                      ? '✅ Pagamento confirmado! Liberando acesso...'
+                      : statusPix === 'erro'
+                        ? '⚠️ Erro ao consultar pagamento'
+                        : '⏳ Aguardando pagamento...'}
+                  </strong>
+
+                  <textarea
+                    readOnly
+                    value={pixPagamento.qrCode || ''}
+                    style={pixCopiaCola}
+                    aria-label="Código Pix copia e cola"
+                  />
+
+                  <div style={pixActions}>
+                    <button type="button" onClick={copiarCodigoPix} style={secondaryButton}>
+                      {copiadoPix ? 'Código copiado!' : 'Copiar Pix'}
+                    </button>
+
+                    <button type="button" onClick={() => consultarStatusPix(false)} style={secondaryButton}>
+                      Verificar pagamento
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div style={pixCard}>
+              <div style={pixCardHeader}>
+                <span style={pixIcon}>💳</span>
+                <div>
+                  <strong style={pixTitle}>Cartão ou outros meios</strong>
+                  <span style={pixHint}>Use o checkout oficial do Mercado Pago.</span>
+                </div>
+              </div>
+
+              <button
+                disabled={gerandoPagamento}
+                onClick={pagarMensalidade}
+                style={secondaryButton}
+              >
+                {gerandoPagamento ? 'Gerando checkout...' : 'Pagar com Mercado Pago'}
+              </button>
+            </div>
+          </div>
         </section>
 
         <section style={{ ...gestaoBox, ...(isMobile ? gestaoBoxMobile : {}) }}>
@@ -1233,4 +1434,112 @@ const secondaryButton = {
   color: '#fff',
   fontWeight: 950,
   cursor: 'pointer',
+};
+
+
+const regularizacaoPixBox = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 0.9fr) minmax(0, 1.1fr)',
+  gap: 18,
+  alignItems: 'start',
+  marginBottom: 18,
+  padding: 22,
+  borderRadius: 26,
+  background: 'linear-gradient(145deg, rgba(15,23,42,0.86), rgba(15,23,42,0.64))',
+  border: '1px solid rgba(34,197,94,0.18)',
+  boxShadow: '0 20px 60px rgba(0,0,0,0.22)',
+};
+
+const regularizacaoPixBoxMobile = {
+  gridTemplateColumns: '1fr',
+  padding: 16,
+  borderRadius: 22,
+};
+
+const pixGrid = {
+  display: 'grid',
+  gap: 12,
+};
+
+const pixCard = {
+  display: 'grid',
+  gap: 14,
+  padding: 16,
+  borderRadius: 20,
+  background: 'rgba(255,255,255,0.045)',
+  border: '1px solid rgba(255,255,255,0.10)',
+};
+
+const pixCardHeader = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+};
+
+const pixIcon = {
+  width: 42,
+  height: 42,
+  borderRadius: 15,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'rgba(34,197,94,0.13)',
+  border: '1px solid rgba(34,197,94,0.22)',
+};
+
+const pixTitle = {
+  display: 'block',
+  color: '#fff',
+  fontSize: 14,
+  fontWeight: 950,
+};
+
+const pixHint = {
+  display: 'block',
+  marginTop: 3,
+  color: '#cbd5e1',
+  fontSize: 12,
+  fontWeight: 750,
+};
+
+const pixContent = {
+  display: 'grid',
+  gap: 10,
+};
+
+const pixQrCode = {
+  width: 190,
+  height: 190,
+  maxWidth: '100%',
+  margin: '0 auto',
+  padding: 10,
+  borderRadius: 18,
+  background: '#fff',
+};
+
+const pixStatusText = {
+  color: '#dcfce7',
+  textAlign: 'center',
+  fontSize: 13,
+  fontWeight: 950,
+};
+
+const pixCopiaCola = {
+  width: '100%',
+  minHeight: 74,
+  resize: 'none',
+  borderRadius: 14,
+  border: '1px solid rgba(255,255,255,0.12)',
+  background: 'rgba(2,6,23,0.58)',
+  color: '#e2e8f0',
+  padding: 10,
+  fontSize: 11,
+  lineHeight: 1.45,
+  outline: 'none',
+};
+
+const pixActions = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: 8,
 };

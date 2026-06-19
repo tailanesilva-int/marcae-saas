@@ -14,6 +14,8 @@ type UsuarioEmpresaResumo = {
   email: string;
   perfil?: string | null;
   ativo?: boolean | null;
+  ultimoLoginEm?: string | null;
+  ultimoLoginIp?: string | null;
 };
 
 type Empresa = {
@@ -40,6 +42,11 @@ solicitouIntegracaoMp?: boolean | null;
   descontoMensal?: number | string | null;
   statusFinanceiro: string;
   bloqueadoPorInadimplencia: boolean;
+  ultimoLoginEm?: string | null;
+  ultimoLoginIp?: string | null;
+  ultimoLoginUsuarioId?: string | null;
+  ultimoLoginUsuarioNome?: string | null;
+  ultimoLoginUsuarioEmail?: string | null;
   usuarios?: UsuarioEmpresaResumo[];
 };
 
@@ -164,6 +171,7 @@ export default function MasterPage() {
   });
 
   const [busca, setBusca] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState("todos");
   const [carregando, setCarregando] = useState(true);
   const [processandoId, setProcessandoId] = useState("");
   const [mensagem, setMensagem] = useState("");
@@ -177,6 +185,13 @@ export default function MasterPage() {
   } | null>(null);
 
   const [formEmpresa, setFormEmpresa] = useState<FormEmpresa>(formInicial);
+  const [modalLiberacaoAberto, setModalLiberacaoAberto] = useState(false);
+  const [empresaLiberacao, setEmpresaLiberacao] = useState<Empresa | null>(null);
+  const [salvandoLiberacao, setSalvandoLiberacao] = useState(false);
+  const [formLiberacao, setFormLiberacao] = useState({
+    dias: "7",
+    motivo: "",
+  });
 
   const [modalHistoricoAberto, setModalHistoricoAberto] = useState(false);
   const [empresaHistorico, setEmpresaHistorico] = useState<Empresa | null>(null);
@@ -497,15 +512,46 @@ const [modalComunicacaoAberto, setModalComunicacaoAberto] = useState(false);
         cache: "no-store",
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
 
-      setEmpresas(data.empresas || []);
+      if (!res.ok) {
+        throw new Error(data?.error || "Erro ao carregar empresas.");
+      }
+
+      const empresasRecebidas = Array.isArray(data?.empresas) ? data.empresas : [];
+
+      const empresasNormalizadas = empresasRecebidas.map((empresa: Empresa) => {
+        const usuarios = Array.isArray(empresa.usuarios) ? empresa.usuarios : [];
+        const usuariosComLogin = usuarios
+          .filter((usuario) => usuario?.ultimoLoginEm)
+          .sort(
+            (a, b) =>
+              new Date(String(b.ultimoLoginEm)).getTime() -
+              new Date(String(a.ultimoLoginEm)).getTime()
+          );
+
+        const ultimoUsuario = usuariosComLogin[0] || null;
+
+        return {
+          ...empresa,
+          ultimoLoginEm: empresa.ultimoLoginEm || ultimoUsuario?.ultimoLoginEm || null,
+          ultimoLoginIp: empresa.ultimoLoginIp || ultimoUsuario?.ultimoLoginIp || null,
+          ultimoLoginUsuarioId:
+            empresa.ultimoLoginUsuarioId || ultimoUsuario?.id || null,
+          ultimoLoginUsuarioNome:
+            empresa.ultimoLoginUsuarioNome || ultimoUsuario?.nome || null,
+          ultimoLoginUsuarioEmail:
+            empresa.ultimoLoginUsuarioEmail || ultimoUsuario?.email || null,
+        };
+      });
+
+      setEmpresas(empresasNormalizadas);
       setResumo(
-        data.resumo || {
-          totalEmpresas: 0,
-          empresasAtivas: 0,
-          inadimplentes: 0,
-          emTrial: 0,
+        data?.resumo || {
+          totalEmpresas: empresasNormalizadas.length,
+          empresasAtivas: empresasNormalizadas.filter((empresa: Empresa) => empresa.ativo).length,
+          inadimplentes: empresasNormalizadas.filter((empresa: Empresa) => empresaEstaInadimplente(empresa)).length,
+          emTrial: empresasNormalizadas.filter((empresa: Empresa) => empresa.trialAtivo || empresa.plano === "trial").length,
         }
       );
     } catch (error) {
@@ -869,6 +915,73 @@ const payload = {
     });
   }
 
+  function abrirLiberacao(empresa: Empresa) {
+    setEmpresaLiberacao(empresa);
+    setFormLiberacao({
+      dias: "7",
+      motivo: "",
+    });
+    setModalLiberacaoAberto(true);
+  }
+
+  function fecharLiberacao() {
+    setModalLiberacaoAberto(false);
+    setEmpresaLiberacao(null);
+    setFormLiberacao({
+      dias: "7",
+      motivo: "",
+    });
+  }
+
+  async function liberarSistemaPorDias() {
+    if (!empresaLiberacao?.id) return;
+
+    const dias = Number(formLiberacao.dias || 0);
+    const motivo = String(formLiberacao.motivo || "").trim();
+
+    if (!Number.isFinite(dias) || dias <= 0 || dias > 365) {
+      setMensagem("Informe uma quantidade de dias válida entre 1 e 365.");
+      return;
+    }
+
+    if (!motivo) {
+      setMensagem("Informe o motivo da liberação.");
+      return;
+    }
+
+    try {
+      setSalvandoLiberacao(true);
+      setMensagem("");
+
+      const res = await fetch(`/api/master/empresas/${empresaLiberacao.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          acao: "liberarDias",
+          dias,
+          motivo,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Erro ao liberar sistema.");
+      }
+
+      setMensagem(`Sistema liberado por mais ${dias} dia(s).`);
+      fecharLiberacao();
+      await carregar();
+    } catch (error: any) {
+      console.error(error);
+      setMensagem(error?.message || "Erro ao liberar sistema.");
+    } finally {
+      setSalvandoLiberacao(false);
+    }
+  }
+
   async function sairMaster() {
     const confirmar = window.confirm("Deseja sair do painel Master?");
 
@@ -886,10 +999,135 @@ const payload = {
     }
   }
 
-  const empresasFiltradas = useMemo(() => {
-    if (!busca) return empresas;
+  function empresaEstaInadimplente(empresa: Empresa) {
+    return (
+      empresa.statusFinanceiro === "inadimplente" ||
+      empresa.bloqueadoPorInadimplencia === true
+    );
+  }
 
+  function empresaCombinaComFiltro(empresa: Empresa) {
+    if (filtroStatus === "todos") return true;
+    if (filtroStatus === "ativas") return empresa.ativo === true;
+    if (filtroStatus === "inativas") return empresa.ativo === false;
+    if (filtroStatus === "bloqueadas") return empresa.bloqueadoPorInadimplencia === true;
+    if (filtroStatus === "inadimplentes") return empresaEstaInadimplente(empresa);
+    if (filtroStatus === "trial") return empresa.trialAtivo || empresa.plano === "trial";
+    if (filtroStatus === "basico") return String(empresa.plano || "basico").toLowerCase() === "basico" && !empresa.trialAtivo;
+    if (filtroStatus === "premium") {
+      const plano = String(empresa.plano || "").toLowerCase();
+      return (plano === "premium" || plano === "plus") && !empresa.trialAtivo;
+    }
+    if (filtroStatus === "onlineHoje") return ultimoLoginDentroDeDias(empresa.ultimoLoginEm, 1);
+    if (filtroStatus === "semAcesso7") return !ultimoLoginDentroDeDias(empresa.ultimoLoginEm, 7);
+    if (filtroStatus === "semAcesso30") return !ultimoLoginDentroDeDias(empresa.ultimoLoginEm, 30);
+
+    return true;
+  }
+
+  function normalizarDataLogin(data: Date | string) {
+    if (data instanceof Date) return data;
+
+    const texto = String(data || "").trim();
+
+    if (!texto) return new Date("invalid");
+
+    const possuiTimezone = /([zZ]|[+-]\d{2}:?\d{2})$/.test(texto);
+    const textoNormalizado = texto.includes("T") ? texto : texto.replace(" ", "T");
+
+    return new Date(possuiTimezone ? textoNormalizado : `${textoNormalizado}Z`);
+  }
+
+  function partesDataBrasil(data: Date | string) {
+    const dataNormalizada = normalizarDataLogin(data);
+
+    if (Number.isNaN(dataNormalizada.getTime())) return null;
+
+    const partes = new Intl.DateTimeFormat("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(dataNormalizada);
+
+    const mapa = partes.reduce<Record<string, string>>((acc, parte) => {
+      acc[parte.type] = parte.value;
+      return acc;
+    }, {});
+
+    const ano = Number(mapa.year);
+    const mes = Number(mapa.month);
+    const dia = Number(mapa.day);
+
+    if (!ano || !mes || !dia) return null;
+
+    return { ano, mes, dia };
+  }
+
+  function indiceDiaBrasil(data: Date | string) {
+    const partes = partesDataBrasil(data);
+
+    if (!partes) return null;
+
+    return Math.floor(
+      Date.UTC(partes.ano, partes.mes - 1, partes.dia) / 86400000
+    );
+  }
+
+  function ultimoLoginDentroDeDias(data?: string | null, dias = 1) {
+    if (!data) return false;
+
+    const diaLogin = indiceDiaBrasil(data);
+    const diaHoje = indiceDiaBrasil(new Date());
+
+    if (diaLogin === null || diaHoje === null) return false;
+
+    const diferencaDias = diaHoje - diaLogin;
+
+    if (dias === 1) {
+      return diferencaDias === 0;
+    }
+
+    return diferencaDias >= 0 && diferencaDias <= dias;
+  }
+
+  function diasDesdeUltimoLogin(data?: string | null) {
+    if (!data) return null;
+
+    const diaLogin = indiceDiaBrasil(data);
+    const diaHoje = indiceDiaBrasil(new Date());
+
+    if (diaLogin === null || diaHoje === null) return null;
+
+    return Math.max(0, diaHoje - diaLogin);
+  }
+
+  function labelUltimoLogin(empresa: Empresa) {
+    if (!empresa.ultimoLoginEm) return "Nunca acessou";
+
+    const dias = diasDesdeUltimoLogin(empresa.ultimoLoginEm);
+
+    if (dias === 0) return "Online hoje";
+    if (dias === 1) return "Acessou ontem";
+    return `Acessou há ${dias} dias`;
+  }
+
+  function corUltimoLogin(empresa: Empresa) {
+    const dias = diasDesdeUltimoLogin(empresa.ultimoLoginEm);
+
+    if (dias === null) return "#ef4444";
+    if (dias <= 1) return "#22c55e";
+    if (dias <= 7) return "#f59e0b";
+    if (dias <= 30) return "#f97316";
+    return "#ef4444";
+  }
+
+  const empresasFiltradas = useMemo(() => {
     return empresas.filter((e) => {
+      if (!empresaCombinaComFiltro(e)) return false;
+
+      if (!busca) return true;
+
       const termo = busca.toLowerCase();
 
       return (
@@ -897,10 +1135,12 @@ const payload = {
         e.slug?.toLowerCase().includes(termo) ||
         e.telefone?.toLowerCase().includes(termo) ||
         e.whatsapp?.toLowerCase().includes(termo) ||
-        e.responsavel?.toLowerCase().includes(termo)
+        e.responsavel?.toLowerCase().includes(termo) ||
+        e.ultimoLoginUsuarioNome?.toLowerCase().includes(termo) ||
+        e.ultimoLoginUsuarioEmail?.toLowerCase().includes(termo)
       );
     });
-  }, [busca, empresas]);
+  }, [busca, empresas, filtroStatus]);
 
   const faturamento = empresasFiltradas.reduce((total, e) => {
     if (!e.ativo) return total;
@@ -925,6 +1165,10 @@ const payload = {
   const totalTrial = empresasFiltradas.filter(
     (e) => e.trialAtivo || String(e.plano || "").toLowerCase() === "trial"
   ).length;
+
+  const totalOnlineHoje = empresas.filter((e) => ultimoLoginDentroDeDias(e.ultimoLoginEm, 1)).length;
+  const totalSemAcesso7 = empresas.filter((e) => !ultimoLoginDentroDeDias(e.ultimoLoginEm, 7)).length;
+  const totalSemAcesso30 = empresas.filter((e) => !ultimoLoginDentroDeDias(e.ultimoLoginEm, 30)).length;
 
   return (
     <div style={styles.page}>
@@ -986,6 +1230,9 @@ const payload = {
         />
         <Card label="Plano Básico" value={totalBasico} color="#10b981" />
         <Card label="Plano Premium" value={totalPremium} color="#a855f7" />
+        <Card label="Online hoje" value={totalOnlineHoje} color="#22c55e" />
+        <Card label="Sem acesso +7 dias" value={totalSemAcesso7} color="#f97316" />
+        <Card label="Sem acesso +30 dias" value={totalSemAcesso30} color="#ef4444" />
       </div>
 
       <section style={styles.configPlanosPanel}>
@@ -1315,12 +1562,43 @@ const payload = {
             </p>
           </div>
 
-          <input
-            placeholder="Buscar empresa, slug, whatsapp..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            style={styles.input}
-          />
+          <div style={styles.panelTools}>
+            <input
+              placeholder="Buscar empresa, slug, whatsapp, responsável ou último usuário..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              style={styles.input}
+            />
+
+            <div style={styles.filtrosRapidos}>
+              {[
+                ["todos", "Todas"],
+                ["ativas", "Ativas"],
+                ["inativas", "Inativas"],
+                ["bloqueadas", "Bloqueadas"],
+                ["inadimplentes", "Inadimplentes"],
+                ["trial", "Trial"],
+                ["basico", "Básico"],
+                ["premium", "Premium"],
+                ["onlineHoje", "Online hoje"],
+                ["semAcesso7", "Sem acesso +7"],
+                ["semAcesso30", "Sem acesso +30"],
+              ].map(([valor, label]) => (
+                <button
+                  key={valor}
+                  type="button"
+                  style={
+                    filtroStatus === valor
+                      ? styles.filtroAtivo
+                      : styles.filtroBotao
+                  }
+                  onClick={() => setFiltroStatus(valor)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {mensagem && <div style={styles.alert}>{mensagem}</div>}
@@ -1341,6 +1619,7 @@ const payload = {
                   <th style={styles.th}>Vencimento</th>
                   <th style={styles.th}>Valor mensal</th>
                   <th style={styles.th}>Acesso</th>
+                  <th style={styles.th}>Último login</th>
                   <th style={styles.th}>Contato</th>
                   <th style={styles.th}>Recebimento</th>
                   <th style={styles.th}>Ações</th>
@@ -1426,6 +1705,31 @@ const payload = {
                         <div style={styles.smallStrong}>Usuário padrão:</div>
                         <div>{usuarioPadrao?.email || "Não criado"}</div>
                         <div style={styles.small}>Senha padrão: 123456</div>
+                      </td>
+
+                      <td style={styles.td}>
+                        <span
+                          style={{
+                            ...styles.badgeBase,
+                            background: corUltimoLogin(e),
+                            color: "#ffffff",
+                            marginBottom: 8,
+                          }}
+                        >
+                          {labelUltimoLogin(e)}
+                        </span>
+
+                        <div style={styles.small}>
+                          {e.ultimoLoginEm
+                            ? formatarDataHora(e.ultimoLoginEm)
+                            : "Sem login registrado"}
+                        </div>
+
+                        {(e.ultimoLoginUsuarioNome || e.ultimoLoginUsuarioEmail) && (
+                          <div style={styles.small}>
+                            Usuário: {e.ultimoLoginUsuarioNome || e.ultimoLoginUsuarioEmail}
+                          </div>
+                        )}
                       </td>
 
                       <td style={styles.td}>
@@ -1526,9 +1830,9 @@ const payload = {
                           <button
                             style={styles.btnGreen}
                             disabled={processando}
-                            onClick={() => executarAcao(e.id, "renovar30")}
+                            onClick={() => abrirLiberacao(e)}
                           >
-                            Renovar +30
+                            Liberar sistema
                           </button>
 
                           {e.ativo ? (
@@ -1585,6 +1889,91 @@ const payload = {
           </div>
         )}
       </div>
+
+
+      {modalLiberacaoAberto && empresaLiberacao && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
+            <div style={styles.modalHeader}>
+              <div>
+                <h2 style={styles.modalTitle}>Liberar sistema</h2>
+                <p style={styles.modalSubtitle}>
+                  {empresaLiberacao.nome} /{empresaLiberacao.slug}
+                </p>
+              </div>
+
+              <button type="button" style={styles.btnFechar} onClick={fecharLiberacao}>
+                ×
+              </button>
+            </div>
+
+            <div style={styles.form}>
+              <div style={styles.formGrid}>
+                <div style={styles.field}>
+                  <label style={styles.label}>Dias de liberação</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="365"
+                    style={styles.formInput}
+                    value={formLiberacao.dias}
+                    onChange={(e) =>
+                      setFormLiberacao((atual) => ({
+                        ...atual,
+                        dias: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div style={styles.field}>
+                  <label style={styles.label}>Vencimento atual</label>
+                  <input
+                    style={styles.formInput}
+                    value={formatarData(empresaLiberacao.assinaturaExpiraEm)}
+                    readOnly
+                  />
+                </div>
+
+                <div style={styles.fieldFull}>
+                  <label style={styles.label}>Motivo da liberação</label>
+                  <textarea
+                    style={styles.textarea}
+                    value={formLiberacao.motivo}
+                    onChange={(e) =>
+                      setFormLiberacao((atual) => ({
+                        ...atual,
+                        motivo: e.target.value,
+                      }))
+                    }
+                    placeholder="Ex.: Cliente em negociação, cortesia comercial, ajuste manual de cobrança..."
+                  />
+                </div>
+              </div>
+
+              <div style={styles.modalActions}>
+                <button
+                  type="button"
+                  style={styles.btnCancelar}
+                  onClick={fecharLiberacao}
+                  disabled={salvandoLiberacao}
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  style={styles.btnSalvar}
+                  onClick={liberarSistemaPorDias}
+                  disabled={salvandoLiberacao}
+                >
+                  {salvandoLiberacao ? "Liberando..." : "Liberar acesso"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {modalCadastroAberto && (
         <div style={styles.modalOverlay}>
@@ -2727,6 +3116,40 @@ const styles: Record<string, any> = {
     borderRadius: 28,
     padding: 26,
     boxShadow: "0 40px 120px rgba(0,0,0,0.55)",
+  },
+
+  panelTools: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+    minWidth: "min(720px, 100%)",
+  },
+  filtrosRapidos: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "8px",
+    justifyContent: "flex-end",
+  },
+  filtroBotao: {
+    border: "1px solid rgba(148, 163, 184, 0.25)",
+    background: "rgba(15, 23, 42, 0.92)",
+    color: "#cbd5e1",
+    borderRadius: "999px",
+    padding: "8px 12px",
+    cursor: "pointer",
+    fontWeight: 900,
+    fontSize: "12px",
+  },
+  filtroAtivo: {
+    border: "1px solid rgba(168, 85, 247, 0.55)",
+    background: "linear-gradient(135deg, #7c3aed, #06b6d4)",
+    color: "#ffffff",
+    borderRadius: "999px",
+    padding: "8px 12px",
+    cursor: "pointer",
+    fontWeight: 900,
+    fontSize: "12px",
+    boxShadow: "0 14px 28px rgba(124, 58, 237, 0.20)",
   },
 
   modalOverlay: {

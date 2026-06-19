@@ -22,6 +22,12 @@ export default function AgendarPage() {
   const [horarios, setHorarios] = useState<string[]>([]);
   const [horarioSelecionado, setHorarioSelecionado] = useState("");
   const [servicosCarrinho, setServicosCarrinho] = useState<any[]>([]);
+  const [camposFichaServico, setCamposFichaServico] = useState<any[]>([]);
+  const [respostasFichaServico, setRespostasFichaServico] = useState<Record<string, any>>({});
+  const [carregandoFichaServico, setCarregandoFichaServico] = useState(false);
+  const [salvandoFichaServico, setSalvandoFichaServico] = useState(false);
+  const [fichasRegistrosPorServico, setFichasRegistrosPorServico] = useState<Record<string, string>>({});
+  const [fichasTitulosPorServico, setFichasTitulosPorServico] = useState<Record<string, string>>({});
   const [galeriaServicoAberta, setGaleriaServicoAberta] = useState<
     string[] | null
   >(null);
@@ -58,6 +64,7 @@ export default function AgendarPage() {
   const [etapaAtual, setEtapaAtual] = useState<
     | "identificacao"
     | "servico"
+    | "ficha"
     | "profissional"
     | "data"
     | "horario"
@@ -164,6 +171,8 @@ export default function AgendarPage() {
     setData("");
     setHorarios([]);
     setHorarioSelecionado("");
+    setCamposFichaServico([]);
+    setRespostasFichaServico({});
   }
 
   function limparFluxoReagendamento() {
@@ -580,6 +589,255 @@ export default function AgendarPage() {
     }
   }
 
+
+  function servicoPossuiFicha(servico: any) {
+    return Boolean(servico?.fichaModeloId || servico?.fichaModelo?.id);
+  }
+
+  function obterFichaModeloIdServico(servico: any) {
+    return servico?.fichaModeloId || servico?.fichaModelo?.id || "";
+  }
+
+  function obterTituloFichaServico(servico: any) {
+    return servico?.fichaModelo?.titulo || "Ficha digital";
+  }
+
+  async function carregarCamposFichaDoServico(servico: any) {
+    if (!empresa?.id || !servicoPossuiFicha(servico)) {
+      setCamposFichaServico([]);
+      setRespostasFichaServico({});
+      return false;
+    }
+
+    const modeloId = obterFichaModeloIdServico(servico);
+
+    if (!modeloId) {
+      setCamposFichaServico([]);
+      setRespostasFichaServico({});
+      return false;
+    }
+
+    try {
+      setCarregandoFichaServico(true);
+
+      const res = await fetch(
+        `/api/fichas-digitais/campos?empresaId=${empresa.id}&modeloId=${modeloId}&respondidoPor=cliente`,
+        { cache: "no-store" },
+      );
+
+      const dataRes = await res.json();
+      const campos = (Array.isArray(dataRes.campos) ? dataRes.campos : []).filter(
+        (campo: any) => (campo.respondidoPor || "cliente") === "cliente",
+      );
+
+      setCamposFichaServico(campos);
+
+      setRespostasFichaServico((atual) => {
+        const novo = { ...atual };
+
+        campos.forEach((campo: any) => {
+          if (novo[campo.id] !== undefined) return;
+
+          const tipoCampo = normalizarTipoFicha(campo.tipo);
+
+          if (tipoCampo === "multiselecao") {
+            novo[campo.id] = [];
+          } else if (tipoCampo === "termo_lgpd" || tipoCampo === "assinatura") {
+            novo[campo.id] = false;
+          } else {
+            novo[campo.id] = "";
+          }
+        });
+
+        return novo;
+      });
+
+      return campos.length > 0;
+    } catch (error) {
+      console.error("Erro ao carregar ficha do serviço:", error);
+      alert("Não foi possível carregar a ficha digital deste serviço.");
+      setCamposFichaServico([]);
+      return false;
+    } finally {
+      setCarregandoFichaServico(false);
+    }
+  }
+
+  function alterarRespostaFicha(campoId: string, valor: any) {
+    setRespostasFichaServico((atual) => ({
+      ...atual,
+      [campoId]: valor,
+    }));
+  }
+
+  function opcoesCampoFicha(campo: any) {
+    if (Array.isArray(campo?.opcoes)) return campo.opcoes;
+
+    if (typeof campo?.opcoes === "string") {
+      try {
+        const parsed = JSON.parse(campo.opcoes);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (error) {}
+
+      return campo.opcoes
+        .split("\n")
+        .map((item: string) => item.trim())
+        .filter(Boolean);
+    }
+
+    if (campo?.opcoes && typeof campo.opcoes === "object") {
+      if (Array.isArray(campo.opcoes.itens)) return campo.opcoes.itens;
+      if (Array.isArray(campo.opcoes.opcoes)) return campo.opcoes.opcoes;
+    }
+
+    return [];
+  }
+
+  function normalizarTipoFicha(tipo: any) {
+    const normalizado = String(tipo || "texto")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[\s-]+/g, "_");
+
+    if (normalizado.includes("assinatura")) return "assinatura";
+    if (normalizado.includes("foto") || normalizado.includes("imagem")) return "foto";
+    if (normalizado.includes("lgpd")) return "termo_lgpd";
+    if (normalizado.includes("multi")) return "multiselecao";
+    if (normalizado.includes("sim") && normalizado.includes("nao")) return "sim_nao";
+
+    return normalizado;
+  }
+
+  function campoFichaEstaRespondido(campo: any) {
+    const valor = respostasFichaServico[campo.id];
+    const tipoCampo = normalizarTipoFicha(campo.tipo);
+
+    if (tipoCampo === "termo_lgpd") {
+      return Boolean(valor);
+    }
+
+    if (tipoCampo === "assinatura") {
+      return Boolean(valor);
+    }
+
+    if (tipoCampo === "multiselecao") {
+      return Array.isArray(valor) && valor.length > 0;
+    }
+
+    if (tipoCampo === "foto") {
+      return true;
+    }
+
+    if (valor === null || valor === undefined) {
+      return false;
+    }
+
+    return String(valor).trim().length > 0;
+  }
+
+  function validarFichaAtual() {
+    const camposObrigatorios = camposFichaServico.filter(
+      (campo: any) => campo.obrigatorio && (campo.respondidoPor || "cliente") === "cliente",
+    );
+    const pendente = camposObrigatorios.find((campo: any) => !campoFichaEstaRespondido(campo));
+
+    if (pendente) {
+      alert(`Responda a pergunta obrigatória: ${pendente.titulo}`);
+      return false;
+    }
+
+    const exigeAceiteLgpd = Boolean(servicoSelecionado?.fichaModelo?.exigeAceiteLgpd);
+    const campoLgpd = camposFichaServico.find((campo: any) => normalizarTipoFicha(campo.tipo) === "termo_lgpd");
+
+    if (exigeAceiteLgpd && campoLgpd && !campoFichaEstaRespondido(campoLgpd)) {
+      alert("É necessário aceitar o termo LGPD para continuar.");
+      return false;
+    }
+
+    return true;
+  }
+
+  async function salvarFichaDoServicoEAvancar() {
+    if (!servicoSelecionado || !servicoPossuiFicha(servicoSelecionado)) {
+      setEtapaAtual("profissional");
+      return;
+    }
+
+    if (fichasRegistrosPorServico[servicoSelecionado.id]) {
+      setEtapaAtual("profissional");
+      return;
+    }
+
+    if (!validarFichaAtual()) return;
+
+    try {
+      setSalvandoFichaServico(true);
+
+      const respostas = camposFichaServico
+        .filter((campo: any) => (campo.respondidoPor || "cliente") === "cliente")
+        .map((campo: any, index: number) => ({
+        campoId: campo.id,
+        campoTitulo: campo.titulo,
+        campoTipo: campo.tipo,
+        valor: respostasFichaServico[campo.id],
+        ordem: campo.ordem ?? index,
+      }));
+
+      const res = await fetch("/api/fichas-digitais/preencher", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          empresaId: empresa.id,
+          modeloId: obterFichaModeloIdServico(servicoSelecionado),
+          clienteId: clienteEncontrado?.id || clienteIdUrl || null,
+          clienteCpf: somenteNumeros(
+            clienteEncontrado?.cpf || clienteEncontrado?.clienteCpf || cpf || cliente?.cpf || "",
+          ),
+          clienteNome: clienteEncontrado?.nome || cliente.nome || null,
+          origem: "agendador",
+          preenchidoPorTipo: "cliente",
+          preenchidoPorNome: clienteEncontrado?.nome || cliente.nome || null,
+          assinaturaNome: clienteEncontrado?.nome || cliente.nome || null,
+          assinaturaCpf: somenteNumeros(
+            clienteEncontrado?.cpf || clienteEncontrado?.clienteCpf || cpf || cliente?.cpf || "",
+          ),
+          aceiteLgpd: camposFichaServico.some(
+            (campo: any) => normalizarTipoFicha(campo.tipo) === "termo_lgpd" && Boolean(respostasFichaServico[campo.id]),
+          ),
+          respostas,
+        }),
+      });
+
+      const dataRes = await res.json();
+
+      if (!res.ok || !dataRes.success) {
+        alert(dataRes.error || "Erro ao salvar ficha digital.");
+        return;
+      }
+
+      setFichasRegistrosPorServico((atual) => ({
+        ...atual,
+        [servicoSelecionado.id]: dataRes.registro?.id,
+      }));
+
+      setFichasTitulosPorServico((atual) => ({
+        ...atual,
+        [servicoSelecionado.id]: dataRes.registro?.tituloSnapshot || obterTituloFichaServico(servicoSelecionado),
+      }));
+
+      setEtapaAtual("profissional");
+    } catch (error) {
+      console.error("Erro ao salvar ficha digital:", error);
+      alert("Erro ao salvar ficha digital. Tente novamente.");
+    } finally {
+      setSalvandoFichaServico(false);
+    }
+  }
+
   async function agendar() {
     if (!clienteEncontrado && !cpf) return alert("Informe o CPF");
     if (!clienteEncontrado && !cpfConsultado)
@@ -683,7 +941,16 @@ export default function AgendarPage() {
           servicoId: item.servicoId,
           profissionalId: item.profissionalId,
           dataHoraInicio: new Date(`${item.data}T${item.horario}`),
+          fichaRegistroId:
+            item.fichaRegistroId || fichasRegistrosPorServico[item.servicoId] || null,
         })),
+        fichasRegistrosPorServico: itensResumo
+          .filter((item) => item.fichaRegistroId || fichasRegistrosPorServico[item.servicoId])
+          .map((item) => ({
+            servicoId: item.servicoId,
+            registroId:
+              item.fichaRegistroId || fichasRegistrosPorServico[item.servicoId],
+          })),
         servicoId: itemPrincipalResumo.servicoId,
         profissionalId: itemPrincipalResumo.profissionalId,
         dataHoraInicio: dataHora,
@@ -878,6 +1145,8 @@ export default function AgendarPage() {
     setHorarioSelecionado("");
     setReagendamentoDireto(false);
     setAgendamentoSelecionado(null);
+    setCamposFichaServico([]);
+    setRespostasFichaServico({});
 
     const agendamentoAberto =
       await verificarAgendamentoAbertoParaServico(servicoIdSelecionado);
@@ -909,13 +1178,24 @@ export default function AgendarPage() {
     setHorarioSelecionado("");
     setReagendamentoDireto(false);
     setAgendamentoSelecionado(null);
+    setCamposFichaServico([]);
+    setRespostasFichaServico({});
     setModoReagendamento(false);
   }
 
-  function avancarParaProfissional() {
+  async function avancarParaProfissional() {
     if (!servicoId) {
       alert("Escolha um serviço para continuar.");
       return;
+    }
+
+    if (servicoPossuiFicha(servicoSelecionado) && !fichasRegistrosPorServico[servicoId]) {
+      const possuiCamposParaCliente = await carregarCamposFichaDoServico(servicoSelecionado);
+
+      if (possuiCamposParaCliente) {
+        setEtapaAtual("ficha");
+        return;
+      }
     }
 
     setEtapaAtual("profissional");
@@ -978,6 +1258,8 @@ export default function AgendarPage() {
       horario: horarioSelecionado,
       servico: servicoSelecionado,
       profissional: profissionalSelecionado,
+      fichaRegistroId: fichasRegistrosPorServico[servicoId] || null,
+      fichaTitulo: fichasTitulosPorServico[servicoId] || obterTituloFichaServico(servicoSelecionado),
     };
 
     setServicosCarrinho((atual) => [...atual, item]);
@@ -1036,6 +1318,8 @@ export default function AgendarPage() {
         horario: horarioSelecionado,
         servico: servicoSelecionado,
         profissional: profissionalSelecionado,
+        fichaRegistroId: fichasRegistrosPorServico[servicoId] || null,
+        fichaTitulo: fichasTitulosPorServico[servicoId] || obterTituloFichaServico(servicoSelecionado),
       };
 
       setServicosCarrinho((atual) => [...atual, item]);
@@ -1252,6 +1536,8 @@ export default function AgendarPage() {
             horario: horarioSelecionado,
             servico: servicoSelecionado,
             profissional: profissionalSelecionado,
+            fichaRegistroId: fichasRegistrosPorServico[servicoId] || null,
+            fichaTitulo: fichasTitulosPorServico[servicoId] || obterTituloFichaServico(servicoSelecionado),
           },
         ]
       : []),
@@ -1332,6 +1618,21 @@ export default function AgendarPage() {
     cpfConsultado &&
     (clienteEncontrado || mostrarCamposExtras);
   const clienteVeioDoPainel = Boolean(clienteIdUrl);
+  const etapasWizard = [
+    { id: "identificacao", label: "CPF" },
+    { id: "servico", label: "Serviço" },
+    ...(servicoPossuiFicha(servicoSelecionado)
+      ? [{ id: "ficha", label: "Ficha" }]
+      : []),
+    { id: "profissional", label: "Profissional" },
+    { id: "data", label: "Data" },
+    { id: "horario", label: "Horário" },
+    { id: "confirmacao", label: "Resumo" },
+  ];
+  const indiceEtapaAtual = Math.max(
+    etapasWizard.findIndex((etapa) => etapa.id === etapaAtual),
+    0,
+  );
 
   if (!empresa) {
     return (
@@ -1375,24 +1676,7 @@ export default function AgendarPage() {
     >
       <section className="shell">
         <div className="wizardSteps">
-          {[
-            { id: "identificacao", label: "CPF" },
-            { id: "servico", label: "Serviço" },
-            { id: "profissional", label: "Profissional" },
-            { id: "data", label: "Data" },
-            { id: "horario", label: "Horário" },
-            { id: "confirmacao", label: "Resumo" },
-          ].map((etapa, index) => {
-            const ordem = [
-              "identificacao",
-              "servico",
-              "profissional",
-              "data",
-              "horario",
-              "confirmacao",
-            ];
-
-            const ativoIndex = ordem.indexOf(etapaAtual);
+          {etapasWizard.map((etapa, index) => {
             const numero = index + 1;
 
             return (
@@ -1401,7 +1685,7 @@ export default function AgendarPage() {
                 className={`wizardStep ${
                   etapaAtual === etapa.id
                     ? "active"
-                    : ativoIndex > index
+                    : indiceEtapaAtual > index
                       ? "done"
                       : ""
                 }`}
@@ -1482,6 +1766,8 @@ export default function AgendarPage() {
                   "Comece pelo CPF para localizar seu cadastro ou criar um novo."}
                 {etapaAtual === "servico" &&
                   "Agora escolha o serviço que deseja agendar."}
+                {etapaAtual === "ficha" &&
+                  "Preencha a ficha digital vinculada ao serviço escolhido."}
                 {etapaAtual === "profissional" &&
                   "Escolha o profissional disponível para o serviço selecionado."}
                 {etapaAtual === "data" &&
@@ -1494,96 +1780,20 @@ export default function AgendarPage() {
             </div>
 
             <div className="step">
-              {etapaAtual === "identificacao" && "1/6"}
-              {etapaAtual === "servico" && "2/6"}
-              {etapaAtual === "profissional" && "3/6"}
-              {etapaAtual === "data" && "4/6"}
-              {etapaAtual === "horario" && "5/6"}
-              {etapaAtual === "confirmacao" && "6/6"}
+              {indiceEtapaAtual + 1}/{etapasWizard.length}
             </div>
           </div>
 
           <div className="progressSteps wizardSteps">
-            <div
-              className={
-                [
-                  "identificacao",
-                  "servico",
-                  "profissional",
-                  "data",
-                  "horario",
-                  "confirmacao",
-                ].includes(etapaAtual)
-                  ? "progressStep active"
-                  : "progressStep"
-              }
-            >
-              <span>1</span>
-              <p>CPF</p>
-            </div>
-
-            <div
-              className={
-                [
-                  "servico",
-                  "profissional",
-                  "data",
-                  "horario",
-                  "confirmacao",
-                ].includes(etapaAtual)
-                  ? "progressStep active"
-                  : "progressStep"
-              }
-            >
-              <span>2</span>
-              <p>Serviço</p>
-            </div>
-
-            <div
-              className={
-                ["profissional", "data", "horario", "confirmacao"].includes(
-                  etapaAtual,
-                )
-                  ? "progressStep active"
-                  : "progressStep"
-              }
-            >
-              <span>3</span>
-              <p>Profissional</p>
-            </div>
-
-            <div
-              className={
-                ["data", "horario", "confirmacao"].includes(etapaAtual)
-                  ? "progressStep active"
-                  : "progressStep"
-              }
-            >
-              <span>4</span>
-              <p>Data</p>
-            </div>
-
-            <div
-              className={
-                ["horario", "confirmacao"].includes(etapaAtual)
-                  ? "progressStep active"
-                  : "progressStep"
-              }
-            >
-              <span>5</span>
-              <p>Horário</p>
-            </div>
-
-            <div
-              className={
-                etapaAtual === "confirmacao"
-                  ? "progressStep active"
-                  : "progressStep"
-              }
-            >
-              <span>6</span>
-              <p>Confirmar</p>
-            </div>
+            {etapasWizard.map((etapa, index) => (
+              <div
+                key={etapa.id}
+                className={indiceEtapaAtual >= index ? "progressStep active" : "progressStep"}
+              >
+                <span>{index + 1}</span>
+                <p>{etapa.label}</p>
+              </div>
+            ))}
           </div>
 
           {clienteVeioDoPainel && clienteEncontrado && (
@@ -2051,6 +2261,9 @@ export default function AgendarPage() {
                                   : "Promoção ativa"}
                               </span>
                             )}
+                            {servicoPossuiFicha(s) && (
+                              <span className="fichaServicoTag">📋 Ficha digital</span>
+                            )}
                             {s.exigePrePagamento && (
                               <span className="prePagamentoTag">
                                 Pré-pagamento
@@ -2110,6 +2323,19 @@ export default function AgendarPage() {
                     </small>
                   )}
 
+                  {servicoPossuiFicha(servicoSelecionado) && (
+                    <div className="recommendationBox fichaVinculadaBox">
+                      <strong>📋 Ficha digital vinculada</strong>
+                      <p>
+                        Este serviço solicita o preenchimento da ficha
+                        {servicoSelecionado.fichaModelo?.titulo
+                          ? ` ${servicoSelecionado.fichaModelo.titulo}`
+                          : " digital"}
+                        antes da escolha do profissional.
+                      </p>
+                    </div>
+                  )}
+
                   {servicoSelecionado.recomendacoesPreAtendimento && (
                     <div className="recommendationBox">
                       <strong>⚠️ Recomendações antes do atendimento</strong>
@@ -2141,7 +2367,206 @@ export default function AgendarPage() {
                   className="primaryButton"
                   onClick={avancarParaProfissional}
                 >
-                  Próximo: profissional
+                  {servicoPossuiFicha(servicoSelecionado) && !fichasRegistrosPorServico[servicoId]
+                    ? "Próximo: ficha"
+                    : "Próximo: profissional"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {podeMostrarAgenda && etapaAtual === "ficha" && (
+            <div className="section etapaBox">
+              <div className="etapaIntro">
+                <span>📋</span>
+                <div>
+                  <strong>Ficha digital do serviço</strong>
+                  <p>
+                    Responda as informações solicitadas para continuar o agendamento.
+                  </p>
+                </div>
+              </div>
+
+              <div className="selectedInfo">
+                <span>Serviço selecionado</span>
+                <strong>{servicoSelecionado?.nome || "Serviço"}</strong>
+                <small>{obterTituloFichaServico(servicoSelecionado)}</small>
+              </div>
+
+              {carregandoFichaServico ? (
+                <div className="emptySlots">Carregando ficha digital...</div>
+              ) : camposFichaServico.length === 0 ? (
+                <div className="emptySlots">
+                  Esta ficha ainda não possui perguntas cadastradas. Você pode continuar.
+                </div>
+              ) : (
+                <div className="fichaPublicaBox">
+                  {camposFichaServico
+                    .filter((campo: any) => (campo.respondidoPor || "cliente") === "cliente")
+                    .map((campo: any) => {
+                    const valor = respostasFichaServico[campo.id];
+                    const tipoCampo = normalizarTipoFicha(campo.tipo);
+                    const opcoes = opcoesCampoFicha(campo);
+
+                    return (
+                      <div key={campo.id} className="fichaCampoPublico">
+                        <label>
+                          {campo.titulo}
+                          {campo.obrigatorio && <b> *</b>}
+                        </label>
+
+                        {campo.descricao && <p>{campo.descricao}</p>}
+
+                        {(tipoCampo === "texto" || !tipoCampo) && (
+                          <input
+                            className="field"
+                            value={valor || ""}
+                            placeholder={campo.placeholder || "Digite sua resposta"}
+                            onChange={(e) => alterarRespostaFicha(campo.id, e.target.value)}
+                          />
+                        )}
+
+                        {tipoCampo === "textarea" && (
+                          <textarea
+                            className="field fichaTextarea"
+                            value={valor || ""}
+                            placeholder={campo.placeholder || "Digite sua resposta"}
+                            onChange={(e) => alterarRespostaFicha(campo.id, e.target.value)}
+                          />
+                        )}
+
+                        {tipoCampo === "numero" && (
+                          <input
+                            className="field"
+                            type="number"
+                            value={valor || ""}
+                            placeholder={campo.placeholder || "0"}
+                            onChange={(e) => alterarRespostaFicha(campo.id, e.target.value)}
+                          />
+                        )}
+
+                        {tipoCampo === "data" && (
+                          <input
+                            className="field"
+                            type="date"
+                            value={valor || ""}
+                            onChange={(e) => alterarRespostaFicha(campo.id, e.target.value)}
+                          />
+                        )}
+
+                        {tipoCampo === "sim_nao" && (
+                          <div className="fichaOpcoesLinha">
+                            {["Sim", "Não"].map((opcao) => (
+                              <button
+                                key={opcao}
+                                type="button"
+                                className={valor === opcao ? "fichaOpcao active" : "fichaOpcao"}
+                                onClick={() => alterarRespostaFicha(campo.id, opcao)}
+                              >
+                                {opcao}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {tipoCampo === "selecao" && (
+                          <div className="fichaOpcoesGrid">
+                            {opcoes.map((opcao: string) => (
+                              <button
+                                key={opcao}
+                                type="button"
+                                className={valor === opcao ? "fichaOpcao active" : "fichaOpcao"}
+                                onClick={() => alterarRespostaFicha(campo.id, opcao)}
+                              >
+                                {opcao}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {tipoCampo === "multiselecao" && (
+                          <div className="fichaOpcoesGrid">
+                            {opcoes.map((opcao: string) => {
+                              const selecionadas = Array.isArray(valor) ? valor : [];
+                              const ativo = selecionadas.includes(opcao);
+
+                              return (
+                                <button
+                                  key={opcao}
+                                  type="button"
+                                  className={ativo ? "fichaOpcao active" : "fichaOpcao"}
+                                  onClick={() =>
+                                    alterarRespostaFicha(
+                                      campo.id,
+                                      ativo
+                                        ? selecionadas.filter((item: string) => item !== opcao)
+                                        : [...selecionadas, opcao],
+                                    )
+                                  }
+                                >
+                                  {ativo ? "✓ " : ""}
+                                  {opcao}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {normalizarTipoFicha(campo.tipo) === "termo_lgpd" && (
+                          <label className="fichaCheckLinha">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(valor)}
+                              onChange={(e) => alterarRespostaFicha(campo.id, e.target.checked)}
+                            />
+                            <span>
+                              Aceito o uso dos meus dados para este atendimento, conforme a política da empresa.
+                            </span>
+                          </label>
+                        )}
+
+                        {tipoCampo === "assinatura" && (
+                          <label className="fichaCheckLinha assinaturaCheckLinha">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(valor)}
+                              onChange={(e) => alterarRespostaFicha(campo.id, e.target.checked)}
+                            />
+                            <span>
+                              Confirmo que as informações desta ficha foram preenchidas por mim e autorizo o uso como assinatura digital.
+                              <small>
+                                Assinatura vinculada ao nome e CPF informados no cadastro.
+                              </small>
+                            </span>
+                          </label>
+                        )}
+
+                        {tipoCampo === "foto" && (
+                          <div className="fichaInfoBox">
+                            Envio de fotos pelo agendador será conectado na próxima fase. Continue normalmente.
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="wizardActions">
+                <button
+                  className="outlineButton"
+                  onClick={() => setEtapaAtual("servico")}
+                  disabled={salvandoFichaServico}
+                >
+                  Voltar
+                </button>
+
+                <button
+                  className="primaryButton"
+                  onClick={salvarFichaDoServicoEAvancar}
+                  disabled={salvandoFichaServico || carregandoFichaServico}
+                >
+                  {salvandoFichaServico ? "Salvando ficha..." : "Salvar ficha e continuar"}
                 </button>
               </div>
             </div>
@@ -2516,6 +2941,12 @@ export default function AgendarPage() {
                           </div>
                         )}
                       </div>
+
+                      {(item.fichaRegistroId || item.servico?.fichaModeloId) && (
+                        <div className="resumoFichaBadge">
+                          📋 Ficha digital preenchida: {item.fichaTitulo || item.servico?.fichaModelo?.titulo || "Ficha do serviço"}
+                        </div>
+                      )}
 
                       {exigePrePagamentoItem && (
                         <div className="resumoPrePagamentoBadge">
@@ -4094,6 +4525,124 @@ margin-right: auto;
     }
   }
 
+  .fichaServicoTag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: rgba(124,58,237,0.16);
+    border: 1px solid rgba(167,139,250,0.20);
+    color: #ddd6fe;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .fichaVinculadaBox {
+    background: rgba(124,58,237,0.10);
+    border-color: rgba(167,139,250,0.18);
+  }
+
+  .fichaPublicaBox {
+    display: grid;
+    gap: 14px;
+    margin-top: 14px;
+  }
+
+  .fichaCampoPublico {
+    border-radius: 20px;
+    padding: 16px;
+    background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(255,255,255,0.08);
+    display: grid;
+    gap: 10px;
+  }
+
+  .fichaCampoPublico > label {
+    color: #fff;
+    font-weight: 900;
+    font-size: 14px;
+  }
+
+  .fichaCampoPublico > label b {
+    color: #fca5a5;
+  }
+
+  .fichaCampoPublico > p {
+    margin: -4px 0 0;
+    color: rgba(255,255,255,0.68);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .fichaTextarea {
+    min-height: 92px;
+    resize: vertical;
+  }
+
+  .fichaOpcoesLinha,
+  .fichaOpcoesGrid {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .fichaOpcoesGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
+
+  .fichaOpcao {
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.045);
+    color: #e5e7eb;
+    min-height: 42px;
+    border-radius: 14px;
+    padding: 10px 12px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .fichaOpcao.active {
+    background: var(--marcae-primary-medium);
+    border-color: var(--marcae-primary);
+    color: #fff;
+  }
+
+  .fichaCheckLinha {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    color: rgba(255,255,255,0.82);
+    line-height: 1.5;
+    font-size: 13px;
+  }
+
+  .fichaInfoBox {
+    border-radius: 16px;
+    padding: 12px;
+    background: rgba(56,189,248,0.10);
+    border: 1px solid rgba(56,189,248,0.16);
+    color: #bae6fd;
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 750;
+  }
+
+  .resumoFichaBadge {
+    margin-top: 12px;
+    border-radius: 16px;
+    padding: 12px;
+    background: rgba(124,58,237,0.12);
+    border: 1px solid rgba(167,139,250,0.18);
+    color: #ddd6fe;
+    font-weight: 900;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+
   @media (min-width: 981px) {
   .page {
     width: 100%;
@@ -4148,5 +4697,136 @@ margin-right: auto;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+  .fichaServicoTag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: rgba(124,58,237,0.16);
+    border: 1px solid rgba(167,139,250,0.20);
+    color: #ddd6fe;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .fichaVinculadaBox {
+    background: rgba(124,58,237,0.10);
+    border-color: rgba(167,139,250,0.18);
+  }
+
+  .fichaPublicaBox {
+    display: grid;
+    gap: 14px;
+    margin-top: 14px;
+  }
+
+  .fichaCampoPublico {
+    border-radius: 20px;
+    padding: 16px;
+    background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(255,255,255,0.08);
+    display: grid;
+    gap: 10px;
+  }
+
+  .fichaCampoPublico > label {
+    color: #fff;
+    font-weight: 900;
+    font-size: 14px;
+  }
+
+  .fichaCampoPublico > label b {
+    color: #fca5a5;
+  }
+
+  .fichaCampoPublico > p {
+    margin: -4px 0 0;
+    color: rgba(255,255,255,0.68);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .fichaTextarea {
+    min-height: 92px;
+    resize: vertical;
+  }
+
+  .fichaOpcoesLinha,
+  .fichaOpcoesGrid {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .fichaOpcoesGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
+
+  .fichaOpcao {
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.045);
+    color: #e5e7eb;
+    min-height: 42px;
+    border-radius: 14px;
+    padding: 10px 12px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .fichaOpcao.active {
+    background: var(--marcae-primary-medium);
+    border-color: var(--marcae-primary);
+    color: #fff;
+  }
+
+  .fichaCheckLinha {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    color: rgba(255,255,255,0.82);
+    line-height: 1.5;
+    font-size: 13px;
+  }
+
+  .fichaInfoBox {
+    border-radius: 16px;
+    padding: 12px;
+    background: rgba(56,189,248,0.10);
+    border: 1px solid rgba(56,189,248,0.16);
+    color: #bae6fd;
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 750;
+  }
+
+  .resumoFichaBadge {
+    margin-top: 12px;
+    border-radius: 16px;
+    padding: 12px;
+    background: rgba(124,58,237,0.12);
+    border: 1px solid rgba(167,139,250,0.18);
+    color: #ddd6fe;
+    font-weight: 900;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+
+  .assinaturaCheckLinha span {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .assinaturaCheckLinha small {
+    color: rgba(226,232,240,0.68);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
 }
 `;
