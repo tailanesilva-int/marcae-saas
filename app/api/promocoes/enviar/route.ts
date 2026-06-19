@@ -152,7 +152,7 @@ export async function POST(req: Request) {
           });
 
           await enviarWhatsapp({
-            instance: empresa.whatsappInstance,
+            instance: empresa.whatsappInstance!,
             numero,
             mensagem: mensagemFinal,
             tentativas: 3,
