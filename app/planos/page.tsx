@@ -1525,7 +1525,7 @@ const pixStatusText: CSSProperties = {
   fontWeight: 700,
 };
 
-const pixCopiaCola = {
+const pixCopiaCola: CSSProperties = {
   width: '100%',
   minHeight: 74,
   resize: 'none',
