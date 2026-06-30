@@ -12,19 +12,27 @@ export async function GET(req: NextRequest) {
         dataInicio: {
           lte: agora,
         },
-        OR: [
+        AND: [
           {
-            dataFim: null,
+            OR: [
+              {
+                dataFim: null,
+              },
+              {
+                dataFim: {
+                  gte: agora,
+                },
+              },
+            ],
           },
           {
-            dataFim: {
-              gte: agora,
-            },
+            OR: [
+              {
+                empresaId: null,
+              },
+              ...(empresaId ? [{ empresaId }] : []),
+            ],
           },
-          {
-            empresaId: null,
-          },
-          ...(empresaId ? [{ empresaId }] : []),
         ],
       },
       orderBy: {
