@@ -4,9 +4,11 @@ import { APP_CONFIG } from '@/lib/config';
 import MarcaeThemeProvider from '@/components/theme/MarcaeThemeProvider';
 import ServiceWorkerRegister from '@/components/pwa/ServiceWorkerRegister';
 
-import PwaProvider from '@/components/mobile/PwaProvider';
-import InstallPrompt from '@/components/mobile/InstallPrompt';
-import SplashScreen from '@/components/mobile/SplashScreen';
+import {
+  InstallPrompt,
+  PwaProvider,
+  SplashScreen,
+} from '@/components/mobile';
 
 export const metadata = {
   title: APP_CONFIG.nome,
@@ -66,9 +68,7 @@ export default function RootLayout({
 
           <InstallPrompt />
 
-          <MarcaeThemeProvider>
-            {children}
-          </MarcaeThemeProvider>
+          <MarcaeThemeProvider>{children}</MarcaeThemeProvider>
         </PwaProvider>
       </body>
     </html>
