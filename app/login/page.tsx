@@ -22,32 +22,68 @@ export default function LoginPage() {
   const [exibirEntradaApp, setExibirEntradaApp] = useState(false);
 
   useEffect(() => {
+    let cancelado = false;
+
     const params = new URLSearchParams(window.location.search);
     const empresa = params.get('empresa') || '';
     setEmpresaSlug(empresa);
-
-    const usuarioSalvo = localStorage.getItem('usuarioEmpresa');
-    const empresaSalva = localStorage.getItem('empresaLogada');
-
-    if (usuarioSalvo && empresaSalva) {
-      setExibirEntradaApp(true);
-
-      window.setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 3000);
-
-      return;
-    }
 
     const verificarTela = () => {
       setMobile(window.innerWidth <= 900);
     };
 
+    const abrirEntradaApp = () => {
+      if (cancelado) return;
+
+      setExibirEntradaApp(true);
+
+      window.setTimeout(() => {
+        if (!cancelado) {
+          window.location.replace('/dashboard');
+        }
+      }, 3000);
+    };
+
+    const verificarSessaoPersistente = async () => {
+      try {
+        const usuarioSalvo = localStorage.getItem('usuarioEmpresa');
+        const empresaSalva = localStorage.getItem('empresaLogada');
+
+        if (usuarioSalvo && empresaSalva) {
+          abrirEntradaApp();
+          return;
+        }
+
+        const res = await fetch('/api/auth/sessao', {
+          method: 'GET',
+          cache: 'no-store',
+        });
+
+        const data = await res.json().catch(() => null);
+
+        if (!cancelado && res.ok && data?.success && data.usuario && data.empresa) {
+          localStorage.setItem('usuarioEmpresa', JSON.stringify(data.usuario));
+          localStorage.setItem('empresaLogada', JSON.stringify(data.empresa));
+          localStorage.setItem('marcae_ultimo_acesso', Date.now().toString());
+
+          if (data.empresa?.id) {
+            localStorage.setItem('empresaId', data.empresa.id);
+          }
+
+          abrirEntradaApp();
+        }
+      } catch (error) {
+        console.warn('Sessão persistente não encontrada ou expirada:', error);
+      }
+    };
+
     verificarTela();
+    verificarSessaoPersistente();
 
     window.addEventListener('resize', verificarTela);
 
     return () => {
+      cancelado = true;
       window.removeEventListener('resize', verificarTela);
     };
   }, []);
@@ -74,6 +110,7 @@ export default function LoginPage() {
 
       localStorage.setItem('usuarioEmpresa', JSON.stringify(data.usuario));
       localStorage.setItem('empresaLogada', JSON.stringify(data.empresa));
+      localStorage.setItem('marcae_ultimo_acesso', Date.now().toString());
 
       if (data.empresa?.id) {
         localStorage.setItem('empresaId', data.empresa.id);
@@ -86,7 +123,7 @@ export default function LoginPage() {
       setExibirEntradaApp(true);
 
       window.setTimeout(() => {
-        window.location.href = '/dashboard';
+        window.location.replace('/dashboard');
       }, 3000);
     } catch (error) {
       console.error('Erro ao fazer login:', error);

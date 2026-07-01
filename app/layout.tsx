@@ -22,6 +22,14 @@ export const metadata = {
     statusBarStyle: 'black-translucent',
   },
 
+  formatDetection: {
+    telephone: false,
+    date: false,
+    address: false,
+    email: false,
+    url: false,
+  },
+
   icons: {
     icon: [
       {
@@ -44,13 +52,25 @@ export const metadata = {
       },
     ],
   },
+
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-title': APP_CONFIG.nome,
+    'apple-mobile-web-app-status-bar-style': 'black-translucent',
+    'msapplication-TileColor': '#09090B',
+    'msapplication-tap-highlight': 'no',
+    'color-scheme': 'dark',
+  },
 };
 
 export const viewport = {
-  themeColor: '#6D28D9',
+  themeColor: '#09090B',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: 'cover',
+  userScalable: false,
 };
 
 export default function RootLayout({

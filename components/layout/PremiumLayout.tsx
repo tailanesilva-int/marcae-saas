@@ -537,9 +537,16 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
       if (diferenca > SESSION_TIMEOUT) {
         localStorage.removeItem("empresaLogada");
         localStorage.removeItem("usuarioEmpresa");
+        localStorage.removeItem("empresaId");
+        localStorage.removeItem("empresaSlugAcesso");
         localStorage.removeItem("marcae_ultimo_acesso");
 
-        window.location.href = "/login";
+        fetch("/api/auth/logout", {
+          method: "POST",
+          keepalive: true,
+        }).catch(() => {});
+
+        window.location.replace("/login");
         return;
       }
 
@@ -575,10 +582,22 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
     return pathname === href;
   }
 
-  function sair() {
-    localStorage.removeItem("empresaLogada");
-    localStorage.removeItem("usuarioEmpresa");
-    window.location.href = "/login";
+  async function sair() {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+    } catch (error) {
+      console.error("Erro ao encerrar sessão no servidor:", error);
+    } finally {
+      localStorage.removeItem("empresaLogada");
+      localStorage.removeItem("usuarioEmpresa");
+      localStorage.removeItem("empresaId");
+      localStorage.removeItem("empresaSlugAcesso");
+      localStorage.removeItem("marcae_ultimo_acesso");
+
+      window.location.replace("/login");
+    }
   }
 
   async function pagarComCartaoLicenca() {

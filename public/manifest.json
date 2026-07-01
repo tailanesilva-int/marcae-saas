@@ -1,15 +1,18 @@
 {
+  "id": "/",
   "name": "Marcaê",
   "short_name": "Marcaê",
   "description": "Sistema de agendamento online para empresas de serviços.",
-  "start_url": "/dashboard",
+  "start_url": "/login",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait-primary",
   "background_color": "#05070F",
-  "theme_color": "#6D28D9",
+  "theme_color": "#09090B",
   "categories": ["business", "productivity"],
   "lang": "pt-BR",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -26,6 +29,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

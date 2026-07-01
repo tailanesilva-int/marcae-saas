@@ -4,25 +4,42 @@ import { useEffect, useState } from 'react';
 
 export default function SplashScreen() {
   const [visivel, setVisivel] = useState(true);
+  const [saindo, setSaindo] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setVisivel(false);
-    }, 900);
+    const iniciarSaida = window.setTimeout(() => {
+      setSaindo(true);
+    }, 2600);
 
-    return () => window.clearTimeout(timer);
+    const removerSplash = window.setTimeout(() => {
+      setVisivel(false);
+    }, 3100);
+
+    return () => {
+      window.clearTimeout(iniciarSaida);
+      window.clearTimeout(removerSplash);
+    };
   }, []);
 
   if (!visivel) return null;
 
   return (
-    <div style={container}>
-      <div style={glow} />
+    <div style={{ ...container, opacity: saindo ? 0 : 1 }}>
+      <div style={glowPrincipal} />
+      <div style={glowSecundario} />
 
       <div style={conteudo}>
-        <img src="/icons/icon-192.png" alt="Marcaê" style={icone} />
+        <div style={iconeWrap}>
+          <img src="/icons/icon-192.png" alt="Marcaê" style={icone} />
+        </div>
+
         <h1 style={titulo}>Marcaê</h1>
-        <p style={subtitulo}>Organize. Agende. Cresça.</p>
+
+        <div style={frases}>
+          <span>Agendar.</span>
+          <span>Organizar.</span>
+          <span>Alcançar.</span>
+        </div>
       </div>
     </div>
   );
@@ -36,16 +53,31 @@ const container: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   overflow: 'hidden',
-  background: 'linear-gradient(160deg, #080B16 0%, #111827 55%, #1e1b4b 100%)',
+  background:
+    'radial-gradient(circle at 50% 35%, rgba(109,40,217,0.22), transparent 34%), linear-gradient(180deg, #03050B 0%, #080B16 52%, #09090B 100%)',
   color: '#fff',
+  transition: 'opacity 0.48s ease',
+  paddingTop: 'env(safe-area-inset-top)',
+  paddingBottom: 'env(safe-area-inset-bottom)',
 };
 
-const glow: React.CSSProperties = {
+const glowPrincipal: React.CSSProperties = {
   position: 'absolute',
-  width: 420,
-  height: 420,
+  width: 460,
+  height: 460,
   borderRadius: '50%',
-  background: 'rgba(124, 58, 237, 0.35)',
+  background: 'rgba(124, 58, 237, 0.34)',
+  filter: 'blur(110px)',
+  animation: 'marcaeSplashGlow 2.8s ease-in-out infinite alternate',
+};
+
+const glowSecundario: React.CSSProperties = {
+  position: 'absolute',
+  bottom: -160,
+  width: 520,
+  height: 260,
+  borderRadius: '50%',
+  background: 'rgba(168, 85, 247, 0.16)',
   filter: 'blur(90px)',
 };
 
@@ -54,24 +86,42 @@ const conteudo: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  animation: 'marcaeSplash 0.75s ease-out',
+  animation: 'marcaeSplashContent 0.9s ease-out',
+};
+
+const iconeWrap: React.CSSProperties = {
+  width: 116,
+  height: 116,
+  borderRadius: 34,
+  padding: 7,
+  background:
+    'linear-gradient(145deg, rgba(124,58,237,0.95), rgba(168,85,247,0.85))',
+  boxShadow:
+    '0 26px 80px rgba(124, 58, 237, 0.48), inset 0 1px 0 rgba(255,255,255,0.22)',
 };
 
 const icone: React.CSSProperties = {
-  width: 112,
-  height: 112,
+  width: '100%',
+  height: '100%',
+  display: 'block',
   borderRadius: 28,
-  boxShadow: '0 28px 80px rgba(124, 58, 237, 0.45)',
 };
 
 const titulo: React.CSSProperties = {
-  margin: '22px 0 6px',
-  fontSize: 40,
-  letterSpacing: '-0.04em',
+  margin: '24px 0 14px',
+  fontSize: 42,
+  fontWeight: 900,
+  letterSpacing: '-0.06em',
 };
 
-const subtitulo: React.CSSProperties = {
-  margin: 0,
-  color: '#cbd5e1',
-  fontSize: 15,
+const frases: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 4,
+  color: '#e9d5ff',
+  fontSize: 18,
+  fontWeight: 800,
+  lineHeight: 1.12,
+  letterSpacing: '-0.03em',
 };

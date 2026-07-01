@@ -1,6 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 
+const EMPRESA_COOKIE_NAME = 'marcae_empresa_token';
+const EMPRESA_SESSION_DURATION = 1000 * 60 * 60 * 24 * 30;
+
+type EmpresaSessionPayload = {
+  id: string;
+  email: string;
+  empresaId: string;
+  tipo: 'empresa';
+  exp: number;
+};
+
+function obterSegredoSessaoEmpresa() {
+  return process.env.EMPRESA_SESSION_SECRET || process.env.MASTER_SESSION_SECRET || '';
+}
+
+function textToBase64Url(value: string) {
+  return Buffer.from(value, 'utf8')
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+async function criarAssinatura(payloadBase64: string, secret: string) {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(payloadBase64));
+  const bytes = Array.from(new Uint8Array(signature));
+  const binary = bytes.map((byte) => String.fromCharCode(byte)).join('');
+
+  return Buffer.from(binary, 'binary')
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+async function gerarTokenEmpresa(payload: EmpresaSessionPayload) {
+  const secret = obterSegredoSessaoEmpresa();
+
+  if (!secret) {
+    throw new Error('EMPRESA_SESSION_SECRET não configurado.');
+  }
+
+  const payloadBase64 = textToBase64Url(JSON.stringify(payload));
+  const assinatura = await criarAssinatura(payloadBase64, secret);
+
+  return `${payloadBase64}.${assinatura}`;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { email, senha } = await req.json();
@@ -89,7 +146,15 @@ export async function POST(req: NextRequest) {
       ultimoLoginUsuarioEmail: usuario.email,
     };
 
-    return NextResponse.json({
+    const token = await gerarTokenEmpresa({
+      id: usuario.id,
+      email: usuario.email,
+      empresaId: empresa.id,
+      tipo: 'empresa',
+      exp: Date.now() + EMPRESA_SESSION_DURATION,
+    });
+
+    const response = NextResponse.json({
       success: true,
       usuario: {
         id: usuario.id,
@@ -101,6 +166,16 @@ export async function POST(req: NextRequest) {
       },
       empresa: empresaAtualizada,
     });
+
+    response.cookies.set(EMPRESA_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: Math.floor(EMPRESA_SESSION_DURATION / 1000),
+    });
+
+    return response;
   } catch (error) {
     console.error('Erro login:', error);
 
