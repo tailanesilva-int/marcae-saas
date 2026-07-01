@@ -19,11 +19,25 @@ export default function LoginPage() {
   const [carregandoRecuperacao, setCarregandoRecuperacao] = useState(false);
   const [mensagemRecuperacao, setMensagemRecuperacao] = useState('');
   const [erroRecuperacao, setErroRecuperacao] = useState('');
+  const [exibirEntradaApp, setExibirEntradaApp] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const empresa = params.get('empresa') || '';
     setEmpresaSlug(empresa);
+
+    const usuarioSalvo = localStorage.getItem('usuarioEmpresa');
+    const empresaSalva = localStorage.getItem('empresaLogada');
+
+    if (usuarioSalvo && empresaSalva) {
+      setExibirEntradaApp(true);
+
+      window.setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 3000);
+
+      return;
+    }
 
     const verificarTela = () => {
       setMobile(window.innerWidth <= 900);
@@ -69,7 +83,11 @@ export default function LoginPage() {
         localStorage.setItem('empresaSlugAcesso', empresaSlug);
       }
 
-      window.location.href = '/dashboard';
+      setExibirEntradaApp(true);
+
+      window.setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 3000);
     } catch (error) {
       console.error('Erro ao fazer login:', error);
       setErro('Erro ao realizar login.');
@@ -179,6 +197,32 @@ export default function LoginPage() {
     } finally {
       setCarregandoRecuperacao(false);
     }
+  }
+
+  if (exibirEntradaApp) {
+    return (
+      <main style={entradaContainer}>
+        <div style={entradaGlow} />
+
+        <section style={entradaCard}>
+          <img
+            src="/icons/icon-192.png"
+            alt="Marcaê"
+            style={entradaIcone}
+          />
+
+          <h1 style={entradaTitulo}>
+            Marca<span style={{ color: '#A855F7' }}>ê</span>
+          </h1>
+
+          <div style={entradaLinha} />
+
+          <p style={entradaFrase}>Agendar. Organizar. Alcançar.</p>
+
+          <span style={entradaStatus}>Preparando seu painel...</span>
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -583,6 +627,75 @@ export default function LoginPage() {
     </div>
   );
 }
+
+
+const entradaContainer = {
+  minHeight: '100vh',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background:
+    'radial-gradient(circle at top, rgba(124,58,237,0.30), transparent 34%), linear-gradient(160deg, #050816 0%, #090B1A 48%, #140B2D 100%)',
+  color: '#fff',
+  padding: '24px',
+  overflow: 'hidden',
+  position: 'relative' as const,
+};
+
+const entradaGlow = {
+  position: 'absolute' as const,
+  width: '420px',
+  height: '420px',
+  borderRadius: '999px',
+  background: 'rgba(168,85,247,0.30)',
+  filter: 'blur(90px)',
+};
+
+const entradaCard = {
+  position: 'relative' as const,
+  zIndex: 2,
+  display: 'flex',
+  flexDirection: 'column' as const,
+  alignItems: 'center',
+  textAlign: 'center' as const,
+};
+
+const entradaIcone = {
+  width: '112px',
+  height: '112px',
+  borderRadius: '28px',
+  marginBottom: '22px',
+  boxShadow: '0 26px 80px rgba(124,58,237,0.48)',
+};
+
+const entradaTitulo = {
+  margin: 0,
+  fontSize: '46px',
+  fontWeight: 900,
+  letterSpacing: '-0.05em',
+};
+
+const entradaLinha = {
+  width: '150px',
+  height: '5px',
+  borderRadius: '999px',
+  margin: '18px 0',
+  background: 'linear-gradient(90deg, transparent, #A855F7, transparent)',
+  boxShadow: '0 0 28px rgba(168,85,247,0.70)',
+};
+
+const entradaFrase = {
+  margin: 0,
+  fontSize: '20px',
+  fontWeight: 800,
+  color: '#E9D5FF',
+};
+
+const entradaStatus = {
+  marginTop: '16px',
+  color: '#94A3B8',
+  fontSize: '13px',
+};
 
 const container = {
   minHeight: '100vh',
