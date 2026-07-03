@@ -6,13 +6,19 @@ import ServiceWorkerRegister from '@/components/pwa/ServiceWorkerRegister';
 
 import {
   InstallPrompt,
+  MobileProvider,
   PwaProvider,
   SplashScreen,
 } from '@/components/mobile';
 
+const APP_DESCRIPTION = 'Sistema de agendamento online para empresas de serviços.';
+const APP_URL = 'https://www.marcaeapp.com.br';
+const APP_OG_IMAGE = '/icons/og-image.png';
+
 export const metadata = {
+  metadataBase: new URL(APP_URL),
   title: APP_CONFIG.nome,
-  description: 'Sistema de agendamento online para empresas de serviços.',
+  description: APP_DESCRIPTION,
   applicationName: APP_CONFIG.nome,
   manifest: '/manifest.webmanifest',
 
@@ -33,6 +39,10 @@ export const metadata = {
   icons: {
     icon: [
       {
+        url: '/favicon.ico',
+        sizes: 'any',
+      },
+      {
         url: '/icons/icon-192.png',
         sizes: '192x192',
         type: 'image/png',
@@ -51,6 +61,30 @@ export const metadata = {
         type: 'image/png',
       },
     ],
+  },
+
+  openGraph: {
+    title: APP_CONFIG.nome,
+    description: APP_DESCRIPTION,
+    url: APP_URL,
+    siteName: APP_CONFIG.nome,
+    locale: 'pt_BR',
+    type: 'website',
+    images: [
+      {
+        url: APP_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: `${APP_CONFIG.nome} - Sistema de agendamento online`,
+      },
+    ],
+  },
+
+  twitter: {
+    card: 'summary_large_image',
+    title: APP_CONFIG.nome,
+    description: APP_DESCRIPTION,
+    images: [APP_OG_IMAGE],
   },
 
   other: {
@@ -84,11 +118,13 @@ export default function RootLayout({
         <ServiceWorkerRegister />
 
         <PwaProvider>
-          <SplashScreen />
+          <MobileProvider>
+            <SplashScreen />
 
-          <InstallPrompt />
+            <InstallPrompt />
 
-          <MarcaeThemeProvider>{children}</MarcaeThemeProvider>
+            <MarcaeThemeProvider>{children}</MarcaeThemeProvider>
+          </MobileProvider>
         </PwaProvider>
       </body>
     </html>

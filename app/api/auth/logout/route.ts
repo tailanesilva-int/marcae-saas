@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 const EMPRESA_COOKIE_NAME = 'marcae_empresa_token';
 
@@ -16,8 +16,8 @@ export async function POST() {
   return response;
 }
 
-export async function GET() {
-  const response = NextResponse.redirect(new URL('/login', process.env.NEXT_PUBLIC_APP_URL || 'https://www.marcaeapp.com.br'));
+export async function GET(request: NextRequest) {
+  const response = NextResponse.redirect(new URL('/login', request.url));
 
   response.cookies.set(EMPRESA_COOKIE_NAME, '', {
     httpOnly: true,

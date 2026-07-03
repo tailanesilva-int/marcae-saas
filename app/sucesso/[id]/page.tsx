@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { prisma } from "@/lib/prisma";
 import { gerarTemaEmpresa } from "@/app/lib/theme";
 import BotaoDownloadComprovante from "@/components/comprovante/BotaoDownloadComprovante";
+import BotaoCompartilharComprovante from "@/components/comprovante/BotaoCompartilharComprovante";
 
 export const dynamic = "force-dynamic";
 
@@ -334,18 +335,23 @@ export default async function SucessoDetalhesPage({
     })
     .join("\n\n");
 
-  const mensagemWhatsapp = encodeURIComponent(
+  const mensagemCompartilhamento =
     `✨ *${nomeEmpresa}* confirma seu agendamento!\n\n` +
-      `Olá, *${nomeCliente}*! Tudo certo? 💜\n\n` +
-      `Seu atendimento foi reservado com sucesso:\n\n` +
-      `${linhasServicosWhatsapp}\n\n` +
-      `💰 *Total:* ${formatarMoeda(totalGeral)}\n` +
-      `💳 *Status geral:* ${statusPagamento}\n\n` +
-      (enderecoEmpresa ? `📍 ${enderecoEmpresa}\n` : "") +
-      (telefoneEmpresa ? `📞 ${telefoneEmpresa}\n` : "") +
-      `\nQualquer dúvida, é só responder por aqui 😉\n\n` +
-      `A gente te espera! ✨`,
-  );
+    `Olá, *${nomeCliente}*! Tudo certo? 💜\n\n` +
+    `Seu atendimento foi reservado com sucesso:\n\n` +
+    `${linhasServicosWhatsapp}\n\n` +
+    `💰 *Total:* ${formatarMoeda(totalGeral)}\n` +
+    `💳 *Status geral:* ${statusPagamento}\n\n` +
+    (enderecoEmpresa ? `📍 ${enderecoEmpresa}\n` : "") +
+    (telefoneEmpresa ? `📞 ${telefoneEmpresa}\n` : "") +
+    `\nQualquer dúvida, é só responder por aqui 😉\n\n` +
+    `A gente te espera! ✨`;
+
+  const mensagemWhatsapp = encodeURIComponent(mensagemCompartilhamento);
+
+  const linkComprovante = `/sucesso/${id}?ids=${encodeURIComponent(
+    ids.join(","),
+  )}#comprovante`;
 
   const telefoneLimpo = limparTelefone(telefoneCliente);
   const linkWhatsapp = telefoneLimpo
@@ -842,28 +848,34 @@ export default async function SucessoDetalhesPage({
             </section>
 
             <section className="actions">
-  <a
-    href={linkWhatsapp}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="actionButton whatsapp"
-  >
-    Enviar confirmação no WhatsApp
-  </a>
+              <BotaoCompartilharComprovante
+                titulo={`Comprovante de agendamento - ${nomeEmpresa}`}
+                texto={mensagemCompartilhamento}
+                url={linkComprovante}
+              />
 
-  {linkGoogleAgenda && (
-    <a
-      href={linkGoogleAgenda}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="actionButton calendar"
-    >
-      Adicionar ao Google Agenda
-    </a>
-  )}
+              <a
+                href={linkWhatsapp}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="actionButton whatsapp"
+              >
+                Enviar confirmação no WhatsApp
+              </a>
 
-  <BotaoDownloadComprovante />
-</section>
+              {linkGoogleAgenda && (
+                <a
+                  href={linkGoogleAgenda}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="actionButton calendar"
+                >
+                  Adicionar ao Google Agenda
+                </a>
+              )}
+
+              <BotaoDownloadComprovante />
+            </section>
 
             <section className="socialCard">
               <div>
@@ -1617,6 +1629,12 @@ export default async function SucessoDetalhesPage({
           transition: transform 0.2s ease, filter 0.2s ease;
         }
 
+        .actionButton {
+          border: 0;
+          cursor: pointer;
+          font-family: inherit;
+        }
+
         .actionButton:hover,
         .socialActions a:hover {
           transform: translateY(-2px);
@@ -1631,6 +1649,18 @@ export default async function SucessoDetalhesPage({
         .actionButton.calendar {
           background: linear-gradient(135deg, var(--marcae-primary), var(--marcae-secondary));
           box-shadow: 0 18px 36px var(--marcae-primary-soft);
+        }
+
+        .actionButton.share {
+          background: linear-gradient(135deg, #7c3aed, #a855f7);
+          box-shadow: 0 18px 36px rgba(168, 85, 247, 0.22);
+        }
+
+        .actionButton.share:disabled {
+          opacity: 0.72;
+          cursor: progress;
+          transform: none;
+          filter: none;
         }
 
 .actionButton.download {
