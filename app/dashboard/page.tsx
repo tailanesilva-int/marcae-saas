@@ -2605,6 +2605,42 @@ export default function DashboardPage() {
             overflow-y: auto;
           }
 
+
+          /* Marcaê Dashboard Mobile Scroll Hard Fix */
+          @media (max-width: 1180px) {
+            html,
+            body {
+              height: auto !important;
+              min-height: 100% !important;
+              overflow-x: hidden !important;
+              overflow-y: auto !important;
+              overscroll-behavior-y: auto !important;
+              touch-action: pan-y !important;
+            }
+
+            body {
+              position: static !important;
+            }
+
+            .dashboard-shell-mobile-safe {
+              display: block !important;
+              min-height: auto !important;
+              height: auto !important;
+              max-height: none !important;
+              overflow: visible !important;
+              touch-action: pan-y !important;
+              -webkit-overflow-scrolling: touch !important;
+              padding-bottom: 138px !important;
+            }
+
+            .dashboard-chart-mobile,
+            .dashboard-chart-mobile *,
+            .recharts-wrapper,
+            .recharts-surface {
+              touch-action: pan-y !important;
+            }
+          }
+
           .dashboard-shell-mobile-safe {
             width: 100%;
             max-width: 1540px;

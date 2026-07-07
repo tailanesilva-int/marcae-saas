@@ -801,12 +801,12 @@ Preciso de ajuda para concluir o pagamento.`,
 
   return (
     <div style={cssVars}>
-      <div style={layoutRoot}>
+      <div className="marcae-layout-root" style={layoutRoot}>
         <div style={backgroundGlowPrimary} />
         <div style={backgroundGlowSecondary} />
         <div style={backgroundGlowThird} />
 
-        <div style={layoutFlex}>
+        <div className="marcae-layout-flex" style={layoutFlex}>
           <aside className="marcae-sidebar-desktop" style={sidebarStyle}>
             <div style={sidebarTop}>
               <div style={brandRow}>
@@ -1443,6 +1443,42 @@ Preciso de ajuda para concluir o pagamento.`,
             display: none;
           }
 
+
+          /* Marcaê Mobile Scroll Hard Fix — força fluxo natural no mobile */
+          @media (max-width: 1180px) {
+            .marcae-layout-root {
+              height: auto !important;
+              min-height: auto !important;
+              overflow: visible !important;
+              touch-action: pan-y !important;
+            }
+
+            .marcae-layout-flex {
+              display: block !important;
+              height: auto !important;
+              min-height: auto !important;
+              overflow: visible !important;
+              touch-action: pan-y !important;
+            }
+
+            .marcae-main-wrapper {
+              position: relative !important;
+              display: block !important;
+              width: 100% !important;
+              max-width: 100vw !important;
+              min-width: 0 !important;
+              height: auto !important;
+              min-height: auto !important;
+              max-height: none !important;
+              overflow: visible !important;
+              overscroll-behavior-y: auto !important;
+              -webkit-overflow-scrolling: touch !important;
+              touch-action: pan-y !important;
+              padding: 10px 8px 128px !important;
+              box-sizing: border-box !important;
+            }
+          }
+
           @media (max-width: 1180px) {
             .marcae-sidebar-desktop {
               display: none !important;
@@ -1554,9 +1590,11 @@ Preciso de ajuda para concluir o pagamento.`,
 
 const layoutRoot: React.CSSProperties = {
   minHeight: "100dvh",
+  height: "auto",
   position: "relative",
   overflowX: "hidden",
   overflowY: "visible",
+  touchAction: "pan-y",
   background:
     "linear-gradient(135deg, var(--marcae-bg) 0%, var(--marcae-bg-soft) 48%, var(--marcae-sidebar) 100%)",
   color: "var(--marcae-text)",
@@ -1601,9 +1639,11 @@ const backgroundGlowThird: React.CSSProperties = {
 const layoutFlex: React.CSSProperties = {
   display: "flex",
   minHeight: "100dvh",
+  height: "auto",
   position: "relative",
   zIndex: 2,
   overflow: "visible",
+  touchAction: "pan-y",
 };
 
 const sidebarStyle: React.CSSProperties = {
@@ -1861,10 +1901,12 @@ const userArrow: React.CSSProperties = {
 const mainWrapper: React.CSSProperties = {
   flex: 1,
   minHeight: "100dvh",
+  height: "auto",
   overflowX: "hidden",
   overflowY: "visible",
   overscrollBehaviorY: "auto",
   WebkitOverflowScrolling: "touch",
+  touchAction: "pan-y",
   padding: "18px 22px 120px",
 };
 

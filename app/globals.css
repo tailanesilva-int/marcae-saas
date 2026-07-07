@@ -428,3 +428,52 @@ button:active {
     opacity: 1;
   }
 }
+
+
+/* Marcaê Mobile Scroll Hard Fix */
+@media (max-width: 1180px) {
+  html,
+  body {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: auto !important;
+    touch-action: pan-y !important;
+  }
+
+  body {
+    position: static !important;
+  }
+
+  .marcae-layout-root,
+  .marcae-layout-flex,
+  .marcae-main-wrapper,
+  .dashboard-shell-mobile-safe {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    touch-action: pan-y !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .marcae-main-wrapper {
+    padding-bottom: calc(128px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .dashboard-modal-overlay-mobile {
+    touch-action: none !important;
+  }
+
+  .dashboard-modal-box-mobile {
+    touch-action: pan-y !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .recharts-wrapper,
+  .recharts-surface {
+    touch-action: pan-y !important;
+  }
+}
