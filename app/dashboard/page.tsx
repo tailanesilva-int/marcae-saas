@@ -4848,6 +4848,112 @@ export default function DashboardPage() {
                 </a>
               </div>
             </div>
+
+            <div style={mobileCompactPanel}>
+              <div style={mobileCompactHeaderLine}>
+                <div>
+                  <strong>🏆 Rankings</strong>
+                  <div style={{ marginTop: 3, color: "#94a3b8", fontSize: 11 }}>
+                    Mês atual · {formatarPeriodoRanking()}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPesquisaRanking("");
+                    setModalRankingAberto(true);
+                  }}
+                  style={mobileCompactLinkButton}
+                >
+                  Ver todos
+                </button>
+              </div>
+
+              <div style={mobileRankingTabs}>
+                {[
+                  { key: "clientes", label: "👥 Clientes" },
+                  { key: "servicos", label: "💼 Serviços" },
+                  { key: "profissionais", label: "👨‍💼 Profissionais" },
+                ].map((aba) => (
+                  <button
+                    key={`mobile-${aba.key}`}
+                    type="button"
+                    onClick={() => setAbaRankingDashboard(aba.key as any)}
+                    style={{
+                      ...mobileRankingTabButton,
+                      ...(abaRankingDashboard === aba.key
+                        ? mobileRankingTabButtonAtivo
+                        : {}),
+                    }}
+                  >
+                    {aba.label}
+                  </button>
+                ))}
+              </div>
+
+              {carregandoRankingDashboard ? (
+                <div style={mobileMutedBox}>Carregando rankings...</div>
+              ) : rankingTopDashboard.length === 0 ? (
+                <div style={mobileMutedBox}>
+                  Sem dados suficientes neste período.
+                </div>
+              ) : (
+                <div style={mobileRankingStack}>
+                  {rankingTopDashboard.map((item: any, index: number) => (
+                    <div
+                      key={`mobile-${abaRankingDashboard}-${item.nome}-${index}`}
+                      style={mobileRankingRow}
+                    >
+                      <span style={mobileRankingMedalha}>
+                        {medalhaRanking(index)}
+                      </span>
+
+                      <div style={mobileRankingInfo}>
+                        <strong>{item.nome}</strong>
+                        <small>
+                          {abaRankingDashboard === "clientes"
+                            ? `${item.quantidadeAgendamentos || 0} agendamentos`
+                            : abaRankingDashboard === "servicos"
+                              ? `${item.quantidade || 0} realizações`
+                              : `${item.atendimentos || 0} atendimentos`}
+                        </small>
+
+                        {abaRankingDashboard === "clientes" &&
+                          item.servicoMaisRealizado && (
+                            <em>
+                              ⭐ {item.servicoMaisRealizado}
+                              {item.quantidadeServico
+                                ? ` (${item.quantidadeServico}x)`
+                                : ""}
+                            </em>
+                          )}
+
+                        {abaRankingDashboard === "clientes" &&
+                          item.profissionalMaisEscolhido && (
+                            <em>
+                              👩 {item.profissionalMaisEscolhido}
+                              {item.quantidadeProfissional
+                                ? ` (${item.quantidadeProfissional}x)`
+                                : ""}
+                            </em>
+                          )}
+
+                        {abaRankingDashboard === "servicos" &&
+                          item.profissionalMaisExecutou && (
+                            <em>👩 Mais executado por {item.profissionalMaisExecutou}</em>
+                          )}
+
+                        {abaRankingDashboard === "profissionais" &&
+                          item.servicoMaisRealizado && (
+                            <em>⭐ {item.servicoMaisRealizado}</em>
+                          )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </section>
 
@@ -9427,6 +9533,78 @@ const mobileCompactLink: React.CSSProperties = {
   textDecoration: "none",
   fontSize: 12,
   fontWeight: 900,
+};
+
+const mobileCompactLinkButton: React.CSSProperties = {
+  border: "1px solid rgba(96,165,250,0.28)",
+  background: "rgba(37,99,235,0.14)",
+  color: "#93c5fd",
+  borderRadius: 999,
+  padding: "7px 10px",
+  fontSize: 11,
+  fontWeight: 900,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+};
+
+const mobileRankingTabs: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+  gap: 6,
+  marginBottom: 8,
+};
+
+const mobileRankingTabButton: React.CSSProperties = {
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "rgba(15,23,42,0.72)",
+  color: "#cbd5e1",
+  borderRadius: 12,
+  padding: "8px 6px",
+  fontSize: 10,
+  fontWeight: 900,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+};
+
+const mobileRankingTabButtonAtivo: React.CSSProperties = {
+  borderColor: "rgba(168,85,247,0.42)",
+  background: "linear-gradient(135deg, rgba(124,58,237,0.32), rgba(168,85,247,0.20))",
+  color: "#fff",
+};
+
+const mobileRankingStack: React.CSSProperties = {
+  display: "grid",
+  gap: 7,
+};
+
+const mobileRankingRow: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "30px 1fr",
+  gap: 8,
+  alignItems: "flex-start",
+  padding: "8px 9px",
+  borderRadius: 13,
+  background: "rgba(15,23,42,0.62)",
+  border: "1px solid rgba(255,255,255,0.06)",
+};
+
+const mobileRankingMedalha: React.CSSProperties = {
+  width: 30,
+  height: 30,
+  borderRadius: 10,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "rgba(255,255,255,0.06)",
+  fontSize: 15,
+};
+
+const mobileRankingInfo: React.CSSProperties = {
+  minWidth: 0,
+  display: "flex",
+  flexDirection: "column",
+  gap: 2,
+  color: "#e5e7eb",
 };
 
 const mobileCompactMuted: React.CSSProperties = {
