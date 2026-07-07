@@ -5507,30 +5507,30 @@ export default function DashboardPage() {
 
                     {abaRankingDashboard === "clientes" && (
                       <div style={rankingMetricasGridPremium}>
-                        <div>
-                          <span>Agendamentos</span>
+                        <div style={rankingMetricaItemPremium}>
+                          <span>Agendamentos:</span>
                           <strong>{item.quantidadeAgendamentos}</strong>
                         </div>
-                        <div>
-                          <span>Valor total</span>
+                        <div style={rankingMetricaItemPremium}>
+                          <span>Valor total:</span>
                           <strong>
                             {valorFinanceiro(item.valorTotal || 0)}
                           </strong>
                         </div>
-                        <div>
-                          <span>Ticket médio</span>
+                        <div style={rankingMetricaItemPremium}>
+                          <span>Ticket médio:</span>
                           <strong>
                             {valorFinanceiro(item.ticketMedio || 0)}
                           </strong>
                         </div>
-                        <div>
-                          <span>Último atendimento</span>
+                        <div style={rankingMetricaItemPremium}>
+                          <span>Último atendimento:</span>
                           <strong>
                             {formatarData(item.ultimoAtendimento)}
                           </strong>
                         </div>
-                        <div>
-                          <span>Serviço preferido</span>
+                        <div style={rankingMetricaItemPremium}>
+                          <span>Serviço preferido:</span>
                           <strong>
                             {item.servicoMaisRealizado || "Não informado"}{" "}
                             {item.quantidadeServico
@@ -5538,8 +5538,8 @@ export default function DashboardPage() {
                               : ""}
                           </strong>
                         </div>
-                        <div>
-                          <span>Profissional preferido</span>
+                        <div style={rankingMetricaItemPremium}>
+                          <span>Profissional preferido:</span>
                           <strong>
                             {item.profissionalMaisEscolhido || "Não informado"}{" "}
                             {item.quantidadeProfissional
@@ -5552,24 +5552,24 @@ export default function DashboardPage() {
 
                     {abaRankingDashboard === "servicos" && (
                       <div style={rankingMetricasGridPremium}>
-                        <div>
-                          <span>Realizações</span>
+                        <div style={rankingMetricaItemPremium}>
+                          <span>Realizações:</span>
                           <strong>{item.quantidade}</strong>
                         </div>
-                        <div>
-                          <span>Faturamento</span>
+                        <div style={rankingMetricaItemPremium}>
+                          <span>Faturamento:</span>
                           <strong>
                             {valorFinanceiro(item.faturamento || 0)}
                           </strong>
                         </div>
-                        <div>
-                          <span>Ticket médio</span>
+                        <div style={rankingMetricaItemPremium}>
+                          <span>Ticket médio:</span>
                           <strong>
                             {valorFinanceiro(item.ticketMedio || 0)}
                           </strong>
                         </div>
-                        <div>
-                          <span>Profissional destaque</span>
+                        <div style={rankingMetricaItemPremium}>
+                          <span>Profissional destaque:</span>
                           <strong>
                             {item.profissionalMaisExecutou || "Não informado"}{" "}
                             {item.quantidadeProfissional
@@ -5582,28 +5582,28 @@ export default function DashboardPage() {
 
                     {abaRankingDashboard === "profissionais" && (
                       <div style={rankingMetricasGridPremium}>
-                        <div>
-                          <span>Atendimentos</span>
+                        <div style={rankingMetricaItemPremium}>
+                          <span>Atendimentos:</span>
                           <strong>{item.atendimentos}</strong>
                         </div>
-                        <div>
-                          <span>Faturamento</span>
+                        <div style={rankingMetricaItemPremium}>
+                          <span>Faturamento:</span>
                           <strong>
                             {valorFinanceiro(item.faturamento || 0)}
                           </strong>
                         </div>
-                        <div>
-                          <span>Comissão</span>
+                        <div style={rankingMetricaItemPremium}>
+                          <span>Comissão:</span>
                           <strong>{valorFinanceiro(item.comissao || 0)}</strong>
                         </div>
-                        <div>
-                          <span>Ticket médio</span>
+                        <div style={rankingMetricaItemPremium}>
+                          <span>Ticket médio:</span>
                           <strong>
                             {valorFinanceiro(item.ticketMedio || 0)}
                           </strong>
                         </div>
-                        <div>
-                          <span>Serviço mais realizado</span>
+                        <div style={rankingMetricaItemPremium}>
+                          <span>Serviço mais realizado:</span>
                           <strong>
                             {item.servicoMaisRealizado || "Não informado"}{" "}
                             {item.quantidadeServico
@@ -8784,6 +8784,17 @@ const rankingMetricasGridPremium: React.CSSProperties = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
   gap: 10,
+};
+
+const rankingMetricaItemPremium: React.CSSProperties = {
+  display: "flex",
+  alignItems: "baseline",
+  gap: 6,
+  minWidth: 0,
+  color: "#cbd5e1",
+  fontSize: 14,
+  fontWeight: 800,
+  lineHeight: 1.35,
 };
 
 const rankingAbrirCadastroButtonPremium: React.CSSProperties = {
