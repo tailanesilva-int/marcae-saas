@@ -1603,8 +1603,7 @@ const layoutFlex: React.CSSProperties = {
   minHeight: "100dvh",
   position: "relative",
   zIndex: 2,
-  overflowX: "hidden",
-  overflowY: "visible",
+  overflow: "visible",
 };
 
 const sidebarStyle: React.CSSProperties = {

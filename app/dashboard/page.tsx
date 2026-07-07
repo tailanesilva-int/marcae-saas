@@ -182,13 +182,6 @@ export default function DashboardPage() {
     );
   }, []);
 
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-
-    document.body.style.overflow = "";
-    document.documentElement.style.overscrollBehaviorY = "";
-  }, [modalRankingAberto, modalReagendamentoAberto]);
-
   async function carregar(
     empresaId: string,
     dataInicio = periodoAplicado.dataInicio,
@@ -2609,6 +2602,7 @@ export default function DashboardPage() {
           body {
             max-width: 100%;
             overflow-x: hidden;
+            overflow-y: auto;
           }
 
           .dashboard-shell-mobile-safe {
