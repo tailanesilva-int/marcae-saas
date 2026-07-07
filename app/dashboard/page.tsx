@@ -183,27 +183,10 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    const algumModalAberto = modalRankingAberto || modalReagendamentoAberto;
-
     if (typeof document === "undefined") return;
 
-    const body = document.body;
-    const html = document.documentElement;
-    const overflowAnteriorBody = body.style.overflow;
-    const overscrollAnteriorHtml = html.style.overscrollBehaviorY;
-
-    if (algumModalAberto) {
-      body.style.overflow = "hidden";
-      html.style.overscrollBehaviorY = "none";
-    } else {
-      body.style.overflow = "";
-      html.style.overscrollBehaviorY = "";
-    }
-
-    return () => {
-      body.style.overflow = overflowAnteriorBody;
-      html.style.overscrollBehaviorY = overscrollAnteriorHtml;
-    };
+    document.body.style.overflow = "";
+    document.documentElement.style.overscrollBehaviorY = "";
   }, [modalRankingAberto, modalReagendamentoAberto]);
 
   async function carregar(

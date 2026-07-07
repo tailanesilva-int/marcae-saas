@@ -1464,6 +1464,8 @@ Preciso de ajuda para concluir o pagamento.`,
               min-height: 100dvh !important;
               overflow-x: hidden !important;
               overflow-y: visible !important;
+              overscroll-behavior-y: auto !important;
+              -webkit-overflow-scrolling: touch !important;
               padding: 10px 8px 120px !important;
               box-sizing: border-box !important;
             }
@@ -1472,8 +1474,7 @@ Preciso de ajuda para concluir o pagamento.`,
               width: 100% !important;
               max-width: 100% !important;
               min-width: 0 !important;
-              position: relative !important;
-              top: auto !important;
+              top: 10px !important;
               margin-bottom: 16px !important;
               box-sizing: border-box !important;
               overflow: visible !important;
@@ -1602,7 +1603,8 @@ const layoutFlex: React.CSSProperties = {
   minHeight: "100dvh",
   position: "relative",
   zIndex: 2,
-  overflow: "visible",
+  overflowX: "hidden",
+  overflowY: "visible",
 };
 
 const sidebarStyle: React.CSSProperties = {
@@ -1860,9 +1862,10 @@ const userArrow: React.CSSProperties = {
 const mainWrapper: React.CSSProperties = {
   flex: 1,
   minHeight: "100dvh",
-  minWidth: 0,
   overflowX: "hidden",
   overflowY: "visible",
+  overscrollBehaviorY: "auto",
+  WebkitOverflowScrolling: "touch",
   padding: "18px 22px 120px",
 };
 
