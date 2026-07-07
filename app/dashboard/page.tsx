@@ -4356,6 +4356,100 @@ export default function DashboardPage() {
 
           <div style={mobileCompactPanelSoft}>
             <div style={mobileCompactHeaderLine}>
+              <strong>🏆 Rankings do mês</strong>
+              <button
+                type="button"
+                onClick={() => {
+                  setPesquisaRanking("");
+                  setModalRankingAberto(true);
+                }}
+                style={mobileTextButton}
+              >
+                Ver todos
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                gap: 6,
+                marginBottom: 8,
+              }}
+            >
+              {[
+                { key: "clientes", label: "Clientes" },
+                { key: "servicos", label: "Serviços" },
+                { key: "profissionais", label: "Profs." },
+              ].map((aba) => (
+                <button
+                  key={aba.key}
+                  type="button"
+                  onClick={() => setAbaRankingDashboard(aba.key as any)}
+                  style={{
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    borderRadius: 12,
+                    background:
+                      abaRankingDashboard === aba.key
+                        ? "rgba(139, 92, 246, 0.24)"
+                        : "rgba(255,255,255,0.05)",
+                    color: "#f8fafc",
+                    fontSize: 10,
+                    fontWeight: 900,
+                    padding: "8px 6px",
+                    cursor: "pointer",
+                  }}
+                >
+                  {aba.label}
+                </button>
+              ))}
+            </div>
+
+            {carregandoRankingDashboard ? (
+              <div style={mobileMutedBox}>Carregando rankings...</div>
+            ) : rankingTopDashboard.length === 0 ? (
+              <div style={mobileMutedBox}>
+                Sem dados suficientes neste período.
+              </div>
+            ) : (
+              <div style={mobileAgendaStack}>
+                {rankingTopDashboard.slice(0, 3).map((item: any, index: number) => (
+                  <div
+                    key={`mobile-${abaRankingDashboard}-${item.nome}-${index}`}
+                    style={mobileAgendaItem}
+                  >
+                    <div style={mobileAgendaTime}>{medalhaRanking(index)}</div>
+
+                    <div style={mobileAgendaInfo}>
+                      <strong>{item.nome}</strong>
+                      <span>
+                        {abaRankingDashboard === "clientes"
+                          ? `${item.quantidadeAgendamentos} agendamentos`
+                          : abaRankingDashboard === "servicos"
+                            ? `${item.quantidade} realizações`
+                            : `${item.atendimentos} atendimentos`}
+                      </span>
+                      {abaRankingDashboard === "clientes" &&
+                        item.servicoMaisRealizado && (
+                          <small>⭐ {item.servicoMaisRealizado}</small>
+                        )}
+                      {abaRankingDashboard === "servicos" &&
+                        item.profissionalMaisExecutou && (
+                          <small>👩 {item.profissionalMaisExecutou}</small>
+                        )}
+                      {abaRankingDashboard === "profissionais" &&
+                        item.servicoMaisRealizado && (
+                          <small>⭐ {item.servicoMaisRealizado}</small>
+                        )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={mobileCompactPanelSoft}>
+            <div style={mobileCompactHeaderLine}>
               <strong>Relacionamento</strong>
               <a href="/promocoes" style={mobileCompactLink}>
                 Campanhas
