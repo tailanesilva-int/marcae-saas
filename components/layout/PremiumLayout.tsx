@@ -535,18 +535,16 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
       const diferenca = agora - Number(ultimoAcesso);
 
       if (diferenca > SESSION_TIMEOUT) {
-        localStorage.removeItem("empresaLogada");
-        localStorage.removeItem("usuarioEmpresa");
-        localStorage.removeItem("empresaId");
-        localStorage.removeItem("empresaSlugAcesso");
-        localStorage.removeItem("marcae_ultimo_acesso");
+        limparSessaoLocalMarcae();
 
         fetch("/api/auth/logout", {
           method: "POST",
           keepalive: true,
+          cache: "no-store",
+          credentials: "include",
         }).catch(() => {});
 
-        window.location.replace("/login");
+        window.location.replace("/login?logout=1");
         return;
       }
 
@@ -582,21 +580,36 @@ export default function PremiumLayout({ children, empresa, usuario }: Props) {
     return pathname === href;
   }
 
+  function limparSessaoLocalMarcae() {
+    try {
+      sessionStorage.setItem("marcae_logout_recente", "true");
+      sessionStorage.setItem("marcae_logout_em", Date.now().toString());
+      sessionStorage.removeItem("marcae_audio_notificacoes_liberado");
+    } catch (error) {
+      console.warn("Não foi possível registrar logout local:", error);
+    }
+
+    localStorage.removeItem("empresaLogada");
+    localStorage.removeItem("usuarioEmpresa");
+    localStorage.removeItem("empresaId");
+    localStorage.removeItem("empresaSlugAcesso");
+    localStorage.removeItem("marcae_ultimo_acesso");
+  }
+
   async function sair() {
+    limparSessaoLocalMarcae();
+
     try {
       await fetch("/api/auth/logout", {
         method: "POST",
+        cache: "no-store",
+        credentials: "include",
       });
     } catch (error) {
       console.error("Erro ao encerrar sessão no servidor:", error);
     } finally {
-      localStorage.removeItem("empresaLogada");
-      localStorage.removeItem("usuarioEmpresa");
-      localStorage.removeItem("empresaId");
-      localStorage.removeItem("empresaSlugAcesso");
-      localStorage.removeItem("marcae_ultimo_acesso");
-
-      window.location.replace("/login");
+      limparSessaoLocalMarcae();
+      window.location.replace("/login?logout=1");
     }
   }
 
@@ -1447,7 +1460,10 @@ Preciso de ajuda para concluir o pagamento.`,
               width: 100% !important;
               max-width: 100vw !important;
               min-width: 0 !important;
+              height: auto !important;
+              min-height: 100dvh !important;
               overflow-x: hidden !important;
+              overflow-y: visible !important;
               padding: 10px 8px 120px !important;
               box-sizing: border-box !important;
             }
@@ -1456,7 +1472,8 @@ Preciso de ajuda para concluir o pagamento.`,
               width: 100% !important;
               max-width: 100% !important;
               min-width: 0 !important;
-              top: 10px !important;
+              position: relative !important;
+              top: auto !important;
               margin-bottom: 16px !important;
               box-sizing: border-box !important;
               overflow: visible !important;
@@ -1585,6 +1602,7 @@ const layoutFlex: React.CSSProperties = {
   minHeight: "100dvh",
   position: "relative",
   zIndex: 2,
+  overflow: "visible",
 };
 
 const sidebarStyle: React.CSSProperties = {
@@ -1842,9 +1860,9 @@ const userArrow: React.CSSProperties = {
 const mainWrapper: React.CSSProperties = {
   flex: 1,
   minHeight: "100dvh",
+  minWidth: 0,
   overflowX: "hidden",
   overflowY: "visible",
-  WebkitOverflowScrolling: "touch",
   padding: "18px 22px 120px",
 };
 
@@ -2248,6 +2266,7 @@ const empresaMiniPlano: React.CSSProperties = {
 const mainContent: React.CSSProperties = {
   position: "relative",
   zIndex: 1,
+  minHeight: 0,
 };
 
 const mobileMenuButton: React.CSSProperties = {
@@ -2284,7 +2303,7 @@ const mobileOverlayBackdrop: React.CSSProperties = {
 const mobileDrawer: React.CSSProperties = {
   position: "relative",
   width: "min(390px, calc(100vw - 28px))",
-  height: "calc(100vh - 24px)",
+  height: "calc(100dvh - 24px)",
   margin: 12,
   padding: 18,
   borderRadius: 28,

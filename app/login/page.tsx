@@ -21,12 +21,39 @@ export default function LoginPage() {
   const [erroRecuperacao, setErroRecuperacao] = useState('');
   const [exibirEntradaApp, setExibirEntradaApp] = useState(false);
 
+  function limparSessaoLocalMarcae() {
+    localStorage.removeItem('usuarioEmpresa');
+    localStorage.removeItem('empresaLogada');
+    localStorage.removeItem('empresaId');
+    localStorage.removeItem('empresaSlugAcesso');
+    localStorage.removeItem('marcae_ultimo_acesso');
+  }
+
+  function existeLogoutRecente() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return (
+        params.get('logout') === '1' ||
+        sessionStorage.getItem('marcae_logout_recente') === 'true'
+      );
+    } catch {
+      return false;
+    }
+  }
+
   useEffect(() => {
     let cancelado = false;
 
     const params = new URLSearchParams(window.location.search);
     const empresa = params.get('empresa') || '';
+    const logoutRecente = existeLogoutRecente();
+
     setEmpresaSlug(empresa);
+
+    if (logoutRecente) {
+      limparSessaoLocalMarcae();
+      setExibirEntradaApp(false);
+    }
 
     const verificarTela = () => {
       setMobile(window.innerWidth <= 900);
@@ -45,18 +72,15 @@ export default function LoginPage() {
     };
 
     const verificarSessaoPersistente = async () => {
+      if (logoutRecente) {
+        return;
+      }
+
       try {
-        const usuarioSalvo = localStorage.getItem('usuarioEmpresa');
-        const empresaSalva = localStorage.getItem('empresaLogada');
-
-        if (usuarioSalvo && empresaSalva) {
-          abrirEntradaApp();
-          return;
-        }
-
         const res = await fetch('/api/auth/sessao', {
           method: 'GET',
           cache: 'no-store',
+          credentials: 'include',
         });
 
         const data = await res.json().catch(() => null);
@@ -95,9 +119,15 @@ export default function LoginPage() {
       setCarregando(true);
       setErro('');
 
+      try {
+        sessionStorage.removeItem('marcae_logout_recente');
+        sessionStorage.removeItem('marcae_logout_em');
+      } catch {}
+
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email: usuario, senha }),
       });
 
@@ -667,7 +697,7 @@ export default function LoginPage() {
 
 
 const entradaContainer = {
-  minHeight: '100vh',
+  minHeight: '100dvh',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -735,7 +765,7 @@ const entradaStatus = {
 };
 
 const container = {
-  minHeight: '100vh',
+  minHeight: '100dvh',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
