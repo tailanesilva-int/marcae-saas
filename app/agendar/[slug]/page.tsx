@@ -4,6 +4,17 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { gerarTemaEmpresa } from "@/app/lib/theme";
 
+
+type FotoFichaAnexada = {
+  url: string;
+  nomeArquivo: string;
+  mimeType: string;
+  tamanhoBytes: number;
+  campoId?: string;
+  campoTitulo?: string;
+  categoria?: string;
+};
+
 export default function AgendarPage() {
   const { slug } = useParams();
   const searchParams = useSearchParams();
@@ -640,7 +651,7 @@ export default function AgendarPage() {
 
           const tipoCampo = normalizarTipoFicha(campo.tipo);
 
-          if (tipoCampo === "multiselecao") {
+          if (tipoCampo === "multiselecao" || tipoCampo === "foto") {
             novo[campo.id] = [];
           } else if (tipoCampo === "termo_lgpd" || tipoCampo === "assinatura") {
             novo[campo.id] = false;
@@ -668,6 +679,145 @@ export default function AgendarPage() {
       ...atual,
       [campoId]: valor,
     }));
+  }
+
+  function obterFotosFicha(campoId: string): FotoFichaAnexada[] {
+    const valor = respostasFichaServico[campoId];
+
+    if (Array.isArray(valor)) {
+      return valor.filter((item) => item?.url);
+    }
+
+    if (valor?.url) {
+      return [valor];
+    }
+
+    return [];
+  }
+
+  function formatarTamanhoArquivo(bytes?: number | null) {
+    const tamanho = Number(bytes || 0);
+
+    if (!Number.isFinite(tamanho) || tamanho <= 0) return "";
+    if (tamanho < 1024 * 1024) return `${Math.max(tamanho / 1024, 1).toFixed(0)} KB`;
+
+    return `${(tamanho / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  function gerarNomeArquivoFicha(campo: any, arquivo: File) {
+    const extensaoOriginal = arquivo.name?.split(".").pop()?.toLowerCase();
+    const extensao = extensaoOriginal && extensaoOriginal.length <= 5 ? extensaoOriginal : "jpg";
+    const campoSeguro = String(campo?.titulo || "foto")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .toLowerCase()
+      .slice(0, 40) || "foto";
+
+    return `${campoSeguro}-${Date.now()}.${extensao}`;
+  }
+
+  function arquivoParaDataUrl(arquivo: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("Não foi possível ler a imagem."));
+      reader.readAsDataURL(arquivo);
+    });
+  }
+
+  async function compactarImagemFicha(arquivo: File): Promise<{ url: string; mimeType: string; tamanhoBytes: number }> {
+    const dataUrlOriginal = await arquivoParaDataUrl(arquivo);
+
+    if (typeof window === "undefined" || !arquivo.type.startsWith("image/")) {
+      return {
+        url: dataUrlOriginal,
+        mimeType: arquivo.type || "image/jpeg",
+        tamanhoBytes: arquivo.size,
+      };
+    }
+
+    const imagem = new Image();
+
+    await new Promise<void>((resolve, reject) => {
+      imagem.onload = () => resolve();
+      imagem.onerror = () => reject(new Error("Não foi possível processar a imagem selecionada."));
+      imagem.src = dataUrlOriginal;
+    });
+
+    const limite = 1400;
+    const larguraOriginal = imagem.naturalWidth || imagem.width;
+    const alturaOriginal = imagem.naturalHeight || imagem.height;
+    const escala = Math.min(1, limite / Math.max(larguraOriginal, alturaOriginal));
+    const largura = Math.max(Math.round(larguraOriginal * escala), 1);
+    const altura = Math.max(Math.round(alturaOriginal * escala), 1);
+    const canvas = document.createElement("canvas");
+
+    canvas.width = largura;
+    canvas.height = altura;
+
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) {
+      return {
+        url: dataUrlOriginal,
+        mimeType: arquivo.type || "image/jpeg",
+        tamanhoBytes: arquivo.size,
+      };
+    }
+
+    ctx.drawImage(imagem, 0, 0, largura, altura);
+
+    const mimeType = arquivo.type === "image/png" ? "image/png" : "image/jpeg";
+    const url = canvas.toDataURL(mimeType, mimeType === "image/png" ? 0.92 : 0.82);
+    const base64 = url.split(",")[1] || "";
+    const tamanhoBytes = Math.round((base64.length * 3) / 4);
+
+    return {
+      url,
+      mimeType,
+      tamanhoBytes,
+    };
+  }
+
+  async function selecionarFotoFicha(campo: any, arquivo?: File | null) {
+    if (!arquivo) return;
+
+    if (!arquivo.type.startsWith("image/")) {
+      alert("Selecione um arquivo de imagem válido.");
+      return;
+    }
+
+    const tamanhoMaximo = 8 * 1024 * 1024;
+
+    if (arquivo.size > tamanhoMaximo) {
+      alert("A imagem é muito grande. Selecione uma imagem com até 8MB.");
+      return;
+    }
+
+    try {
+      const imagem = await compactarImagemFicha(arquivo);
+      const foto: FotoFichaAnexada = {
+        url: imagem.url,
+        nomeArquivo: gerarNomeArquivoFicha(campo, arquivo),
+        mimeType: imagem.mimeType,
+        tamanhoBytes: imagem.tamanhoBytes,
+        campoId: campo.id,
+        campoTitulo: campo.titulo,
+        categoria: campo.titulo || "Foto da ficha",
+      };
+
+      alterarRespostaFicha(campo.id, [foto]);
+    } catch (error) {
+      console.error("Erro ao anexar foto da ficha:", error);
+      alert("Não foi possível anexar a imagem. Tente novamente.");
+    }
+  }
+
+  function removerFotoFicha(campoId: string) {
+    alterarRespostaFicha(campoId, []);
   }
 
   function opcoesCampoFicha(campo: any) {
@@ -727,7 +877,7 @@ export default function AgendarPage() {
     }
 
     if (tipoCampo === "foto") {
-      return true;
+      return obterFotosFicha(campo.id).length > 0;
     }
 
     if (valor === null || valor === undefined) {
@@ -775,15 +925,50 @@ export default function AgendarPage() {
     try {
       setSalvandoFichaServico(true);
 
-      const respostas = camposFichaServico
-        .filter((campo: any) => (campo.respondidoPor || "cliente") === "cliente")
-        .map((campo: any, index: number) => ({
-        campoId: campo.id,
-        campoTitulo: campo.titulo,
-        campoTipo: campo.tipo,
-        valor: respostasFichaServico[campo.id],
-        ordem: campo.ordem ?? index,
-      }));
+      const camposCliente = camposFichaServico.filter(
+        (campo: any) => (campo.respondidoPor || "cliente") === "cliente",
+      );
+
+      const respostas = camposCliente.map((campo: any, index: number) => {
+        const tipoCampo = normalizarTipoFicha(campo.tipo);
+        const valor =
+          tipoCampo === "foto"
+            ? obterFotosFicha(campo.id).map((foto) => ({
+                url: foto.url,
+                nomeArquivo: foto.nomeArquivo,
+                mimeType: foto.mimeType,
+                tamanhoBytes: foto.tamanhoBytes,
+                campoId: campo.id,
+                campoTitulo: campo.titulo,
+                categoria: foto.categoria || campo.titulo || "Foto da ficha",
+              }))
+            : respostasFichaServico[campo.id];
+
+        return {
+          campoId: campo.id,
+          campoTitulo: campo.titulo,
+          campoTipo: campo.tipo,
+          valor,
+          ordem: campo.ordem ?? index,
+        };
+      });
+
+      const arquivosFicha = camposCliente
+        .filter((campo: any) => normalizarTipoFicha(campo.tipo) === "foto")
+        .flatMap((campo: any) =>
+          obterFotosFicha(campo.id).map((foto, index) => ({
+            tipo: "foto",
+            categoria: foto.categoria || campo.titulo || "Foto da ficha",
+            url: foto.url,
+            nomeArquivo: foto.nomeArquivo,
+            mimeType: foto.mimeType,
+            tamanhoBytes: foto.tamanhoBytes,
+            descricao: campo.descricao || campo.titulo || null,
+            ordem: campo.ordem ?? index,
+            campoId: campo.id,
+            campoTitulo: campo.titulo,
+          })),
+        );
 
       const res = await fetch("/api/fichas-digitais/preencher", {
         method: "POST",
@@ -809,6 +994,7 @@ export default function AgendarPage() {
             (campo: any) => normalizarTipoFicha(campo.tipo) === "termo_lgpd" && Boolean(respostasFichaServico[campo.id]),
           ),
           respostas,
+          arquivos: arquivosFicha,
         }),
       });
 
@@ -2542,8 +2728,71 @@ export default function AgendarPage() {
                         )}
 
                         {tipoCampo === "foto" && (
-                          <div className="fichaInfoBox">
-                            Envio de fotos pelo agendador será conectado na próxima fase. Continue normalmente.
+                          <div className="fichaFotoBox">
+                            {obterFotosFicha(campo.id).length === 0 ? (
+                              <div className="fichaFotoDrop">
+                                <div className="fichaFotoIcon">📷</div>
+                                <strong>Adicionar imagem</strong>
+                                <span>Use a câmera ou escolha uma foto da galeria.</span>
+                              </div>
+                            ) : (
+                              <div className="fichaFotoPreview">
+                                <img
+                                  src={obterFotosFicha(campo.id)[0].url}
+                                  alt={campo.titulo || "Imagem anexada"}
+                                />
+                                <div>
+                                  <strong>Foto adicionada</strong>
+                                  <span>
+                                    {obterFotosFicha(campo.id)[0].nomeArquivo}
+                                    {formatarTamanhoArquivo(obterFotosFicha(campo.id)[0].tamanhoBytes)
+                                      ? ` • ${formatarTamanhoArquivo(obterFotosFicha(campo.id)[0].tamanhoBytes)}`
+                                      : ""}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="fichaFotoActions">
+                              <label className="fichaFotoButton">
+                                📸 Tirar foto
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  capture="environment"
+                                  onChange={(e) => {
+                                    selecionarFotoFicha(campo, e.target.files?.[0]);
+                                    e.currentTarget.value = "";
+                                  }}
+                                />
+                              </label>
+
+                              <label className="fichaFotoButton secondary">
+                                🖼 Escolher da galeria
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    selecionarFotoFicha(campo, e.target.files?.[0]);
+                                    e.currentTarget.value = "";
+                                  }}
+                                />
+                              </label>
+
+                              {obterFotosFicha(campo.id).length > 0 && (
+                                <button
+                                  type="button"
+                                  className="fichaFotoButton danger"
+                                  onClick={() => removerFotoFicha(campo.id)}
+                                >
+                                  🗑 Remover
+                                </button>
+                              )}
+                            </div>
+
+                            <small className="fichaFotoHint">
+                              A imagem será vinculada à ficha digital deste atendimento.
+                            </small>
                           </div>
                         )}
                       </div>
@@ -4628,6 +4877,125 @@ margin-right: auto;
     font-size: 13px;
     line-height: 1.5;
     font-weight: 750;
+  }
+
+  .fichaFotoBox {
+    display: grid;
+    gap: 12px;
+  }
+
+  .fichaFotoDrop {
+    min-height: 150px;
+    border-radius: 18px;
+    border: 1px dashed rgba(167,139,250,0.36);
+    background: rgba(124,58,237,0.09);
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 18px;
+    color: rgba(255,255,255,0.78);
+  }
+
+  .fichaFotoDrop strong {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 950;
+  }
+
+  .fichaFotoDrop span {
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .fichaFotoIcon {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    display: grid;
+    place-items: center;
+    background: var(--marcae-primary-medium);
+    border: 1px solid rgba(255,255,255,0.12);
+    font-size: 24px;
+    margin-bottom: 4px;
+  }
+
+  .fichaFotoPreview {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+    padding: 10px;
+    border-radius: 18px;
+    background: rgba(34,197,94,0.10);
+    border: 1px solid rgba(74,222,128,0.18);
+  }
+
+  .fichaFotoPreview img {
+    width: 96px;
+    height: 96px;
+    object-fit: cover;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(0,0,0,0.20);
+  }
+
+  .fichaFotoPreview strong {
+    display: block;
+    color: #bbf7d0;
+    font-weight: 950;
+    margin-bottom: 4px;
+  }
+
+  .fichaFotoPreview span {
+    display: block;
+    color: rgba(255,255,255,0.72);
+    font-size: 12px;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .fichaFotoActions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .fichaFotoButton {
+    min-height: 44px;
+    border-radius: 14px;
+    border: 1px solid rgba(167,139,250,0.28);
+    background: var(--marcae-primary-medium);
+    color: #fff;
+    font-weight: 950;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+  }
+
+  .fichaFotoButton.secondary {
+    background: rgba(255,255,255,0.06);
+    color: #e5e7eb;
+  }
+
+  .fichaFotoButton.danger {
+    grid-column: 1 / -1;
+    background: rgba(239,68,68,0.10);
+    border-color: rgba(248,113,113,0.22);
+    color: #fecaca;
+  }
+
+  .fichaFotoButton input {
+    display: none;
+  }
+
+  .fichaFotoHint {
+    color: rgba(255,255,255,0.56);
+    font-size: 12px;
+    line-height: 1.35;
   }
 
   .resumoFichaBadge {

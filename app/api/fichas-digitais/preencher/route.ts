@@ -43,6 +43,61 @@ function normalizarData(valor: any) {
   return data;
 }
 
+function normalizarTipoFicha(tipo: any) {
+  const normalizado = String(tipo || "texto")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\s-]+/g, "_");
+
+  if (normalizado.includes("assinatura")) return "assinatura";
+  if (normalizado.includes("foto") || normalizado.includes("imagem")) return "foto";
+  if (normalizado.includes("lgpd")) return "termo_lgpd";
+  if (normalizado.includes("multi")) return "multiselecao";
+  if (normalizado.includes("sim") && normalizado.includes("nao")) return "sim_nao";
+
+  return normalizado;
+}
+
+function valorObrigatorioVazio(tipoCampo: string, valor: any) {
+  if (tipoCampo === "termo_lgpd" || tipoCampo === "assinatura") {
+    return !Boolean(valor);
+  }
+
+  if (tipoCampo === "foto") {
+    if (Array.isArray(valor)) {
+      return valor.filter((item) => item?.url).length === 0;
+    }
+
+    return !valor?.url;
+  }
+
+  return (
+    valor === null ||
+    valor === undefined ||
+    valor === "" ||
+    (Array.isArray(valor) && valor.length === 0)
+  );
+}
+
+function normalizarArquivosFicha(valor: any) {
+  const arquivos = Array.isArray(valor) ? valor : valor?.url ? [valor] : [];
+
+  return arquivos
+    .filter((arquivo: any) => arquivo?.url)
+    .map((arquivo: any, index: number) => ({
+      tipo: arquivo.tipo || "foto",
+      categoria: arquivo.categoria || arquivo.campoTitulo || null,
+      url: String(arquivo.url),
+      nomeArquivo: arquivo.nomeArquivo ? String(arquivo.nomeArquivo) : null,
+      mimeType: arquivo.mimeType ? String(arquivo.mimeType) : null,
+      tamanhoBytes: arquivo.tamanhoBytes ? Number(arquivo.tamanhoBytes) : null,
+      descricao: arquivo.descricao || arquivo.campoTitulo || null,
+      ordem: Number.isFinite(Number(arquivo.ordem)) ? Number(arquivo.ordem) : index,
+    }));
+}
+
 async function localizarCliente(empresaId: string, clienteId?: string | null, cpf?: string | null) {
   if (clienteId) {
     const cliente = await prisma.cliente.findFirst({
@@ -87,6 +142,7 @@ export async function POST(req: Request) {
     const respostasRecebidas = Array.isArray(body.respostas)
       ? body.respostas
       : [];
+    const arquivosRecebidos = Array.isArray(body.arquivos) ? body.arquivos : [];
 
     if (!empresaId) {
       return respostaErro("empresaId obrigatório.");
@@ -126,20 +182,19 @@ export async function POST(req: Request) {
       body.clienteCpf || body.assinaturaCpf || null,
     );
 
-    const camposObrigatorios = modelo.campos.filter((campo) => campo.obrigatorio);
+    const preenchidoPorTipo = body.preenchidoPorTipo || "cliente";
+    const camposObrigatorios = modelo.campos.filter(
+      (campo) =>
+        campo.obrigatorio &&
+        (campo.respondidoPor || "cliente") === preenchidoPorTipo,
+    );
 
     for (const campo of camposObrigatorios) {
       const resposta = respostasRecebidas.find((item: any) => item.campoId === campo.id);
       const valor = resposta?.valor;
+      const tipoCampo = normalizarTipoFicha(campo.tipo);
 
-      const vazio =
-        valor === null ||
-        valor === undefined ||
-        valor === "" ||
-        (Array.isArray(valor) && valor.length === 0) ||
-        (campo.tipo === "termo_lgpd" && !Boolean(valor));
-
-      if (vazio) {
+      if (valorObrigatorioVazio(tipoCampo, valor)) {
         return respostaErro(`Responda a pergunta obrigatória: ${campo.titulo}`);
       }
     }
@@ -158,7 +213,7 @@ export async function POST(req: Request) {
           tituloSnapshot: modelo.titulo,
           status: "preenchida",
           origem: body.origem || "agendador",
-          preenchidoPorTipo: body.preenchidoPorTipo || "cliente",
+          preenchidoPorTipo,
           preenchidoPorNome: body.preenchidoPorNome || assinaturaNome,
           preenchidoPorUsuarioId: body.preenchidoPorUsuarioId || null,
           assinado: Boolean(modelo.exigeAssinatura && assinaturaNome),
@@ -204,6 +259,44 @@ export async function POST(req: Request) {
             valorJson,
             ordem: campo.ordem ?? resposta.ordem ?? index,
           },
+        });
+      }
+
+      const arquivosDasRespostas = respostasRecebidas.flatMap((resposta: any) => {
+        const campo = modelo.campos.find((item) => item.id === resposta.campoId);
+
+        if (!campo || normalizarTipoFicha(campo.tipo) !== "foto") return [];
+
+        return normalizarArquivosFicha(resposta.valor).map((arquivo) => ({
+          ...arquivo,
+          categoria: arquivo.categoria || campo.titulo,
+          descricao: arquivo.descricao || campo.descricao || campo.titulo,
+          ordem: campo.ordem ?? arquivo.ordem,
+        }));
+      });
+
+      const todosArquivos = [
+        ...normalizarArquivosFicha(arquivosRecebidos),
+        ...arquivosDasRespostas,
+      ].filter(
+        (arquivo, index, lista) =>
+          arquivo.url && lista.findIndex((item) => item.url === arquivo.url) === index,
+      );
+
+      if (todosArquivos.length > 0) {
+        await tx.fichaArquivo.createMany({
+          data: todosArquivos.map((arquivo, index) => ({
+            empresaId,
+            registroId: fichaRegistro.id,
+            tipo: arquivo.tipo || "foto",
+            categoria: arquivo.categoria || null,
+            url: arquivo.url,
+            nomeArquivo: arquivo.nomeArquivo || null,
+            mimeType: arquivo.mimeType || null,
+            tamanhoBytes: arquivo.tamanhoBytes ? Number(arquivo.tamanhoBytes) : null,
+            descricao: arquivo.descricao || null,
+            ordem: Number.isFinite(Number(arquivo.ordem)) ? Number(arquivo.ordem) : index,
+          })),
         });
       }
 
