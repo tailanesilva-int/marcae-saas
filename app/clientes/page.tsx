@@ -80,6 +80,11 @@ export default function ClientesPage() {
   >({});
   const [salvandoComplementoFicha, setSalvandoComplementoFicha] =
     useState(false);
+  const [galeriaFichaAberta, setGaleriaFichaAberta] = useState<any[] | null>(
+    null,
+  );
+  const [galeriaFichaIndice, setGaleriaFichaIndice] = useState(0);
+  const [galeriaFichaTitulo, setGaleriaFichaTitulo] = useState("");
 
   useEffect(() => {
     const empresaStorage = localStorage.getItem("empresaLogada");
@@ -487,6 +492,7 @@ export default function ClientesPage() {
     setAbaCliente("dados");
     fecharDrawerFichaCliente();
     fecharDrawerVisualizarFicha();
+    fecharGaleriaFicha();
   }
 
   function abrirLancamentoFinanceiro(tipo: "credito" | "debito") {
@@ -1008,6 +1014,7 @@ export default function ClientesPage() {
   }
 
   function fecharDrawerVisualizarFicha() {
+    fecharGaleriaFicha();
     setDrawerVisualizarFichaAberto(false);
     setFichaDetalhada(null);
     setRespostasProfissionalFicha({});
@@ -1119,6 +1126,38 @@ export default function ClientesPage() {
       (foto, index, lista) =>
         foto.url && lista.findIndex((item) => item.url === foto.url) === index,
     );
+  }
+
+  function abrirGaleriaFicha(fotos: any[], indice = 0, titulo = "Fotos da ficha") {
+    const fotosValidas = Array.isArray(fotos)
+      ? fotos.filter((foto) => foto?.url)
+      : [];
+
+    if (fotosValidas.length === 0) return;
+
+    setGaleriaFichaAberta(fotosValidas);
+    setGaleriaFichaIndice(Math.min(Math.max(indice, 0), fotosValidas.length - 1));
+    setGaleriaFichaTitulo(titulo);
+  }
+
+  function fecharGaleriaFicha() {
+    setGaleriaFichaAberta(null);
+    setGaleriaFichaIndice(0);
+    setGaleriaFichaTitulo("");
+  }
+
+  function navegarGaleriaFicha(direcao: "anterior" | "proxima") {
+    setGaleriaFichaIndice((indiceAtual) => {
+      const total = galeriaFichaAberta?.length || 0;
+
+      if (total <= 1) return indiceAtual;
+
+      if (direcao === "anterior") {
+        return indiceAtual === 0 ? total - 1 : indiceAtual - 1;
+      }
+
+      return indiceAtual >= total - 1 ? 0 : indiceAtual + 1;
+    });
   }
 
   function camposClienteSemAssinatura(ficha: any) {
@@ -3696,11 +3735,16 @@ export default function ClientesPage() {
                                   {fotosCampo.length > 0 && (
                                     <div style={fichaFotosHistoricoGrid}>
                                       {fotosCampo.map((foto, index) => (
-                                        <a
+                                        <button
                                           key={`${foto.url}-${index}`}
-                                          href={foto.url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
+                                          type="button"
+                                          onClick={() =>
+                                            abrirGaleriaFicha(
+                                              fotosCampo,
+                                              index,
+                                              campo.titulo || "Fotos da ficha",
+                                            )
+                                          }
                                           style={fichaFotoHistoricoCard}
                                         >
                                           <img
@@ -3711,7 +3755,7 @@ export default function ClientesPage() {
                                           <span style={fichaFotoHistoricoLegenda}>
                                             Foto {index + 1}
                                           </span>
-                                        </a>
+                                        </button>
                                       ))}
                                     </div>
                                   )}
@@ -3872,6 +3916,87 @@ export default function ClientesPage() {
             </aside>
           </div>
         )}
+
+        {galeriaFichaAberta && galeriaFichaAberta.length > 0 && (
+          <div style={galeriaFichaOverlay}>
+            <button
+              type="button"
+              aria-label="Fechar galeria da ficha"
+              onClick={fecharGaleriaFicha}
+              style={galeriaFichaBackdrop}
+            />
+
+            <section style={galeriaFichaCard}>
+              <div style={galeriaFichaHeader}>
+                <div>
+                  <span style={sectionEyebrow}>Visualização da foto</span>
+                  <h3 style={galeriaFichaTituloStyle}>{galeriaFichaTitulo}</h3>
+                  <p style={galeriaFichaContador}>
+                    Foto {galeriaFichaIndice + 1} de {galeriaFichaAberta.length}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={fecharGaleriaFicha}
+                  style={galeriaFichaFechar}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={galeriaFichaImagemBox}>
+                {galeriaFichaAberta.length > 1 && (
+                  <button
+                    type="button"
+                    aria-label="Foto anterior"
+                    onClick={() => navegarGaleriaFicha("anterior")}
+                    style={{ ...galeriaFichaSeta, left: 10 }}
+                  >
+                    ‹
+                  </button>
+                )}
+
+                <img
+                  src={galeriaFichaAberta[galeriaFichaIndice]?.url}
+                  alt={
+                    galeriaFichaAberta[galeriaFichaIndice]?.nomeArquivo ||
+                    `Foto ${galeriaFichaIndice + 1}`
+                  }
+                  style={galeriaFichaImagem}
+                />
+
+                {galeriaFichaAberta.length > 1 && (
+                  <button
+                    type="button"
+                    aria-label="Próxima foto"
+                    onClick={() => navegarGaleriaFicha("proxima")}
+                    style={{ ...galeriaFichaSeta, right: 10 }}
+                  >
+                    ›
+                  </button>
+                )}
+              </div>
+
+              <div style={galeriaFichaFooter}>
+                <span>
+                  {galeriaFichaAberta[galeriaFichaIndice]?.nomeArquivo ||
+                    `Foto ${galeriaFichaIndice + 1}`}
+                </span>
+
+                <a
+                  href={galeriaFichaAberta[galeriaFichaIndice]?.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={galeriaFichaAbrirNovaAba}
+                >
+                  Abrir em nova aba
+                </a>
+              </div>
+            </section>
+          </div>
+        )}
+
 
         {drawerFichaAberto && (
           <div style={drawerFichaOverlay}>
@@ -5596,8 +5721,10 @@ const fichaFotoHistoricoCard: CSSProperties = {
   borderRadius: 14,
   background: "rgba(15,23,42,0.72)",
   border: "1px solid rgba(255,255,255,0.10)",
-  textDecoration: "none",
   color: "#e5e7eb",
+  cursor: "pointer",
+  textAlign: "left",
+  appearance: "none",
 };
 
 const fichaFotoHistoricoImagem: CSSProperties = {
@@ -5614,6 +5741,126 @@ const fichaFotoHistoricoLegenda: CSSProperties = {
   fontWeight: 900,
   color: "#c4b5fd",
   textAlign: "center",
+};
+
+const galeriaFichaOverlay: CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  zIndex: 1400,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: 18,
+  background: "rgba(2,6,23,0.88)",
+  backdropFilter: "blur(14px)",
+};
+
+const galeriaFichaBackdrop: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  border: "none",
+  background: "transparent",
+  cursor: "pointer",
+};
+
+const galeriaFichaCard: CSSProperties = {
+  position: "relative",
+  zIndex: 2,
+  width: "min(980px, 96vw)",
+  maxHeight: "92vh",
+  borderRadius: 24,
+  padding: 14,
+  background: "linear-gradient(180deg, rgba(15,23,42,0.98), rgba(2,6,23,0.98))",
+  border: "1px solid rgba(255,255,255,0.12)",
+  boxShadow: "0 30px 90px rgba(0,0,0,0.55)",
+  display: "flex",
+  flexDirection: "column",
+  gap: 12,
+};
+
+const galeriaFichaHeader: CSSProperties = {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 14,
+  padding: "4px 4px 0",
+};
+
+const galeriaFichaTituloStyle: CSSProperties = {
+  margin: "4px 0 0",
+  color: "#f8fafc",
+  fontSize: 18,
+};
+
+const galeriaFichaContador: CSSProperties = {
+  margin: "4px 0 0",
+  color: "#94a3b8",
+  fontSize: 12,
+  fontWeight: 800,
+};
+
+const galeriaFichaFechar: CSSProperties = {
+  width: 38,
+  height: 38,
+  borderRadius: 999,
+  border: "1px solid rgba(255,255,255,0.14)",
+  background: "rgba(15,23,42,0.90)",
+  color: "#f8fafc",
+  fontSize: 24,
+  cursor: "pointer",
+};
+
+const galeriaFichaImagemBox: CSSProperties = {
+  position: "relative",
+  width: "100%",
+  minHeight: "min(68vh, 620px)",
+  borderRadius: 18,
+  overflow: "hidden",
+  background: "rgba(0,0,0,0.42)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+const galeriaFichaImagem: CSSProperties = {
+  width: "100%",
+  height: "100%",
+  maxHeight: "68vh",
+  objectFit: "contain",
+  display: "block",
+};
+
+const galeriaFichaSeta: CSSProperties = {
+  position: "absolute",
+  top: "50%",
+  transform: "translateY(-50%)",
+  zIndex: 3,
+  width: 44,
+  height: 44,
+  borderRadius: 999,
+  border: "1px solid rgba(255,255,255,0.18)",
+  background: "rgba(15,23,42,0.78)",
+  color: "#f8fafc",
+  fontSize: 34,
+  lineHeight: 1,
+  cursor: "pointer",
+};
+
+const galeriaFichaFooter: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  color: "#cbd5e1",
+  fontSize: 12,
+  fontWeight: 800,
+  padding: "0 4px 2px",
+};
+
+const galeriaFichaAbrirNovaAba: CSSProperties = {
+  color: "#c4b5fd",
+  textDecoration: "none",
+  fontWeight: 900,
 };
 
 const drawerFichaOverlay: CSSProperties = {
