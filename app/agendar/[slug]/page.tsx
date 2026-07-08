@@ -15,6 +15,8 @@ type FotoFichaAnexada = {
   categoria?: string;
 };
 
+const LIMITE_FOTOS_POR_CAMPO_FICHA = 3;
+
 export default function AgendarPage() {
   const { slug } = useParams();
   const searchParams = useSearchParams();
@@ -798,6 +800,13 @@ export default function AgendarPage() {
     }
 
     try {
+      const fotosAtuais = obterFotosFicha(campo.id);
+
+      if (fotosAtuais.length >= LIMITE_FOTOS_POR_CAMPO_FICHA) {
+        alert(`Você pode adicionar até ${LIMITE_FOTOS_POR_CAMPO_FICHA} fotos nesta pergunta.`);
+        return;
+      }
+
       const imagem = await compactarImagemFicha(arquivo);
       const foto: FotoFichaAnexada = {
         url: imagem.url,
@@ -809,15 +818,25 @@ export default function AgendarPage() {
         categoria: campo.titulo || "Foto da ficha",
       };
 
-      alterarRespostaFicha(campo.id, [foto]);
+      alterarRespostaFicha(campo.id, [...fotosAtuais, foto]);
     } catch (error) {
       console.error("Erro ao anexar foto da ficha:", error);
       alert("Não foi possível anexar a imagem. Tente novamente.");
     }
   }
 
-  function removerFotoFicha(campoId: string) {
-    alterarRespostaFicha(campoId, []);
+  function removerFotoFicha(campoId: string, indice?: number) {
+    const fotosAtuais = obterFotosFicha(campoId);
+
+    if (indice === undefined) {
+      alterarRespostaFicha(campoId, []);
+      return;
+    }
+
+    alterarRespostaFicha(
+      campoId,
+      fotosAtuais.filter((_, index) => index !== indice),
+    );
   }
 
   function opcoesCampoFicha(campo: any) {
@@ -2729,69 +2748,107 @@ export default function AgendarPage() {
 
                         {tipoCampo === "foto" && (
                           <div className="fichaFotoBox">
-                            {obterFotosFicha(campo.id).length === 0 ? (
-                              <div className="fichaFotoDrop">
-                                <div className="fichaFotoIcon">📷</div>
-                                <strong>Adicionar imagem</strong>
-                                <span>Use a câmera ou escolha uma foto da galeria.</span>
-                              </div>
-                            ) : (
-                              <div className="fichaFotoPreview">
-                                <img
-                                  src={obterFotosFicha(campo.id)[0].url}
-                                  alt={campo.titulo || "Imagem anexada"}
-                                />
-                                <div>
-                                  <strong>Foto adicionada</strong>
-                                  <span>
-                                    {obterFotosFicha(campo.id)[0].nomeArquivo}
-                                    {formatarTamanhoArquivo(obterFotosFicha(campo.id)[0].tamanhoBytes)
-                                      ? ` • ${formatarTamanhoArquivo(obterFotosFicha(campo.id)[0].tamanhoBytes)}`
-                                      : ""}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
+                            {(() => {
+                              const fotosCampo = obterFotosFicha(campo.id);
+                              const limiteAtingido =
+                                fotosCampo.length >= LIMITE_FOTOS_POR_CAMPO_FICHA;
 
-                            <div className="fichaFotoActions">
-                              <label className="fichaFotoButton">
-                                📸 Tirar foto
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  capture="environment"
-                                  onChange={(e) => {
-                                    selecionarFotoFicha(campo, e.target.files?.[0]);
-                                    e.currentTarget.value = "";
-                                  }}
-                                />
-                              </label>
+                              return (
+                                <>
+                                  <div className="fichaFotoTopo">
+                                    <span>Fotos anexadas</span>
+                                    <strong>
+                                      {fotosCampo.length}/{LIMITE_FOTOS_POR_CAMPO_FICHA}
+                                    </strong>
+                                  </div>
 
-                              <label className="fichaFotoButton secondary">
-                                🖼 Escolher da galeria
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(e) => {
-                                    selecionarFotoFicha(campo, e.target.files?.[0]);
-                                    e.currentTarget.value = "";
-                                  }}
-                                />
-                              </label>
+                                  {fotosCampo.length === 0 ? (
+                                    <div className="fichaFotoDrop">
+                                      <div className="fichaFotoIcon">📷</div>
+                                      <strong>Adicionar imagem</strong>
+                                      <span>Use a câmera ou escolha até 3 fotos da galeria.</span>
+                                    </div>
+                                  ) : (
+                                    <div className="fichaFotoGrid">
+                                      {fotosCampo.map((foto, index) => (
+                                        <div
+                                          className="fichaFotoPreview"
+                                          key={`${foto.url}-${index}`}
+                                        >
+                                          <img
+                                            src={foto.url}
+                                            alt={`${campo.titulo || "Imagem anexada"} ${index + 1}`}
+                                          />
+                                          <div>
+                                            <strong>Foto {index + 1}</strong>
+                                            <span>
+                                              {foto.nomeArquivo}
+                                              {formatarTamanhoArquivo(foto.tamanhoBytes)
+                                                ? ` • ${formatarTamanhoArquivo(foto.tamanhoBytes)}`
+                                                : ""}
+                                            </span>
+                                          </div>
 
-                              {obterFotosFicha(campo.id).length > 0 && (
-                                <button
-                                  type="button"
-                                  className="fichaFotoButton danger"
-                                  onClick={() => removerFotoFicha(campo.id)}
-                                >
-                                  🗑 Remover
-                                </button>
-                              )}
-                            </div>
+                                          <button
+                                            type="button"
+                                            className="fichaFotoRemoveMini"
+                                            onClick={() => removerFotoFicha(campo.id, index)}
+                                          >
+                                            Remover
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {!limiteAtingido ? (
+                                    <div className="fichaFotoActions">
+                                      <label className="fichaFotoButton">
+                                        📸 Tirar foto
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          capture="environment"
+                                          onChange={(e) => {
+                                            selecionarFotoFicha(campo, e.target.files?.[0]);
+                                            e.currentTarget.value = "";
+                                          }}
+                                        />
+                                      </label>
+
+                                      <label className="fichaFotoButton secondary">
+                                        🖼 Escolher da galeria
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          onChange={(e) => {
+                                            selecionarFotoFicha(campo, e.target.files?.[0]);
+                                            e.currentTarget.value = "";
+                                          }}
+                                        />
+                                      </label>
+                                    </div>
+                                  ) : (
+                                    <div className="fichaFotoLimite">
+                                      Limite de 3 fotos atingido. Remova uma imagem para adicionar outra.
+                                    </div>
+                                  )}
+
+                                  {fotosCampo.length > 1 && (
+                                    <button
+                                      type="button"
+                                      className="fichaFotoButton danger"
+                                      onClick={() => removerFotoFicha(campo.id)}
+                                    >
+                                      🗑 Remover todas
+                                    </button>
+                                  )}
+                                </>
+                              );
+                            })()}
 
                             <small className="fichaFotoHint">
-                              A imagem será vinculada à ficha digital deste atendimento.
+                              As imagens serão vinculadas à ficha digital deste atendimento.
                             </small>
                           </div>
                         )}
@@ -4919,9 +4976,32 @@ margin-right: auto;
     margin-bottom: 4px;
   }
 
+  .fichaFotoTopo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    color: rgba(255,255,255,0.70);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .fichaFotoTopo strong {
+    color: #fff;
+    border-radius: 999px;
+    padding: 5px 9px;
+    background: rgba(124,58,237,0.20);
+    border: 1px solid rgba(167,139,250,0.18);
+  }
+
+  .fichaFotoGrid {
+    display: grid;
+    gap: 10px;
+  }
+
   .fichaFotoPreview {
     display: grid;
-    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-columns: 86px minmax(0, 1fr) auto;
     gap: 12px;
     align-items: center;
     padding: 10px;
@@ -4931,8 +5011,8 @@ margin-right: auto;
   }
 
   .fichaFotoPreview img {
-    width: 96px;
-    height: 96px;
+    width: 86px;
+    height: 86px;
     object-fit: cover;
     border-radius: 14px;
     border: 1px solid rgba(255,255,255,0.14);

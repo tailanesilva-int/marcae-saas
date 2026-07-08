@@ -1036,6 +1036,13 @@ export default function ClientesPage() {
   function formatarValorRespostaFicha(resposta: any) {
     const valor = obterValorRespostaFicha(resposta);
 
+    if (resposta?.campoTipo === "foto") {
+      const fotos = normalizarFotosRespostaFicha(resposta);
+      return fotos.length
+        ? `${fotos.length} ${fotos.length === 1 ? "foto anexada" : "fotos anexadas"}`
+        : "Nenhuma foto anexada";
+    }
+
     if (Array.isArray(valor)) {
       return valor.length ? valor.join(", ") : "Não informado";
     }
@@ -1053,6 +1060,65 @@ export default function ClientesPage() {
     }
 
     return valor ? String(valor) : "Não informado";
+  }
+
+  function normalizarFotosRespostaFicha(resposta: any) {
+    const valor = obterValorRespostaFicha(resposta);
+    const fotos = Array.isArray(valor) ? valor : valor?.url ? [valor] : [];
+
+    return fotos
+      .filter((foto: any) => foto?.url)
+      .map((foto: any, index: number) => ({
+        url: String(foto.url),
+        nomeArquivo: foto.nomeArquivo || foto.nome || `Foto ${index + 1}`,
+        mimeType: foto.mimeType || foto.tipoArquivo || "image/jpeg",
+        tamanhoBytes: foto.tamanhoBytes || foto.tamanho || null,
+        categoria: foto.categoria || foto.campoTitulo || null,
+        descricao: foto.descricao || foto.campoTitulo || null,
+      }));
+  }
+
+  function fotosArquivosDaFichaPorCampo(ficha: any, campo: any) {
+    const tituloCampo = String(campo?.titulo || "").trim().toLowerCase();
+    const arquivos = Array.isArray(ficha?.arquivos) ? ficha.arquivos : [];
+
+    return arquivos
+      .filter((arquivo: any) => {
+        if (!arquivo?.url) return false;
+        if (campo?.tipo !== "foto") return false;
+
+        const categoria = String(arquivo.categoria || "").trim().toLowerCase();
+        const descricao = String(arquivo.descricao || "").trim().toLowerCase();
+        const nomeArquivo = String(arquivo.nomeArquivo || "").trim().toLowerCase();
+
+        if (!tituloCampo) return true;
+
+        return (
+          categoria === tituloCampo ||
+          descricao === tituloCampo ||
+          categoria.includes(tituloCampo) ||
+          descricao.includes(tituloCampo) ||
+          nomeArquivo.includes(tituloCampo.slice(0, 16))
+        );
+      })
+      .map((arquivo: any, index: number) => ({
+        url: String(arquivo.url),
+        nomeArquivo: arquivo.nomeArquivo || `Foto ${index + 1}`,
+        mimeType: arquivo.mimeType || "image/jpeg",
+        tamanhoBytes: arquivo.tamanhoBytes || null,
+        categoria: arquivo.categoria || null,
+        descricao: arquivo.descricao || null,
+      }));
+  }
+
+  function fotosDaRespostaFicha(ficha: any, campo: any, resposta: any) {
+    const fotosResposta = normalizarFotosRespostaFicha(resposta);
+    const fotosArquivos = fotosArquivosDaFichaPorCampo(ficha, campo);
+
+    return [...fotosResposta, ...fotosArquivos].filter(
+      (foto, index, lista) =>
+        foto.url && lista.findIndex((item) => item.url === foto.url) === index,
+    );
   }
 
   function camposClienteSemAssinatura(ficha: any) {
@@ -1282,12 +1348,24 @@ export default function ClientesPage() {
 
     const respostaHtml = (campo: any) => {
       const resposta = respostasPorCampo.get(campo.id);
+      const fotos = campo.tipo === "foto"
+        ? fotosDaRespostaFicha(fichaDetalhada, campo, resposta)
+        : [];
+      const fotosHtml = fotos.length
+        ? `<div class="fotos-grid">${fotos
+            .map(
+              (foto, index) =>
+                `<figure><img src="${escaparHtmlFicha(foto.url)}" alt="${escaparHtmlFicha(`${campo.titulo} ${index + 1}`)}" /><figcaption>${escaparHtmlFicha(foto.nomeArquivo || `Foto ${index + 1}`)}</figcaption></figure>`,
+            )
+            .join("")}</div>`
+        : "";
 
       return `
         <article class="resposta">
           <div class="resposta-tipo">${escaparHtmlFicha(labelTipoFicha(campo.tipo))}</div>
           <h3>${escaparHtmlFicha(campo.titulo)}</h3>
           <p>${escaparHtmlFicha(formatarValorRespostaFicha(resposta))}</p>
+          ${fotosHtml}
         </article>
       `;
     };
@@ -1510,6 +1588,10 @@ export default function ClientesPage() {
               overflow-wrap: anywhere;
             }
             .respostas-grid { display: grid; gap: 8px; }
+            .fotos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+            .fotos-grid figure { margin: 0; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; background: #fff; }
+            .fotos-grid img { width: 100%; height: 118px; object-fit: cover; display: block; }
+            .fotos-grid figcaption { padding: 5px 7px; font-size: 9px; color: #64748b; word-break: break-word; }
             .resposta {
               border: 1px solid #e2e8f0;
               border-radius: 12px;
@@ -3596,11 +3678,43 @@ export default function ClientesPage() {
                                 fichaDetalhada,
                               ).get(campo.id);
 
+                              const fotosCampo =
+                                campo.tipo === "foto"
+                                  ? fotosDaRespostaFicha(
+                                      fichaDetalhada,
+                                      campo,
+                                      resposta,
+                                    )
+                                  : [];
+
                               return (
                                 <div key={campo.id} style={fichaRespostaCard}>
                                   <span>{labelTipoFicha(campo.tipo)}</span>
                                   <strong>{campo.titulo}</strong>
                                   <p>{formatarValorRespostaFicha(resposta)}</p>
+
+                                  {fotosCampo.length > 0 && (
+                                    <div style={fichaFotosHistoricoGrid}>
+                                      {fotosCampo.map((foto, index) => (
+                                        <a
+                                          key={`${foto.url}-${index}`}
+                                          href={foto.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          style={fichaFotoHistoricoCard}
+                                        >
+                                          <img
+                                            src={foto.url}
+                                            alt={`${campo.titulo} ${index + 1}`}
+                                            style={fichaFotoHistoricoImagem}
+                                          />
+                                          <span style={fichaFotoHistoricoLegenda}>
+                                            Foto {index + 1}
+                                          </span>
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               );
                             },
@@ -5465,6 +5579,41 @@ const fichaRespostaCard: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: 6,
+};
+
+const fichaFotosHistoricoGrid: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(96px, 1fr))",
+  gap: 10,
+  marginTop: 6,
+};
+
+const fichaFotoHistoricoCard: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+  padding: 8,
+  borderRadius: 14,
+  background: "rgba(15,23,42,0.72)",
+  border: "1px solid rgba(255,255,255,0.10)",
+  textDecoration: "none",
+  color: "#e5e7eb",
+};
+
+const fichaFotoHistoricoImagem: CSSProperties = {
+  width: "100%",
+  height: 112,
+  objectFit: "cover",
+  borderRadius: 10,
+  border: "1px solid rgba(255,255,255,0.12)",
+  background: "rgba(0,0,0,0.22)",
+};
+
+const fichaFotoHistoricoLegenda: CSSProperties = {
+  fontSize: 11,
+  fontWeight: 900,
+  color: "#c4b5fd",
+  textAlign: "center",
 };
 
 const drawerFichaOverlay: CSSProperties = {
