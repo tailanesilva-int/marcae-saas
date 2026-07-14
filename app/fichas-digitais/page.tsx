@@ -1001,9 +1001,14 @@ export default function FichasDigitaisPage() {
 
             .fichas-drawer-mobile {
               width: calc(100vw - 20px) !important;
+              height: calc(100dvh - 20px) !important;
+              max-height: calc(100dvh - 20px) !important;
+              min-height: 0 !important;
               margin: 10px !important;
               border-radius: 24px !important;
               padding: 14px !important;
+              overflow: hidden !important;
+              touch-action: pan-y !important;
             }
 
             .fichas-drawer-grid-mobile,
@@ -3037,10 +3042,17 @@ const drawerClose: CSSProperties = {
 };
 
 const drawerScroll: CSSProperties = {
+  flex: 1,
+  minHeight: 0,
   overflowY: "auto",
   overflowX: "hidden",
+  overscrollBehaviorY: "contain",
+  WebkitOverflowScrolling: "touch",
+  touchAction: "pan-y",
   paddingRight: 4,
+  paddingBottom: 24,
   display: "grid",
+  alignContent: "start",
   gap: 12,
 };
 
