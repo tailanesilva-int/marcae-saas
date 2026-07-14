@@ -1002,13 +1002,43 @@ export default function FichasDigitaisPage() {
             .fichas-drawer-mobile {
               width: calc(100vw - 20px) !important;
               height: calc(100dvh - 20px) !important;
-              max-height: calc(100dvh - 20px) !important;
               min-height: 0 !important;
+              max-height: calc(100dvh - 20px) !important;
               margin: 10px !important;
               border-radius: 24px !important;
               padding: 14px !important;
-              overflow: hidden !important;
+              display: block !important;
+              overflow-x: hidden !important;
+              overflow-y: auto !important;
+              overscroll-behavior-y: contain !important;
+              -webkit-overflow-scrolling: touch !important;
               touch-action: pan-y !important;
+              scrollbar-gutter: stable !important;
+            }
+
+            .fichas-drawer-mobile > div:first-child {
+              position: sticky !important;
+              top: -14px !important;
+              z-index: 5 !important;
+              margin: -14px -14px 14px !important;
+              padding: 14px !important;
+              background: linear-gradient(
+                180deg,
+                rgba(15, 23, 42, 1),
+                rgba(15, 23, 42, 0.98)
+              ) !important;
+              border-radius: 24px 24px 0 0 !important;
+            }
+
+            .fichas-drawer-scroll-mobile {
+              display: grid !important;
+              min-height: auto !important;
+              height: auto !important;
+              overflow: visible !important;
+              overscroll-behavior: auto !important;
+              touch-action: pan-y !important;
+              padding-right: 0 !important;
+              padding-bottom: calc(48px + env(safe-area-inset-bottom)) !important;
             }
 
             .fichas-drawer-grid-mobile,
@@ -1719,7 +1749,7 @@ export default function FichasDigitaisPage() {
                 </button>
               </div>
 
-              <div style={drawerScroll}>
+              <div className="fichas-drawer-scroll-mobile" style={drawerScroll}>
                 <section style={drawerSection}>
                   <div style={formGrupoTopo}>
                     <span style={formGrupoBadge}>01</span>
